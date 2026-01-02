@@ -85,10 +85,9 @@ export default function CollectionsPage() {
 
   const handleExport = () => {
     const dataToExport = filteredCollections.map((collection) => {
-      const client = clients.find((c) => c.id === collection.client_id)
       return {
         'ID Recaudo': collection.id,
-        Cliente: client?.name || collection.client_id,
+        Cliente: collection.name,
         Monto: formatCurrency(collection.amount),
         'Fecha de Pago': formatDateTime(collection.payment_date),
         'Método de Pago': collection.payment_method || 'N/A',
@@ -100,25 +99,11 @@ export default function CollectionsPage() {
     exportToExcel(dataToExport, { filename: 'recaudos_recaudopro', sheetName: 'Recaudos' })
   }
 
-  const enrichedCollections = useMemo(() => {
-    return filteredCollections.map((collection) => {
-      const client = clients.find((c) => c.id === collection.client_id)
-      return {
-        ...collection,
-        clientName: client?.name || collection.client_id
-      }
-    })
-  }, [filteredCollections, clients])
-
-  const columns: Column<CollectionWithUserEmail & { clientName?: string }>[] = [
+  const columns: Column<CollectionWithUserEmail>[] = [
     {
-      key: 'clientName',
+      key: 'name',
       header: 'Cliente',
-      render: (collection) => (
-        <span className="font-medium">
-          {(collection as any).clientName || collection.client_id}
-        </span>
-      )
+      className: 'font-medium'
     },
     {
       key: 'user_email',
@@ -188,7 +173,7 @@ export default function CollectionsPage() {
         <h1 className="text-3xl font-bold text-gray-900">Recaudos</h1>
         <div className="flex gap-3">
           <Button
-            variant="outline"
+            {...({ variant: 'outline' } as any)}
             onClick={handleExport}
             disabled={filteredCollections.length === 0}
           >
@@ -214,7 +199,7 @@ export default function CollectionsPage() {
 
       <div className="flex-1 min-h-0">
         <DynamicTable
-          data={enrichedCollections}
+          data={filteredCollections}
           columns={columns}
           isLoading={isLoading}
           error={error}
