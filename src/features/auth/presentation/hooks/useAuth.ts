@@ -11,7 +11,7 @@ import { useAuthStore } from '../store/authStore'
 import { SignInRequest, CreateUserRequest } from '../../domain/models'
 
 export const useAuth = () => {
-  const { user, setUser, signOut: signOutStore } = useAuthStore()
+  const { user, setUser, setBusinessId, signOut: signOutStore } = useAuthStore()
 
   // Instanciar Repository y Service
   const authService = useMemo(() => {
@@ -48,10 +48,21 @@ export const useAuth = () => {
       throw error
     }
   }
+
+  const getBusinessByCode = async (code: string) => {
+    try {
+      const repository = new AuthRepository()
+      return await repository.getBusinessByCode(code)
+    } catch (error) {
+      throw error
+    }
+  }
   const signIn = async (request: SignInRequest) => {
     try {
       const response = await signInUseCase(request)
       setUser(response.user)
+      // No sobrescribir businessId: debe mantenerse el del Código de negocio ingresado
+      // en el paso 1. response.user.business_id puede ser de otro negocio (ej. NEG003).
       return { success: true, error: null }
     } catch (error) {
       return {
@@ -111,6 +122,18 @@ export const useAuth = () => {
     }
   }
 
+  const deleteUser = async (id: string) => {
+    try {
+      await authService.deleteUser(id)
+      return { success: true, error: null }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error al eliminar usuario',
+      }
+    }
+  }
+
   return {
     user,
     signIn,
@@ -118,7 +141,9 @@ export const useAuth = () => {
     loadCurrentUser,
     resetPassword,
     getUsersByBusinessId,
+    getBusinessByCode,
     createUser,
+    deleteUser,
   }
 }
 

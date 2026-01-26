@@ -7,6 +7,7 @@ export interface IAuthRepository {
   signOut(): Promise<void>
   resetPassword(email: string): Promise<void>
   createUser(request: CreateUserRequest, businessId: string): Promise<User>
+  deleteUser(id: string): Promise<void>
 }
 
 

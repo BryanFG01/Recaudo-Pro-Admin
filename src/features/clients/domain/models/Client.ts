@@ -18,6 +18,12 @@ export interface CreateClientRequest {
   address?: string | null
   latitude?: number | null
   longitude?: number | null
+  /** Código del negocio (ej: ARG01). */
+  business_code?: string | null
+  /** ID del usuario asignado como gestor. */
+  user_id?: string | null
+  /** Número del usuario (ej: ARGCOBRADOR1). */
+  user_number?: string | null
 }
 
 export interface UpdateClientRequest extends Partial<CreateClientRequest> {

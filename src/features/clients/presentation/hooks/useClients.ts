@@ -8,6 +8,7 @@ import {
   buildSearchClientsUseCase,
   buildCreateClientUseCase,
   buildUpdateClientUseCase,
+  buildDeleteClientUseCase,
 } from '../../application/useCases'
 import { CreateClientRequest, UpdateClientRequest } from '../../domain/models'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
@@ -45,6 +46,11 @@ export const useClients = () => {
     [clientService]
   )
 
+  const deleteClientUseCase = useMemo(
+    () => buildDeleteClientUseCase(clientService),
+    [clientService]
+  )
+
   const { data, error, isLoading, mutate } = useSWR(
     user ? 'clients' : null,
     () => getClientsUseCase()
@@ -65,6 +71,11 @@ export const useClients = () => {
     return result
   }
 
+  const deleteClient = async (id: string) => {
+    await deleteClientUseCase(id)
+    mutate()
+  }
+
   const searchClients = async (query: string) => {
     return searchClientsUseCase(query)
   }
@@ -76,6 +87,7 @@ export const useClients = () => {
     refetch: mutate,
     createClient,
     updateClient,
+    deleteClient,
     searchClients,
     getClientById: getClientByIdUseCase,
   }

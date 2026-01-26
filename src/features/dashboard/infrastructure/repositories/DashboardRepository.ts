@@ -1,185 +1,175 @@
 import { IDashboardRepository } from '../../domain/port'
 import { DashboardStats, DashboardStatsRequest, DailyCollectionData } from '../../domain/models'
-import { supabase } from '@/shared/config/supabase'
+import { apiClient } from '@/shared/config/api'
 
+type CollectionRow = { amount: number; payment_date: string; payment_method?: string | null }
+type CreditRow = { client_id: string; total_balance: number; overdue_installments: number }
+
+/**
+ * Calcula las estadísticas del dashboard a partir de:
+ * - GET /api/collections?businessId=&startDate=&endDate=
+ * - GET /api/credits?businessId=
+ * - GET /api/clients?business_code= o business_id= (solo business; Total de Clientes)
+ */
 export class DashboardRepository implements IDashboardRepository {
   async getDashboardStats(request: DashboardStatsRequest): Promise<DashboardStats> {
     if (!request.businessId) {
       throw new Error('businessId es requerido para obtener estadísticas del dashboard')
     }
 
+    const businessId = request.businessId
+    const startDate = request.startDate
+    const endDate = request.endDate
     const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
-    const weekStart = new Date(todayStart)
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1)
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
 
-    // Recaudos del día
-    let dailyQuery = supabase
-      .from('collections')
-      .select('amount, payment_method')
-      .eq('business_id', request.businessId)
-      .gte('payment_date', todayStart.toISOString())
-      .lt('payment_date', todayEnd.toISOString())
-    
-    const { data: dailyData } = await dailyQuery
+    // 1. Recaudos del período
+    let collections: CollectionRow[] = []
+    try {
+      const params = new URLSearchParams({ businessId })
+      if (startDate) params.set('startDate', startDate.toISOString())
+      if (endDate) params.set('endDate', endDate.toISOString())
+      const data = await apiClient.get<CollectionRow[]>(`/api/collections?${params.toString()}`)
+      collections = Array.isArray(data) ? data : []
+    } catch {
+      collections = []
+    }
 
-    const dailyCollection = (dailyData || []).reduce((sum, item) => sum + (item.amount as number), 0)
+    // 2. Créditos del negocio
+    let credits: CreditRow[] = []
+    try {
+      const data = await apiClient.get<CreditRow[]>(`/api/credits?businessId=${encodeURIComponent(businessId)}`)
+      credits = Array.isArray(data) ? data : []
+    } catch {
+      credits = []
+    }
 
-    // Recaudos de la semana
-    const { data: weeklyData } = await supabase
-      .from('collections')
-      .select('amount, payment_method, payment_date')
-      .eq('business_id', request.businessId)
-      .gte('payment_date', weekStart.toISOString())
-
-    let weeklyCollection = 0
-    let weeklyCash = 0
-    let weeklyTransaction = 0
-    let weeklyCashCount = 0
-    let weeklyTransactionCount = 0
-    const weeklyDataMap: Record<number, number> = {}
-
-    weeklyData?.forEach(item => {
-      const amount = item.amount as number
-      weeklyCollection += amount
-      const date = new Date(item.payment_date as string)
-      const weekday = date.getDay() === 0 ? 7 : date.getDay()
-      weeklyDataMap[weekday] = (weeklyDataMap[weekday] || 0) + amount
-
-      const paymentMethod = (item.payment_method as string)?.toLowerCase()
-      if (paymentMethod === 'efectivo') {
-        weeklyCash += amount
-        weeklyCashCount++
-      } else if (paymentMethod === 'transacción' || paymentMethod === 'transaccion') {
-        weeklyTransaction += amount
-        weeklyTransactionCount++
+    // 3. Total de clientes: GET /api/clients. Según Swagger solo business_code es necesario; no se envían user_id/user_number.
+    let totalClientsFromCredits = 0
+    {
+      const getClientId = (r: Record<string, unknown>): string =>
+        String(r.client_id ?? r.clientId ?? '').trim()
+      totalClientsFromCredits = new Set(
+        credits.map((c) => getClientId(c as Record<string, unknown>)).filter(Boolean)
+      ).size
+    }
+    let totalClients = totalClientsFromCredits
+    const hasBusiness = request.businessCode || businessId
+    if (hasBusiness) {
+      try {
+        const params = new URLSearchParams()
+        if (request.businessCode) params.set('business_code', request.businessCode)
+        else params.set('business_id', businessId)
+        const clients = await apiClient.get<unknown[]>(`/api/clients?${params.toString()}`)
+        if (Array.isArray(clients)) totalClients = clients.length
+      } catch {
+        // mantener totalClientsFromCredits
       }
-    })
+    }
 
-    // Recaudos del mes
-    const { data: monthlyData } = await supabase
-      .from('collections')
-      .select('amount, payment_method')
-      .eq('business_id', request.businessId)
-      .gte('payment_date', monthStart.toISOString())
+    // --- Recaudos: totales y por método ---
+    let totalCollected = 0
+    let cashCollection = 0
+    let transactionCollection = 0
+    let cashCount = 0
+    let transactionCount = 0
+    const dailyDataMap: Record<string, number> = {}
+    const dailyCashMap: Record<string, number> = {}
+    const dailyTransactionMap: Record<string, number> = {}
 
-    const monthlyCollection = (monthlyData || []).reduce((sum, item) => sum + (item.amount as number), 0)
+    for (const c of collections) {
+      const amount = Number(c.amount) || 0
+      totalCollected += amount
+      const pm = (c.payment_method || '').toLowerCase()
+      if (pm === 'efectivo') {
+        cashCollection += amount
+        cashCount++
+      } else if (pm === 'transacción' || pm === 'transaccion') {
+        transactionCollection += amount
+        transactionCount++
+      }
+      const d = c.payment_date ? new Date(c.payment_date) : null
+      if (d) {
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        dailyDataMap[key] = (dailyDataMap[key] || 0) + amount
+        if (pm === 'efectivo') dailyCashMap[key] = (dailyCashMap[key] || 0) + amount
+        if (pm === 'transacción' || pm === 'transaccion') dailyTransactionMap[key] = (dailyTransactionMap[key] || 0) + amount
+      }
+    }
 
-    // Créditos activos
-    const { data: creditsData } = await supabase
-      .from('credits')
-      .select('id, overdue_installments, client_id')
-      .eq('business_id', request.businessId)
-      .gt('total_balance', 0)
+    // --- Créditos ---
+    const totalCredits = credits.length
+    const activeCredits = credits.filter((c) => (Number(c.total_balance) || 0) > 0).length
+    const clientsInArrears = credits.filter((c) => (Number(c.overdue_installments) || 0) > 0 && (Number(c.total_balance) || 0) > 0).length
 
-    const activeCredits = creditsData?.length || 0
-    const clientsInArrears = creditsData?.filter(c => (c.overdue_installments as number) > 0).length || 0
-    const uniqueClients = new Set(creditsData?.map(c => c.client_id as string) || []).size
+    const upToDatePercentage = activeCredits > 0 ? ((activeCredits - clientsInArrears) / activeCredits) * 100 : 0
+    const overduePercentage = Math.max(0, 100 - upToDatePercentage)
 
-    const upToDatePercentage = activeCredits > 0 
-      ? ((activeCredits - clientsInArrears) / activeCredits) * 100 
-      : 0
+    // --- daily/weekly/monthly (derivados del período) ---
+    let dailyCollection = 0
+    let weeklyCollection = totalCollected
+    let monthlyCollection = totalCollected
+    if (startDate && endDate) {
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      if (daysDiff <= 1) {
+        dailyCollection = totalCollected
+        weeklyCollection = 0
+        monthlyCollection = 0
+      } else if (daysDiff <= 7) {
+        dailyCollection = 0
+        monthlyCollection = 0
+      } else {
+        dailyCollection = 0
+        weeklyCollection = 0
+      }
+    }
 
-    // Calcular datos por período
-    let totalCollected = weeklyCollection
-    let cashCollection = weeklyCash
-    let transactionCollection = weeklyTransaction
-    let cashCount = weeklyCashCount
-    let transactionCount = weeklyTransactionCount
-    let dailyCollectionData: DailyCollectionData[] = []
+    // --- weeklyCollectionData ---
+    let weeklyCollectionData: DailyCollectionData[] = []
+    const dayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
 
-    if (request.startDate && request.endDate) {
-      const { data: periodData } = await supabase
-        .from('collections')
-        .select('amount, payment_method, payment_date')
-        .eq('business_id', request.businessId)
-        .gte('payment_date', request.startDate.toISOString())
-        .lt('payment_date', request.endDate.toISOString())
-        .order('payment_date', { ascending: true })
+    if (startDate && endDate) {
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-      totalCollected = 0
-      cashCollection = 0
-      transactionCollection = 0
-      cashCount = 0
-      transactionCount = 0
-
-      const dailyDataMap: Record<string, number> = {}
-      const dailyCashMap: Record<string, number> = {}
-      const dailyTransactionMap: Record<string, number> = {}
-
-      periodData?.forEach(item => {
-        const amount = item.amount as number
-        totalCollected += amount
-        const date = new Date(item.payment_date as string)
-        const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-        
-        dailyDataMap[dayKey] = (dailyDataMap[dayKey] || 0) + amount
-
-        const paymentMethod = (item.payment_method as string)?.toLowerCase()
-        if (paymentMethod === 'efectivo') {
-          cashCollection += amount
-          cashCount++
-          dailyCashMap[dayKey] = (dailyCashMap[dayKey] || 0) + amount
-        } else if (paymentMethod === 'transacción' || paymentMethod === 'transaccion') {
-          transactionCollection += amount
-          transactionCount++
-          dailyTransactionMap[dayKey] = (dailyTransactionMap[dayKey] || 0) + amount
-        }
-      })
-
-      const daysDiff = Math.ceil((request.endDate.getTime() - request.startDate.getTime()) / (1000 * 60 * 60 * 24))
-      const dayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
-
-      if (daysDiff === 1) {
-        const todayKey = `${request.startDate.getFullYear()}-${String(request.startDate.getMonth() + 1).padStart(2, '0')}-${String(request.startDate.getDate()).padStart(2, '0')}`
-        dailyCollectionData = [{
-          day: request.startDate.getDate(),
+      if (daysDiff <= 1) {
+        const k = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+        weeklyCollectionData = [{
+          day: startDate.getDate(),
           label: 'Hoy',
-          amount: dailyDataMap[todayKey] || 0,
-          cash: dailyCashMap[todayKey] || 0,
-          transaction: dailyTransactionMap[todayKey] || 0,
+          amount: dailyDataMap[k] || 0,
+          cash: dailyCashMap[k] || 0,
+          transaction: dailyTransactionMap[k] || 0,
         }]
       } else if (daysDiff <= 7) {
         for (let i = 0; i < 7; i++) {
-          const currentDate = new Date(request.startDate)
-          currentDate.setDate(currentDate.getDate() + i)
-          const dayKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
-          dailyCollectionData.push({
-            day: currentDate.getDay() === 0 ? 7 : currentDate.getDay(),
-            label: dayLabels[i],
-            amount: dailyDataMap[dayKey] || 0,
-            cash: dailyCashMap[dayKey] || 0,
-            transaction: dailyTransactionMap[dayKey] || 0,
+          const d = new Date(startDate)
+          d.setDate(d.getDate() + i)
+          const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          weeklyCollectionData.push({
+            day: d.getDay() === 0 ? 7 : d.getDay(),
+            label: dayLabels[i] || String(i + 1),
+            amount: dailyDataMap[k] || 0,
+            cash: dailyCashMap[k] || 0,
+            transaction: dailyTransactionMap[k] || 0,
           })
         }
       } else {
-        let currentDate = new Date(request.startDate)
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        while (currentDate < request.endDate && currentDate <= today) {
-          const dayKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`
-          dailyCollectionData.push({
-            day: currentDate.getDate(),
-            label: String(currentDate.getDate()),
-            amount: dailyDataMap[dayKey] || 0,
-            cash: dailyCashMap[dayKey] || 0,
-            transaction: dailyTransactionMap[dayKey] || 0,
+        let cur = new Date(startDate)
+        while (cur < endDate && cur <= today) {
+          const k = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`
+          weeklyCollectionData.push({
+            day: cur.getDate(),
+            label: String(cur.getDate()),
+            amount: dailyDataMap[k] || 0,
+            cash: dailyCashMap[k] || 0,
+            transaction: dailyTransactionMap[k] || 0,
           })
-          currentDate.setDate(currentDate.getDate() + 1)
-          if (currentDate > today) break
+          cur.setDate(cur.getDate() + 1)
         }
       }
     } else {
-      const dayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
       for (let i = 1; i <= 7; i++) {
-        dailyCollectionData.push({
-          day: i,
-          label: dayLabels[i - 1],
-          amount: weeklyDataMap[i] || 0,
-          cash: 0,
-          transaction: 0,
-        })
+        weeklyCollectionData.push({ day: i, label: dayLabels[i - 1] || String(i), amount: 0, cash: 0, transaction: 0 })
       }
     }
 
@@ -191,15 +181,14 @@ export class DashboardRepository implements IDashboardRepository {
       clientsInArrears,
       totalCollected,
       upToDatePercentage,
-      overduePercentage: 100 - upToDatePercentage,
+      overduePercentage,
       cashCollection,
       transactionCollection,
       cashCount,
       transactionCount,
-      weeklyCollectionData: dailyCollectionData,
-      totalClients: uniqueClients,
+      weeklyCollectionData,
+      totalClients,
+      totalCredits,
     }
   }
 }
-
-

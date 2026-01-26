@@ -1,15 +1,33 @@
-import { useState, useEffect, useMemo } from 'react'
-import { DynamicTable, Column } from '@/shared/components/DynamicTable'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { Column, DynamicTable } from '@/shared/components/DynamicTable'
+import { exportToExcel } from '@/shared/utils/excel'
+import { Download, Filter } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { ClientWithCredits } from '../../domain/models'
 import { ClientService } from '../../domain/services/ClientService'
 import { ClientRepository } from '../../infrastructure/repositories/ClientRepository'
-import { useAuthStore } from '@/features/auth/presentation/store/authStore'
-import { exportToExcel } from '@/shared/utils/excel'
-import { Button } from '@/components/ui/button'
-import { Download, Filter } from 'lucide-react'
+
+// Mismos tonos que FiltersBar y login (panel oscuro)
+const cardDark = 'bg-[#2D3748] border-gray-600 text-gray-200'
+const inputDark =
+  'bg-[#2D3748] border-gray-600 text-white data-[placeholder]:text-gray-400 focus:ring-2 focus:ring-[#2563EB] focus-visible:ring-2 focus-visible:ring-[#2563EB]'
+const labelDark = 'text-gray-200'
+const selectContentDark = 'bg-[#2D3748] border-gray-600 text-gray-200'
+const selectItemAll = 'data-[highlighted]:bg-[#2563EB]/40 text-blue-200'
+const selectItemDark = 'text-gray-200 data-[highlighted]:bg-white/10'
 
 export default function AdminClientsPage() {
-  const { user, businessId } = useAuthStore()
+  const { user, businessId, businessCode } = useAuthStore()
   const [clients, setClients] = useState<ClientWithCredits[]>([])
   const [filteredClients, setFilteredClients] = useState<ClientWithCredits[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -25,10 +43,10 @@ export default function AdminClientsPage() {
   }, [])
 
   useEffect(() => {
-    if (currentBusinessId) {
+    if (currentBusinessId && user?.id) {
       loadClients()
     }
-  }, [currentBusinessId])
+  }, [currentBusinessId, user?.id, businessCode])
 
   useEffect(() => {
     if (selectedEmail) {
@@ -39,13 +57,13 @@ export default function AdminClientsPage() {
   }, [selectedEmail, clients])
 
   const loadClients = async () => {
-    if (!currentBusinessId) return
+    if (!currentBusinessId || !user?.id) return
 
     setIsLoading(true)
     setError(null)
 
     try {
-      const data = await clientService.getClientsWithCredits(currentBusinessId)
+      const data = await clientService.getClientsWithCredits(currentBusinessId, user.id, undefined, businessCode ?? undefined, user.number ?? undefined)
       setClients(data)
       
       // Extraer emails únicos para el filtro
@@ -111,7 +129,7 @@ export default function AdminClientsPage() {
       render: (client) => {
         const balance = client.total_balance
         return (
-          <span className={balance > 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
+          <span className={balance > 0 ? 'text-red-300 font-semibold' : 'text-green-300 font-semibold'}>
             {formatCurrency(balance)}
           </span>
         )
@@ -121,15 +139,17 @@ export default function AdminClientsPage() {
       key: 'user_email',
       header: 'Email Gestor',
       render: (client) => (
-        <span className="text-sm text-gray-600">{client.user_email || 'N/A'}</span>
+        <span className="text-sm text-gray-300">{client.user_email || 'N/A'}</span>
       ),
     },
   ]
 
-  if (!user?.business_id) {
+  if (!currentBusinessId || !user?.id) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">No tienes un negocio asignado</p>
+        <p className="text-gray-400">
+          {!user?.id ? 'No hay sesión de usuario. Por favor, inicia sesión.' : 'No tienes un negocio asignado.'}
+        </p>
       </div>
     )
   }
@@ -137,41 +157,50 @@ export default function AdminClientsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Administración de Clientes</h1>
+        <h1 className="text-3xl font-bold text-white">Administración de Clientes</h1>
         <Button
           onClick={handleExport}
           disabled={filteredClients.length === 0}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 border-gray-600 text-gray-300 hover:bg-white/10 hover:border-gray-500 hover:text-white"
         >
           <Download className="w-4 h-4" />
           Exportar a Excel
         </Button>
       </div>
 
-      <div className="flex gap-4 items-end">
-        <div className="flex-1">
-          <label htmlFor="emailFilter" className="block text-sm font-medium text-gray-700 mb-2">
-            Filtrar por Email
-          </label>
-          <div className="relative">
-            <Filter className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
-            <select
-              id="emailFilter"
-              value={selectedEmail}
-              onChange={(e) => setSelectedEmail(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Todos los emails</option>
-              {availableEmails.map(email => (
-                <option key={email} value={email}>{email}</option>
-              ))}
-            </select>
+      <Card className={cardDark}>
+        <CardContent className="pt-6">
+          <div className="flex gap-4 items-end flex-wrap">
+            <div className="flex-1 min-w-[200px] space-y-2">
+              <Label htmlFor="emailFilter" className={`flex items-center gap-1.5 ${labelDark}`}>
+                <Filter className="w-4 h-4 text-[#2563EB]" aria-hidden />
+                Filtrar por nombre
+              </Label>
+              <Select
+                value={selectedEmail || '__all__'}
+                onValueChange={(v) => setSelectedEmail(v === '__all__' ? '' : v)}
+              >
+                <SelectTrigger id="emailFilter" className={inputDark}>
+                  <SelectValue placeholder="Todos los nombres" />
+                </SelectTrigger>
+                <SelectContent className={selectContentDark}>
+                  <SelectItem value="__all__" className={selectItemAll}>
+                    Todos los nombres
+                  </SelectItem>
+                  {availableEmails.map((email) => (
+                    <SelectItem key={email} value={email} className={selectItemDark}>
+                      {email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-gray-400 shrink-0">
+              Mostrando {filteredClients.length} de {clients.length} clientes
+            </p>
           </div>
-        </div>
-        <div className="text-sm text-gray-600">
-          Mostrando {filteredClients.length} de {clients.length} clientes
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <DynamicTable
         data={filteredClients}

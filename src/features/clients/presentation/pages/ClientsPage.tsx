@@ -1,19 +1,19 @@
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
-import { Button } from '@/components/ui/button'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
 import { ClientFilters } from '@/shared/types/filters'
 import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
-import { Download, Plus } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { ClientWithCredits } from '../../domain/models'
 import { ClientService } from '../../domain/services/ClientService'
 import { ClientRepository } from '../../infrastructure/repositories/ClientRepository'
 
 export default function ClientsPage() {
-  const { businessId, user } = useAuthStore()
+  const { businessId, businessCode, user } = useAuthStore()
   const { getUsersByBusinessId } = useAuth()
   const [clients, setClients] = useState<ClientWithCredits[]>([])
   const [filteredClients, setFilteredClients] = useState<ClientWithCredits[]>([])
@@ -30,17 +30,17 @@ export default function ClientsPage() {
   }, [])
 
   useEffect(() => {
-    if (currentBusinessId) {
+    if (currentBusinessId && user?.id) {
       loadUsers()
       loadClients()
     }
-  }, [currentBusinessId])
+  }, [currentBusinessId, user?.id])
 
   useEffect(() => {
-    if (currentBusinessId) {
+    if (currentBusinessId && user?.id) {
       loadClients()
     }
-  }, [filters, currentBusinessId])
+  }, [filters, currentBusinessId, user?.id])
 
   const loadUsers = async () => {
     if (!currentBusinessId) return
@@ -54,18 +54,24 @@ export default function ClientsPage() {
   }
 
   const loadClients = async () => {
-    if (!currentBusinessId) return
+    if (!currentBusinessId || !user?.id) return
 
     setIsLoading(true)
     setError(null)
 
     try {
+      // "__all__" y vacíos se tratan como "Todos" (sin filtro)
+      const hasVal = (v: string | undefined) =>
+        v != null && v !== '__all__' && String(v).trim() !== ''
       const clientFilters: ClientFilters = {
         businessId: currentBusinessId,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        userEmail: filters.userEmail || undefined,
-        clientId: filters.clientId || undefined
+        businessCode: businessCode || undefined,
+        userId: user.id,
+        userNumber: user?.number ?? undefined,
+        startDate: hasVal(filters.startDate) ? filters.startDate : undefined,
+        endDate: hasVal(filters.endDate) ? filters.endDate : undefined,
+        userEmail: hasVal(filters.userEmail) ? filters.userEmail : undefined,
+        clientId: hasVal(filters.clientId) ? filters.clientId : undefined
       }
 
       const data = await clientService.getClientsWithFilters(clientFilters)
@@ -115,8 +121,8 @@ export default function ClientsPage() {
         <span
           className={
             client.total_balance === 0
-              ? 'text-green-600 font-semibold'
-              : 'text-red-600 font-semibold'
+              ? 'text-green-300 font-semibold'
+              : 'text-red-300 font-semibold'
           }
         >
           {formatCurrency(client.total_balance)}
@@ -139,10 +145,12 @@ export default function ClientsPage() {
     return clients.map((c) => ({ id: c.id, name: c.name }))
   }, [clients])
 
-  if (!currentBusinessId) {
+  if (!currentBusinessId || !user?.id) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-gray-600">No hay business_id disponible. Por favor, inicia sesión.</p>
+        <p className="text-gray-400">
+          {!user?.id ? 'No hay sesión de usuario. Por favor, inicia sesión.' : 'No hay business_id disponible. Por favor, inicia sesión.'}
+        </p>
       </div>
     )
   }
@@ -150,16 +158,25 @@ export default function ClientsPage() {
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex-shrink-0 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Clientes</h1>
+        <h1 className="text-3xl font-bold text-white">Clientes</h1>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={handleExport} disabled={filteredClients.length === 0}>
-            <Download className="w-4 h-4 mr-2" />
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={filteredClients.length === 0}
+            className="border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
+            aria-label="Exportar clientes a Excel"
+          >
+            <Download className="w-4 h-4 mr-2" aria-hidden="true" /> 
             Exportar a Excel
           </Button>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
+          {/* <Button
+            className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-0"
+            aria-label="Crear nuevo cliente"
+          >
+            <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
             Nuevo Cliente
-          </Button>
+          </Button> */}
         </div>
       </div>
 

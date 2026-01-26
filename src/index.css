@@ -65,4 +65,37 @@
     width: 100%;
     min-height: 100vh;
   }
+  
+  /* Mejoras de accesibilidad y foco */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  
+  /* Asegurar que los elementos interactivos sean accesibles por teclado */
+  button:not(:disabled),
+  a,
+  input:not(:disabled),
+  select:not(:disabled),
+  textarea:not(:disabled) {
+    cursor: pointer;
+  }
+  
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
+  
+  /* Mejorar contraste y legibilidad */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }

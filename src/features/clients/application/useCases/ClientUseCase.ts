@@ -31,4 +31,10 @@ export const buildUpdateClientUseCase = (service: ClientService) => {
   }
 }
 
+export const buildDeleteClientUseCase = (service: ClientService) => {
+  return async (id: string): Promise<void> => {
+    return service.deleteClient(id)
+  }
+}
+
 

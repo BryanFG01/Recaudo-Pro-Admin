@@ -21,8 +21,8 @@ export default function CreditStatusChart({
   const COLORS = ['#10b981', '#ef4444']
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold mb-4">Estado de Créditos</h3>
+    <div className="bg-[#2D3748] border border-gray-600 rounded-lg shadow p-6">
+      <h3 className="text-lg font-semibold mb-4 text-white">Estado de Créditos</h3>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
@@ -39,18 +39,18 @@ export default function CreditStatusChart({
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip />
-          <Legend />
+          <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '6px' }} />
+          <Legend wrapperStyle={{ color: '#e5e7eb' }} />
         </PieChart>
       </ResponsiveContainer>
       <div className="mt-4 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Al Día:</span>
-          <span className="font-semibold">{activeCredits - clientsInArrears} créditos</span>
+          <span className="text-sm text-gray-400">Al Día:</span>
+          <span className="font-semibold text-gray-100">{activeCredits - clientsInArrears} créditos</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Atrasados:</span>
-          <span className="font-semibold text-error">{clientsInArrears} créditos</span>
+          <span className="text-sm text-gray-400">Atrasados:</span>
+          <span className="font-semibold text-red-400">{clientsInArrears} créditos</span>
         </div>
       </div>
     </div>

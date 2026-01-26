@@ -1,261 +1,162 @@
+import { apiClient } from '@/shared/config/api'
+import { CreateUserRequest, SignInRequest, SignInResponse, User } from '../../domain/models'
 import { IAuthRepository } from '../../domain/port'
-import { SignInRequest, SignInResponse, User, CreateUserRequest } from '../../domain/models'
-import { supabase } from '@/shared/config/supabase'
+
+interface Business {
+  id: string
+  code: string
+  name?: string
+}
 
 export class AuthRepository implements IAuthRepository {
+  /**
+   * Obtiene negocio por código.
+   * GET /api/businesses/code/{code}
+   * Solo recibe code en la ruta (sin body ni query).
+   */
+  async getBusinessByCode(code: string): Promise<Business> {
+    try {
+      const cleanCode = code.trim()
+      if (!cleanCode) throw new Error('El código de negocio no puede estar vacío')
+      const business = await apiClient.get<Business>(`/api/businesses/code/${encodeURIComponent(cleanCode)}`)
+      return business
+    } catch (error) {
+      throw new Error(`Error al buscar negocio: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+    }
+  }
+  /**
+   * Inicio de sesión super-admin.
+   * POST /api/super-admins/{businessCode}/users-by-credentials
+   * - businessCode en la URL (viene del paso 1, ej. ARG01, NEG003).
+   * - Body: { email, password }.
+   * Respuesta: array o un usuario { id, number, name, role, phone, employee_code, is_active, business_id }.
+   */
   async signInWithEmail(request: SignInRequest): Promise<SignInResponse> {
     try {
-      const { data, error } = await supabase.rpc('authenticate_user', {
-        p_business_id: request.businessId,
-        p_email: request.email.trim(),
-        p_password: request.password,
+      const code = request.businessCode?.trim()
+      if (!code) throw new Error('Código de negocio es requerido para iniciar sesión.')
+
+      const path = `/api/super-admins/${encodeURIComponent(code)}/users-by-credentials`
+      const res = await apiClient.post<unknown>(path, {
+        email: request.email.trim(),
+        password: request.password,
       })
 
-      if (error || !data || data.length === 0) {
-        throw new Error('Credenciales inválidas')
-      }
+      type BackendUser = { id: string; number?: string; name: string | null; role: string; phone?: string | null; employee_code?: string | null; is_active: boolean; business_id: string }
+      const list: BackendUser[] = Array.isArray(res)
+        ? (res as BackendUser[])
+        : res && typeof res === 'object' && 'id' in res
+          ? [res as BackendUser]
+          : []
+      if (list.length === 0) throw new Error('La respuesta del servidor no incluye el usuario')
 
-      const user = data[0] as User
+      const matches = (u: BackendUser) =>
+        (request.businessId && u.business_id === request.businessId) ||
+        (request.businessCode && u.business_id === request.businessCode)
+      const chosen =
+        request.businessId || request.businessCode
+          ? list.find(matches) ?? list[0]
+          : list[0]
 
-      return {
-        user,
-        success: true,
+      const user: User = {
+        id: chosen.id,
+        email: request.email.trim(),
+        name: chosen.name ?? null,
+        avatar_url: null,
+        business_id: chosen.business_id,
+        employee_code: chosen.employee_code ?? null,
+        phone: chosen.phone ?? null,
+        role: chosen.role as User['role'],
+        commission_percentage: null,
+        is_active: chosen.is_active,
+        created_at: (chosen as { created_at?: string }).created_at ?? '',
+        updated_at: (chosen as { updated_at?: string }).updated_at ?? '',
       }
+      return { user, success: true }
     } catch (error) {
-      throw new Error(`Error al iniciar sesión: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      const msg = error instanceof Error ? error.message : ''
+      // No exponer detalles internos, URLs ni mensajes del backend al usuario
+      if (/unauthorized|401|403|forbidden|credenciales|incorrecto/i.test(msg)) {
+        throw new Error('Correo o contraseña incorrectos.')
+      }
+      throw new Error('Error al iniciar sesión. Intentá de nuevo.')
     }
   }
 
+  /**
+   * GET /api/users/business/{businessId}
+   * businessId: UUID o código (ej. ARG01). Se elimina password de la respuesta por seguridad.
+   */
   async getUsersByBusinessId(businessId: string): Promise<User[]> {
     try {
-      // Limpiar el business_id de espacios en blanco
       const cleanBusinessId = businessId.trim()
-
       if (!cleanBusinessId) {
         throw new Error('ID de negocio no puede estar vacío')
       }
 
-      // Intentar primero con función RPC si existe (bypasea RLS)
-      try {
-        const { data: rpcUsers, error: rpcError } = await supabase.rpc('get_users_by_business_id', {
-          p_business_id: cleanBusinessId,
-        })
-
-        if (!rpcError && rpcUsers) {
-          if (rpcUsers.length > 0) {
-            return rpcUsers as User[]
-          } else {
-            // La función existe pero no hay usuarios, continuar con consulta directa
-            console.log('Función RPC ejecutada pero no hay usuarios, intentando consulta directa')
-          }
-        } else if (rpcError) {
-          // Si el error es que la función no existe
-          if (rpcError.code === 'PGRST202' || rpcError.message.includes('Could not find the function')) {
-            console.error('❌ Función RPC no existe.')
-            console.error('📄 SOLUCIÓN: Abre el archivo "SOLUCION_COMPLETA.sql"')
-            console.error('📋 Copia TODO el contenido y ejecútalo en Supabase SQL Editor')
-            console.error('🔗 Ve a: https://app.supabase.com → Tu Proyecto → SQL Editor')
-            // Continuar con consulta directa (probablemente fallará por RLS)
-          } else {
-            // Otro tipo de error en la función RPC
-            console.error('Error en función RPC:', rpcError)
-            throw new Error(`Error en función RPC: ${rpcError.message}`)
-          }
-        }
-      } catch (rpcErr) {
-        // Si la función RPC no existe, continuar con consulta directa
-        console.log('Función RPC no disponible, usando consulta directa')
-      }
-
-      // Consultar usuarios activos primero
-      const { data: activeUsers, error: activeError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('business_id', cleanBusinessId)
-        .eq('is_active', true)
-        .order('email', { ascending: true })
-
-      // Si hay usuarios activos, retornarlos
-      if (!activeError && activeUsers && activeUsers.length > 0) {
-        return activeUsers as User[]
-      }
-
-      // Si no hay usuarios activos, consultar todos (incluyendo inactivos)
-      const { data: allUsers, error: allUsersError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('business_id', cleanBusinessId)
-        .order('email', { ascending: true })
-
-      if (allUsersError) {
-        // Si hay un error específico de RLS o permisos
-        const errorMsg = allUsersError.message.toLowerCase()
-        if (errorMsg.includes('permission') || errorMsg.includes('rls') || errorMsg.includes('policy')) {
-          throw new Error(
-            `Error de permisos (RLS): Las políticas de seguridad están bloqueando la consulta.\n\n` +
-            `Solución: Crea una función RPC en Supabase con el siguiente código:\n\n` +
-            `CREATE OR REPLACE FUNCTION get_users_by_business_id(p_business_id UUID)\n` +
-            `RETURNS TABLE (\n` +
-            `  id UUID,\n` +
-            `  email TEXT,\n` +
-            `  name TEXT,\n` +
-            `  avatar_url TEXT,\n` +
-            `  business_id UUID,\n` +
-            `  employee_code TEXT,\n` +
-            `  phone TEXT,\n` +
-            `  role TEXT,\n` +
-            `  commission_percentage NUMERIC,\n` +
-            `  is_active BOOLEAN,\n` +
-            `  created_at TIMESTAMPTZ,\n` +
-            `  updated_at TIMESTAMPTZ\n` +
-            `)\n` +
-            `LANGUAGE plpgsql\n` +
-            `SECURITY DEFINER\n` +
-            `AS $$\n` +
-            `BEGIN\n` +
-            `  RETURN QUERY\n` +
-            `  SELECT u.*\n` +
-            `  FROM users u\n` +
-            `  WHERE u.business_id = p_business_id\n` +
-            `  ORDER BY u.email;\n` +
-            `END;\n` +
-            `$$;\n\n` +
-            `GRANT EXECUTE ON FUNCTION get_users_by_business_id(UUID) TO anon, authenticated;`
-          )
-        }
-        throw new Error(`Error al obtener usuarios: ${allUsersError.message}. Verifica que el business_id "${cleanBusinessId}" sea correcto.`)
-      }
-
-      if (!allUsers || allUsers.length === 0) {
-        // Verificar si el error fue silencioso (RLS bloqueando)
-        const hasRlsError = activeError && (
-          activeError.message.toLowerCase().includes('permission') ||
-          activeError.message.toLowerCase().includes('rls') ||
-          activeError.message.toLowerCase().includes('policy') ||
-          activeError.code === '42501'
-        )
-
-        if (hasRlsError) {
-          throw new Error(
-            `🚫 ERROR: Las políticas RLS están bloqueando la consulta.\n\n` +
-            `✅ SOLUCIÓN OBLIGATORIA:\n\n` +
-            `1. Ve a: https://app.supabase.com → Tu Proyecto → SQL Editor\n` +
-            `2. Abre el archivo: "EJECUTAR_AHORA.sql" en este proyecto\n` +
-            `3. Copia TODO el contenido (desde CREATE hasta GRANT)\n` +
-            `4. Pégalo en Supabase SQL Editor\n` +
-            `5. Haz clic en "Run" o presiona Ctrl+Enter\n` +
-            `6. Deberías ver: "Success. No rows returned"\n` +
-            `7. Recarga esta página y prueba de nuevo\n\n` +
-            `⚠️ Sin esta función, NO podrás ver los emails disponibles.`
-          )
-        }
-
-        // Si no hay error de RLS pero tampoco hay usuarios, puede ser que RLS esté bloqueando silenciosamente
-        throw new Error(
-          `No se encontraron usuarios para el business_id: "${cleanBusinessId}".\n\n` +
-          `🔍 Posibles causas:\n` +
-          `1. El business_id no existe o es incorrecto\n` +
-          `2. No hay usuarios en la tabla users con ese business_id\n` +
-          `3. Las políticas RLS están bloqueando la consulta (más probable)\n\n` +
-          `✅ SOLUCIÓN OBLIGATORIA:\n` +
-          `1. Abre: https://app.supabase.com → Tu Proyecto → SQL Editor\n` +
-          `2. Abre el archivo "EJECUTAR_EN_SUPABASE.sql" en este proyecto\n` +
-          `3. Copia TODO el contenido y ejecútalo en Supabase\n` +
-          `4. Deberías ver: "Success. No rows returned"\n` +
-          `5. Recarga esta página y prueba de nuevo\n\n` +
-          `⚠️ Sin esta función, NO podrás ver los emails disponibles.`
-        )
-      }
-
-      // Si hay usuarios pero todos están inactivos, mostrar advertencia pero retornarlos
-      const inactiveCount = allUsers.filter(u => !u.is_active).length
-      if (inactiveCount > 0 && inactiveCount === allUsers.length) {
-        console.warn(`Todos los usuarios del business_id ${cleanBusinessId} están inactivos`)
-      }
-
-      return allUsers as User[]
+      type ApiUser = User & { password?: unknown }
+      const raw = await apiClient.get<ApiUser[]>(`/api/users/business/${encodeURIComponent(cleanBusinessId)}`)
+      const list = Array.isArray(raw) ? raw : []
+      // No guardar password en el estado: el backend no debería enviarlo en listados
+      return list.map(({ password: _p, ...u }) => u as User)
     } catch (error) {
       throw new Error(`Error al obtener usuarios: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
 
+  async getUserById(id: string): Promise<User> {
+    try {
+      const user = await apiClient.get<User>(`/api/users/${encodeURIComponent(id)}`)
+      return user
+    } catch (error) {
+      throw new Error(`Error al obtener usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+    }
+  }
+
   async getCurrentUser(): Promise<User | null> {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      
-      if (!authUser) return null
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authUser.id)
-        .single()
-
-      if (error || !data) return null
-
-      return data as User
+      // TODO: Implementar obtención de usuario actual desde el backend
+      // Esto dependerá de cómo el backend maneje la autenticación
+      return null
     } catch (error) {
       return null
     }
   }
 
   async signOut(): Promise<void> {
-    await supabase.auth.signOut()
+    // TODO: Implementar cierre de sesión con el backend
   }
 
   async resetPassword(email: string): Promise<void> {
-    await supabase.auth.resetPasswordForEmail(email)
+    // TODO: Implementar reset de contraseña con el backend
   }
 
+  /**
+   * POST /api/users
+   * Body: CreateUserRequest + business_id.
+   * Campos soportados: email, password, role, number, name, first_name, second_name,
+   * first_last_name, second_last_name, document_type, document_number, document_file_url,
+   * phone, address, residence_country, residence_city, work_country, business_code,
+   * employee_code, commission_percentage, is_active, business_id.
+   */
   async createUser(request: CreateUserRequest, businessId: string): Promise<User> {
     try {
-      // 1. Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: request.email.trim(),
-        password: request.password,
-        email_confirm: true, // Confirmar email automáticamente
-      })
-
-      if (authError) {
-        throw new Error(`Error al crear usuario en Auth: ${authError.message}`)
-      }
-
-      if (!authData.user) {
-        throw new Error('No se pudo crear el usuario en Auth')
-      }
-
-      // 2. Crear registro en la tabla users
-      const userData = {
-        id: authData.user.id,
-        email: request.email.trim(),
-        name: request.name || null,
-        phone: request.phone || null,
-        employee_code: request.employee_code || null,
-        role: request.role,
-        commission_percentage: request.commission_percentage || null,
-        is_active: request.is_active !== undefined ? request.is_active : true,
-        business_id: businessId,
-      }
-
-      const { data: userRecord, error: userError } = await supabase
-        .from('users')
-        .insert(userData)
-        .select()
-        .single()
-
-      if (userError) {
-        // Si falla la inserción en users, intentar eliminar el usuario de Auth
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id)
-        } catch (deleteError) {
-          console.error('Error al eliminar usuario de Auth después de fallo:', deleteError)
-        }
-        throw new Error(`Error al crear registro de usuario: ${userError.message}`)
-      }
-
-      return userRecord as User
+      const userData = { ...request, business_id: businessId }
+      const user = await apiClient.post<User>('/api/users', userData)
+      return user
     } catch (error) {
       throw new Error(`Error al crear usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+    }
+  }
+
+  /**
+   * DELETE /api/users/{id}
+   */
+  async deleteUser(id: string): Promise<void> {
+    try {
+      await apiClient.delete(`/api/users/${encodeURIComponent(id)}`)
+    } catch (error) {
+      throw new Error(`Error al eliminar usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
 }

@@ -41,23 +41,29 @@ export default function StatsCard({
     <Card
       className={cn(
         'border-l-4',
-        isWarning ? 'border-warning' : 'border-primary',
+        isWarning ? 'border-l-warning' : 'border-l-primary',
         className
       )}
+      role="article"
+      aria-label={`${title}: ${formatValue(value)}`}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        {icon && <div className="text-primary">{icon}</div>}
+        {icon && <div className={cn(isWarning ? 'text-warning' : 'text-primary')} aria-hidden="true">{icon}</div>}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{formatValue(value)}</div>
+        <div className="text-2xl font-bold" aria-label={`Valor: ${formatValue(value)}`}>
+          {formatValue(value)}
+        </div>
         {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+          <p className="text-xs text-muted-foreground mt-1" aria-label={subtitle}>
+            {subtitle}
+          </p>
         )}
         {trend && (
-          <div className="flex items-center gap-1 mt-2">
+          <div className="flex items-center gap-1 mt-2" aria-label={`Tendencia: ${trend.isPositive ? 'positiva' : 'negativa'} ${trend.value}%`}>
             <span
               className={cn(
                 'text-xs font-medium',

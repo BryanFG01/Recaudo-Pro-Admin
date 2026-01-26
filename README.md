@@ -8,7 +8,7 @@ Este proyecto sigue una arquitectura hexagonal (features first) con las siguient
 
 - **Domain**: Lógica de negocio pura, sin dependencias externas
 - **Application**: Casos de uso que orquestan el dominio
-- **Infrastructure**: Implementaciones de adaptadores (Supabase, APIs)
+- **Infrastructure**: Implementaciones de adaptadores (API del backend)
 - **Presentation**: Componentes React y hooks
 
 ## 🚀 Instalación
@@ -19,15 +19,24 @@ npm install
 
 ## ⚙️ Configuración
 
-1. Crea un archivo `.env` en la raíz del proyecto
-2. Agrega las siguientes variables de entorno:
+1. Copia `.env.example` a `.env` en la raíz: `cp .env.example .env`
+2. Edita `.env` y asigna la URL de tu backend:
 
 ```env
-VITE_SUPABASE_URL=https://zuksfgjhfdrgeoxtvvyn.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1a3NmZ2poZmRyZ2VveHR2dnluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNzAyODAsImV4cCI6MjA3ODY0NjI4MH0.rPZWKSJA5vHScr-o4f5e4gwNs1cxpRMYjPV-X6CkNxo
+VITE_BACK_URL=https://tu-backend.up.railway.app
 ```
 
-**Nota:** Después de crear o modificar el archivo `.env`, debes reiniciar el servidor de desarrollo (`npm run dev`).
+**Nota:** La web no tiene contacto directo con Supabase; Dashboard, Recaudos, Créditos, Clientes y Auth usan la API del backend (`VITE_BACK_URL`). Tras cambiar `.env`, reinicia el servidor (`pnpm run dev`).
+
+### Endpoints que debe exponer el backend
+
+El frontend llama a la base `VITE_BACK_URL` con estos recursos (ajusta paths/query si tu API es distinta):
+
+- **Dashboard:** `GET /api/dashboard/stats?businessId=&startDate=&endDate=`
+- **Clientes:** `GET /api/clients/business/:id?user_id=`, `POST /api/clients`, `PATCH /api/clients/:id`, `DELETE /api/clients/:id`
+- **Créditos:** `GET /api/credits`, `GET /api/credits?businessId=&clientId=&startDate=&endDate=&userEmail=`, `GET /api/credits/:id`, `POST /api/credits`, `PATCH /api/credits/:id`
+- **Recaudos:** `GET /api/collections`, `GET /api/collections?businessId=&clientId=&startDate=&endDate=&payment_method=&userEmail=`, `GET /api/collections?clientId=`, `GET /api/collections?creditId=`, `GET /api/collections?limit=`, `POST /api/collections`
+- **Auth/Usuarios:** según tu implementación (ej. `/api/users/business/:id`, login, etc.)
 
 ## 🏃 Desarrollo
 

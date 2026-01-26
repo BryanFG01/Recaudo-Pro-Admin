@@ -11,9 +11,8 @@ import DashboardPage from './features/dashboard/presentation/pages/DashboardPage
 import { Layout } from './shared/components/Layout'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, businessId } = useAuthStore()
-  // Permitir acceso si hay usuario O businessId
-  return user || businessId ? <>{children}</> : <Navigate to="/login" replace />
+  const { user } = useAuthStore()
+  return user ? <>{children}</> : <Navigate to="/login" replace />
 }
 
 function App() {

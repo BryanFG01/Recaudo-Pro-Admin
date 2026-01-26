@@ -13,13 +13,8 @@ export class AuthService {
   }
 
   async signInWithEmail(request: SignInRequest): Promise<SignInResponse> {
-    // Validaciones de negocio
-    if (!request.email || !request.password) {
+    if (!request.email?.trim() || !request.password) {
       throw new Error('Email y contraseña son requeridos')
-    }
-
-    if (!request.businessId) {
-      throw new Error('ID de negocio es requerido')
     }
 
     if (!this.isValidEmail(request.email)) {
@@ -77,6 +72,11 @@ export class AuthService {
     }
 
     return this.repository.createUser(request, businessId)
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    if (!id || !id.trim()) throw new Error('ID de usuario es requerido')
+    return this.repository.deleteUser(id.trim())
   }
 
   private isValidEmail(email: string): boolean {

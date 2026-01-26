@@ -1,16 +1,16 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
+import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { Column, DynamicTable } from '@/shared/components/DynamicTable'
+import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
+import { CreditFilters } from '@/shared/types/filters'
+import { formatCurrency, formatDate } from '@/shared/utils/date'
+import { exportToExcel } from '@/shared/utils/excel'
+import { Download, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { CreditWithUserEmail } from '../../domain/port'
 import { CreditService } from '../../domain/services/CreditService'
 import { CreditRepository } from '../../infrastructure/repositories/CreditRepository'
-import { CreditWithUserEmail } from '../../domain/port'
-import { DynamicTable, Column } from '@/shared/components/DynamicTable'
-import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
-import { Button } from '@/components/ui/button'
-import { Download, Plus } from 'lucide-react'
-import { exportToExcel } from '@/shared/utils/excel'
-import { formatDate, formatCurrency } from '@/shared/utils/date'
-import { CreditFilters } from '@/shared/types/filters'
 
 export default function CreditsPage() {
   const { businessId, user } = useAuthStore()
@@ -210,14 +210,14 @@ export default function CreditsPage() {
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex-shrink-0 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Créditos</h1>
+        <h1 className="text-3xl font-bold text-white">Créditos</h1>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={handleExport} disabled={filteredCredits.length === 0}>
+          <Button variant="outline" onClick={handleExport} disabled={filteredCredits.length === 0} className="border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white">
             <Download className="w-4 h-4 mr-2" />
             Exportar a Excel
           </Button>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-0">
+            <Plus className="w-4 h-4 mr-2 text-white bg-[#2563EB] hover:bg-[#1d4ed8] border-0" />
             Nuevo Crédito
           </Button>
         </div>
