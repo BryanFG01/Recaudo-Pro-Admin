@@ -11,7 +11,7 @@ import { useAuthStore } from '../store/authStore'
 import { SignInRequest, CreateUserRequest } from '../../domain/models'
 
 export const useAuth = () => {
-  const { user, setUser, setBusinessId, signOut: signOutStore } = useAuthStore()
+  const { user, setUser, signOut: signOutStore } = useAuthStore()
 
   // Instanciar Repository y Service
   const authService = useMemo(() => {

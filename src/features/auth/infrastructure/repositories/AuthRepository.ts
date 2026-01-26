@@ -127,7 +127,7 @@ export class AuthRepository implements IAuthRepository {
     // TODO: Implementar cierre de sesión con el backend
   }
 
-  async resetPassword(email: string): Promise<void> {
+  async resetPassword(_email: string): Promise<void> {
     // TODO: Implementar reset de contraseña con el backend
   }
 

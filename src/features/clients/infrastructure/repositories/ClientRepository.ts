@@ -54,7 +54,7 @@ export class ClientRepository implements IClientRepository {
     }
   }
 
-  async searchClients(query: string): Promise<Client[]> {
+  async searchClients(_query: string): Promise<Client[]> {
     try {
       // TODO: El backend debería tener un endpoint de búsqueda
       // Por ahora retornamos array vacío
