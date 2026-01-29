@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import { formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
@@ -12,13 +13,14 @@ import { useAuthStore } from '../store/authStore'
 export default function AdminUsersPage() {
   const navigate = useNavigate()
   const { businessId } = useAuthStore()
-  const { getUsersByBusinessId, deleteUser } = useAuth()
+  const { getUsersByBusinessId, deleteUser, updateUserActive } = useAuth()
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleteMode, setDeleteMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isDeleting, setIsDeleting] = useState(false)
+  const [updatingIdentifier, setUpdatingIdentifier] = useState<string | null>(null)
 
   useEffect(() => {
     if (businessId) {
@@ -93,12 +95,39 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleToggleActive = useCallback(
+    async (user: User, nextActive: boolean) => {
+      if (!user.id) return
+      setUpdatingIdentifier(user.id)
+      setError(null)
+      try {
+        const result = await updateUserActive(user.id, nextActive)
+        if (result.success && result.user) {
+          setUsers((prev) => prev.map((u) => (u.id === result.user!.id ? result.user! : u)))
+        } else {
+          setError(result.error ?? 'Error al actualizar estado')
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al actualizar estado')
+      } finally {
+        setUpdatingIdentifier(null)
+      }
+    },
+    [updateUserActive]
+  )
+
   const baseColumns: Column<User>[] = [
     {
       key: 'email',
       header: 'Email',
       className: 'font-medium',
       render: (user) => <span className="text-gray-200">{user.email || '-'}</span>
+    },
+    {
+      // document
+      key: 'document_id',
+      header: 'Número de documento',
+      render: (user) => <span className="text-gray-300">{user.document_number || '-'}</span>
     },
     {
       key: 'name',
@@ -119,8 +148,8 @@ export default function AdminUsersPage() {
             user.role === 'admin'
               ? 'bg-purple-900/50 text-purple-200 border border-purple-700/50'
               : user.role === 'supervisor'
-              ? 'bg-blue-900/50 text-blue-200 border border-blue-700/50'
-              : 'bg-green-900/50 text-green-200 border border-green-700/50'
+                ? 'bg-blue-900/50 text-blue-200 border border-blue-700/50'
+                : 'bg-green-900/50 text-green-200 border border-green-700/50'
           }`}
         >
           {user.role}
@@ -141,21 +170,24 @@ export default function AdminUsersPage() {
         </span>
       )
     },
- 
+
     {
       key: 'is_active',
       header: 'Estado',
-      render: (user) => (
-        <span
-          className={`px-2 py-1 rounded text-xs font-medium ${
-            user.is_active
-              ? 'bg-green-900/50 text-green-200 border border-green-700/50'
-              : 'bg-red-900/50 text-red-200 border border-red-700/50'
-          }`}
-        >
-          {user.is_active ? 'Activo' : 'Inactivo'}
-        </span>
-      )
+      render: (user) => {
+        const isUpdating = user.id != null && updatingIdentifier === user.id
+        return (
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={user.is_active}
+              onCheckedChange={(checked) => handleToggleActive(user, checked)}
+              disabled={isUpdating || deleteMode}
+              aria-label={user.is_active ? 'Activo' : 'Inactivo'}
+            />
+            <span className="text-sm text-gray-400">{user.is_active ? 'Activo' : 'Inactivo'}</span>
+          </div>
+        )
+      }
     },
     {
       key: 'created_at',
@@ -204,7 +236,9 @@ export default function AdminUsersPage() {
           </p>
           <p className="text-sm text-gray-400 mt-2">Usuarios encontrados: {users.length}</p>
           {deleteMode && (
-            <p className="text-sm text-amber-200/90 mt-1">Selecciona uno o más usuarios para eliminar.</p>
+            <p className="text-sm text-amber-200/90 mt-1">
+              Selecciona uno o más usuarios para eliminar.
+            </p>
           )}
         </div>
         <div className="flex flex-wrap gap-3 items-center">

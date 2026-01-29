@@ -3,7 +3,6 @@ import AdminUsersPage from './features/auth/presentation/pages/AdminUsersPage'
 import CreateUserPage from './features/auth/presentation/pages/CreateUserPage'
 import LoginPage from './features/auth/presentation/pages/LoginPage'
 import { useAuthStore } from './features/auth/presentation/store/authStore'
-import AdminClientsPage from './features/clients/presentation/pages/AdminClientsPage'
 import ClientsPage from './features/clients/presentation/pages/ClientsPage'
 import CollectionsPage from './features/collections/presentation/pages/CollectionsPage'
 import CreditsPage from './features/credits/presentation/pages/CreditsPage'
@@ -60,7 +59,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/admin/clients"
           element={
             <PrivateRoute>
@@ -69,7 +68,7 @@ function App() {
               </Layout>
             </PrivateRoute>
           }
-        />
+        /> */}
         <Route
           path="/credits"
           element={

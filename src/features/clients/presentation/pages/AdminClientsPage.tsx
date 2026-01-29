@@ -6,9 +6,12 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from '@/components/ui/select'
+import { User } from '@/features/auth/domain/models'
+import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { CreditRepository } from '@/features/credits/infrastructure/repositories/CreditRepository'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import { exportToExcel } from '@/shared/utils/excel'
 import { Download, Filter } from 'lucide-react'
@@ -28,12 +31,14 @@ const selectItemDark = 'text-gray-200 data-[highlighted]:bg-white/10'
 
 export default function AdminClientsPage() {
   const { user, businessId, businessCode } = useAuthStore()
+  const { getUsersByBusinessId } = useAuth()
   const [clients, setClients] = useState<ClientWithCredits[]>([])
   const [filteredClients, setFilteredClients] = useState<ClientWithCredits[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedEmail, setSelectedEmail] = useState<string>('')
   const [availableEmails, setAvailableEmails] = useState<string[]>([])
+  const [usersList, setUsersList] = useState<User[]>([])
 
   const currentBusinessId = user?.business_id || businessId
 
@@ -42,15 +47,37 @@ export default function AdminClientsPage() {
     return new ClientService(repository)
   }, [])
 
+  const creditRepository = useMemo(() => new CreditRepository(), [])
+
   useEffect(() => {
     if (currentBusinessId && user?.id) {
+      loadUsers()
       loadClients()
     }
   }, [currentBusinessId, user?.id, businessCode])
 
+  const loadUsers = async () => {
+    if (!currentBusinessId) return
+    try {
+      const users = await getUsersByBusinessId(currentBusinessId)
+      setUsersList(users)
+    } catch (err) {
+      console.error('Error al cargar usuarios:', err)
+    }
+  }
+
+  /** Mapa user_id -> nombre del usuario asignado al cliente (para columna "Asignado a"). */
+  const userNameById = useMemo(() => {
+    const map: Record<string, string> = {}
+    usersList.forEach((u) => {
+      if (u.id) map[u.id] = u.name?.trim() || u.email || 'Sin nombre'
+    })
+    return map
+  }, [usersList])
+
   useEffect(() => {
     if (selectedEmail) {
-      setFilteredClients(clients.filter(c => c.user_email === selectedEmail))
+      setFilteredClients(clients.filter((c) => c.user_email === selectedEmail))
     } else {
       setFilteredClients(clients)
     }
@@ -63,11 +90,34 @@ export default function AdminClientsPage() {
     setError(null)
 
     try {
-      const data = await clientService.getClientsWithCredits(currentBusinessId, user.id, undefined, businessCode ?? undefined, user.number ?? undefined)
-      setClients(data)
-      
+      const [clientsFromApi, credits] = await Promise.all([
+        clientService.getClientsWithCredits(
+          currentBusinessId,
+          user.id,
+          undefined,
+          businessCode ?? undefined,
+          user.number ?? undefined
+        ),
+        creditRepository.getCreditsByBusinessId(currentBusinessId)
+      ])
+
+      // Enriquecer cada cliente con totales de sus créditos (total préstamos, monto total, saldo pendiente)
+      const enriched: ClientWithCredits[] = clientsFromApi.map((client) => {
+        const clientCredits = credits.filter((c) => c.client_id === client.id)
+        const total_amount = clientCredits.reduce((s, c) => s + (c.total_amount ?? 0), 0)
+        const total_balance = clientCredits.reduce((s, c) => s + (c.total_balance ?? 0), 0)
+        return {
+          ...client,
+          total_credits: clientCredits.length,
+          total_amount,
+          total_balance
+        }
+      })
+
+      setClients(enriched)
+
       // Extraer emails únicos para el filtro
-      const emails = [...new Set(data.map(c => c.user_email).filter(Boolean))] as string[]
+      const emails = [...new Set(enriched.map((c) => c.user_email).filter(Boolean))] as string[]
       setAvailableEmails(emails)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar clientes')
@@ -77,19 +127,21 @@ export default function AdminClientsPage() {
   }
 
   const handleExport = () => {
-    const exportData = filteredClients.map(client => ({
-      'Nombre': client.name,
-      'Teléfono': client.phone,
+    const exportData = filteredClients.map((client) => ({
+      Nombre: client.name,
+      Teléfono: client.phone,
+      'Asignado a': client.user_id
+        ? (userNameById[client.user_id] ?? client.user_email ?? 'N/A')
+        : client.user_email || 'N/A',
       'Total Préstamos': client.total_credits,
       'Monto Total': client.total_amount,
       'Cuanto Debe': client.total_balance,
-      'Email Gestor': client.user_email || 'N/A',
-      'Documento': client.document_id || 'N/A',
+      Documento: client.document_id || 'N/A'
     }))
 
     exportToExcel(exportData, {
       filename: `clientes_${new Date().toISOString().split('T')[0]}`,
-      sheetName: 'Clientes',
+      sheetName: 'Clientes'
     })
   }
 
@@ -97,7 +149,7 @@ export default function AdminClientsPage() {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency: 'COP',
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 0
     }).format(amount)
   }
 
@@ -105,23 +157,21 @@ export default function AdminClientsPage() {
     {
       key: 'name',
       header: 'Nombre',
-      className: 'font-medium',
+      className: 'font-medium'
     },
     {
       key: 'phone',
-      header: 'Teléfono',
+      header: 'Teléfono'
     },
     {
       key: 'total_credits',
       header: 'Total Préstamos',
-      render: (client) => (
-        <span className="font-semibold">{client.total_credits}</span>
-      ),
+      render: (client) => <span className="font-semibold">{client.total_credits}</span>
     },
     {
       key: 'total_amount',
       header: 'Monto Total',
-      render: (client) => formatCurrency(client.total_amount),
+      render: (client) => formatCurrency(client.total_amount)
     },
     {
       key: 'total_balance',
@@ -129,26 +179,34 @@ export default function AdminClientsPage() {
       render: (client) => {
         const balance = client.total_balance
         return (
-          <span className={balance > 0 ? 'text-red-300 font-semibold' : 'text-green-300 font-semibold'}>
+          <span
+            className={balance > 0 ? 'text-red-300 font-semibold' : 'text-green-300 font-semibold'}
+          >
             {formatCurrency(balance)}
           </span>
         )
-      },
+      }
     },
     {
-      key: 'user_email',
-      header: 'Email Gestor',
+      key: 'user_id',
+      header: 'Asignado a',
       render: (client) => (
-        <span className="text-sm text-gray-300">{client.user_email || 'N/A'}</span>
-      ),
-    },
+        <span className="text-sm text-gray-200 font-medium">
+          {client.user_id
+            ? (userNameById[client.user_id] ?? client.user_email ?? 'Sin asignar')
+            : client.user_email || 'Sin asignar'}
+        </span>
+      )
+    }
   ]
 
   if (!currentBusinessId || !user?.id) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-400">
-          {!user?.id ? 'No hay sesión de usuario. Por favor, inicia sesión.' : 'No tienes un negocio asignado.'}
+          {!user?.id
+            ? 'No hay sesión de usuario. Por favor, inicia sesión.'
+            : 'No tienes un negocio asignado.'}
         </p>
       </div>
     )
@@ -212,4 +270,3 @@ export default function AdminClientsPage() {
     </div>
   )
 }
-

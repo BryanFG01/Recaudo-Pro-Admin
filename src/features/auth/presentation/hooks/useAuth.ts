@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
+import {
+  buildGetCurrentUserUseCase,
+  buildResetPasswordUseCase,
+  buildSignInUseCase,
+  buildSignOutUseCase
+} from '../../application/useCases'
+import { CreateUserRequest, SignInRequest } from '../../domain/models'
 import { AuthService } from '../../domain/services/AuthService'
 import { AuthRepository } from '../../infrastructure/repositories/AuthRepository'
-import {
-  buildSignInUseCase,
-  buildGetCurrentUserUseCase,
-  buildSignOutUseCase,
-  buildResetPasswordUseCase,
-} from '../../application/useCases'
 import { useAuthStore } from '../store/authStore'
-import { SignInRequest, CreateUserRequest } from '../../domain/models'
 
 export const useAuth = () => {
   const { user, setUser, signOut: signOutStore } = useAuthStore()
@@ -20,25 +20,16 @@ export const useAuth = () => {
   }, [])
 
   // Construir Use Cases
-  const signInUseCase = useMemo(
-    () => buildSignInUseCase(authService),
-    [authService]
-  )
+  const signInUseCase = useMemo(() => buildSignInUseCase(authService), [authService])
 
   const getCurrentUserUseCase = useMemo(
     () => buildGetCurrentUserUseCase(authService),
     [authService]
   )
 
-  const signOutUseCase = useMemo(
-    () => buildSignOutUseCase(authService),
-    [authService]
-  )
+  const signOutUseCase = useMemo(() => buildSignOutUseCase(authService), [authService])
 
-  const resetPasswordUseCase = useMemo(
-    () => buildResetPasswordUseCase(authService),
-    [authService]
-  )
+  const resetPasswordUseCase = useMemo(() => buildResetPasswordUseCase(authService), [authService])
 
   // Handlers
   const getUsersByBusinessId = async (businessId: string) => {
@@ -67,7 +58,7 @@ export const useAuth = () => {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error al iniciar sesión',
+        error: error instanceof Error ? error.message : 'Error al iniciar sesión'
       }
     }
   }
@@ -80,7 +71,7 @@ export const useAuth = () => {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error al cerrar sesión',
+        error: error instanceof Error ? error.message : 'Error al cerrar sesión'
       }
     }
   }
@@ -104,7 +95,7 @@ export const useAuth = () => {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error al resetear contraseña',
+        error: error instanceof Error ? error.message : 'Error al resetear contraseña'
       }
     }
   }
@@ -117,7 +108,7 @@ export const useAuth = () => {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Error al crear usuario',
-        user: null,
+        user: null
       }
     }
   }
@@ -129,7 +120,20 @@ export const useAuth = () => {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error al eliminar usuario',
+        error: error instanceof Error ? error.message : 'Error al eliminar usuario'
+      }
+    }
+  }
+
+  const updateUserActive = async (identifier: string, isActive: boolean) => {
+    try {
+      const updated = await authService.updateUserActive(identifier, isActive)
+      return { success: true, error: null, user: updated }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error al actualizar estado',
+        user: null
       }
     }
   }
@@ -144,7 +148,6 @@ export const useAuth = () => {
     getBusinessByCode,
     createUser,
     deleteUser,
+    updateUserActive
   }
 }
-
-

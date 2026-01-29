@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button'
+import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { CreditRepository } from '@/features/credits/infrastructure/repositories/CreditRepository'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
 import { ClientFilters } from '@/shared/types/filters'
@@ -20,6 +22,7 @@ export default function ClientsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [availableEmails, setAvailableEmails] = useState<string[]>([])
+  const [usersList, setUsersList] = useState<User[]>([])
   const [filters, setFilters] = useState<FilterValues>({})
 
   const currentBusinessId = user?.business_id || businessId
@@ -28,6 +31,8 @@ export default function ClientsPage() {
     const repository = new ClientRepository()
     return new ClientService(repository)
   }, [])
+
+  const creditRepository = useMemo(() => new CreditRepository(), [])
 
   useEffect(() => {
     if (currentBusinessId && user?.id) {
@@ -46,12 +51,22 @@ export default function ClientsPage() {
     if (!currentBusinessId) return
     try {
       const users = await getUsersByBusinessId(currentBusinessId)
+      setUsersList(users)
       const emails = users.map((u) => u.email).filter(Boolean) as string[]
       setAvailableEmails(emails)
     } catch (err) {
       console.error('Error al cargar usuarios:', err)
     }
   }
+
+  /** Mapa user_id -> nombre del usuario asignado al cliente (para columna "Asignado a"). */
+  const userNameById = useMemo(() => {
+    const map: Record<string, string> = {}
+    usersList.forEach((u) => {
+      if (u.id) map[u.id] = u.name?.trim() || u.email || 'Sin nombre'
+    })
+    return map
+  }, [usersList])
 
   const loadClients = async () => {
     if (!currentBusinessId || !user?.id) return
@@ -74,9 +89,26 @@ export default function ClientsPage() {
         clientId: hasVal(filters.clientId) ? filters.clientId : undefined
       }
 
-      const data = await clientService.getClientsWithFilters(clientFilters)
-      setClients(data)
-      setFilteredClients(data)
+      const [clientsFromApi, credits] = await Promise.all([
+        clientService.getClientsWithFilters(clientFilters),
+        creditRepository.getCreditsByBusinessId(currentBusinessId)
+      ])
+
+      // Enriquecer cada cliente con totales de sus créditos (total préstamos, monto total, saldo pendiente)
+      const enriched: ClientWithCredits[] = clientsFromApi.map((client) => {
+        const clientCredits = credits.filter((c) => c.client_id === client.id)
+        const total_amount = clientCredits.reduce((s, c) => s + (c.total_amount ?? 0), 0)
+        const total_balance = clientCredits.reduce((s, c) => s + (c.total_balance ?? 0), 0)
+        return {
+          ...client,
+          total_credits: clientCredits.length,
+          total_amount,
+          total_balance
+        }
+      })
+
+      setClients(enriched)
+      setFilteredClients(enriched)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar clientes')
     } finally {
@@ -93,12 +125,14 @@ export default function ClientsPage() {
       'ID Cliente': client.id,
       Nombre: client.name,
       Teléfono: client.phone,
+      'Asignado a': client.user_id
+        ? (userNameById[client.user_id] ?? client.user_email ?? 'N/A')
+        : client.user_email || 'N/A',
       Documento: client.document_id || 'N/A',
       Dirección: client.address || 'N/A',
       'Total Préstamos': client.total_credits,
       'Monto Total Préstamos': formatCurrency(client.total_amount),
       'Saldo Pendiente': formatCurrency(client.total_balance),
-      'Email Gestor': client.user_email || 'N/A',
       'Fecha Creación': formatDate(client.created_at)
     }))
     exportToExcel(dataToExport, { filename: 'clientes_recaudopro', sheetName: 'Clientes' })
@@ -107,6 +141,17 @@ export default function ClientsPage() {
   const columns: Column<ClientWithCredits>[] = [
     { key: 'name', header: 'Nombre' },
     { key: 'phone', header: 'Teléfono' },
+    {
+      key: 'user_id',
+      header: 'Asignado a',
+      render: (client) => (
+        <span className="text-sm text-gray-200 font-medium">
+          {client.user_id
+            ? (userNameById[client.user_id] ?? client.user_email ?? 'Sin asignar')
+            : client.user_email || 'Sin asignar'}
+        </span>
+      )
+    },
     { key: 'document_id', header: 'Documento', render: (client) => client.document_id || '-' },
     { key: 'total_credits', header: 'Total Préstamos' },
     {
@@ -130,11 +175,6 @@ export default function ClientsPage() {
       )
     },
     {
-      key: 'user_email',
-      header: 'Email Gestor',
-      render: (client) => client.user_email || 'Sin asignar'
-    },
-    {
       key: 'created_at',
       header: 'Fecha Creación',
       render: (client) => formatDate(client.created_at)
@@ -149,7 +189,9 @@ export default function ClientsPage() {
     return (
       <div className="flex justify-center items-center h-64">
         <p className="text-gray-400">
-          {!user?.id ? 'No hay sesión de usuario. Por favor, inicia sesión.' : 'No hay business_id disponible. Por favor, inicia sesión.'}
+          {!user?.id
+            ? 'No hay sesión de usuario. Por favor, inicia sesión.'
+            : 'No hay business_id disponible. Por favor, inicia sesión.'}
         </p>
       </div>
     )
@@ -167,7 +209,7 @@ export default function ClientsPage() {
             className="border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
             aria-label="Exportar clientes a Excel"
           >
-            <Download className="w-4 h-4 mr-2" aria-hidden="true" /> 
+            <Download className="w-4 h-4 mr-2" aria-hidden="true" />
             Exportar a Excel
           </Button>
           {/* <Button

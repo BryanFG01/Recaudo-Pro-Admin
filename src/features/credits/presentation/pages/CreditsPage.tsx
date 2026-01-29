@@ -1,6 +1,9 @@
 import { Button } from '@/components/ui/button'
+import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { Client } from '@/features/clients/domain/models'
+import { ClientRepository } from '@/features/clients/infrastructure/repositories/ClientRepository'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
 import { CreditFilters } from '@/shared/types/filters'
@@ -13,12 +16,14 @@ import { CreditService } from '../../domain/services/CreditService'
 import { CreditRepository } from '../../infrastructure/repositories/CreditRepository'
 
 export default function CreditsPage() {
-  const { businessId, user } = useAuthStore()
+  const { businessId, businessCode, user } = useAuthStore()
   const { getUsersByBusinessId } = useAuth()
   const [filteredCredits, setFilteredCredits] = useState<CreditWithUserEmail[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [availableEmails, setAvailableEmails] = useState<string[]>([])
+  const [usersList, setUsersList] = useState<User[]>([])
+  const [clientsList, setClientsList] = useState<Client[]>([])
   const [filters, setFilters] = useState<FilterValues>({})
 
   const currentBusinessId = user?.business_id || businessId
@@ -32,6 +37,7 @@ export default function CreditsPage() {
     if (currentBusinessId) {
       console.log('✅ Business ID disponible:', currentBusinessId)
       loadUsers()
+      loadClients()
       loadCredits()
     } else {
       console.warn('⚠️ No hay business_id disponible')
@@ -49,12 +55,57 @@ export default function CreditsPage() {
     if (!currentBusinessId) return
     try {
       const users = await getUsersByBusinessId(currentBusinessId)
-      const emails = users.map(u => u.email).filter(Boolean) as string[]
+      setUsersList(users)
+      const emails = users.map((u) => u.email).filter(Boolean) as string[]
       setAvailableEmails(emails)
     } catch (err) {
       console.error('Error al cargar usuarios:', err)
     }
   }
+
+  const loadClients = async () => {
+    if (!currentBusinessId) return
+    try {
+      const repo = new ClientRepository()
+      const clients = await repo.getClientsWithCredits(
+        currentBusinessId,
+        user?.id ?? '',
+        undefined,
+        businessCode ?? undefined
+      )
+      setClientsList(clients as unknown as Client[])
+    } catch (err) {
+      console.error('Error al cargar clientes:', err)
+    }
+  }
+
+  /** Mapa client_id -> nombre del cliente (para pintar en columna Cliente). */
+  const clientNameById = useMemo(() => {
+    const map: Record<string, string> = {}
+    clientsList.forEach((c) => {
+      if (c.id) map[c.id] = c.name?.trim() || 'Sin nombre'
+    })
+    return map
+  }, [clientsList])
+
+  /** Mapa user_id -> nombre del usuario responsable (para pintar en tabla). */
+  const userNameById = useMemo(() => {
+    const map: Record<string, string> = {}
+    usersList.forEach((u) => {
+      if (u.id) map[u.id] = u.name?.trim() || u.email || 'Sin nombre'
+    })
+    return map
+  }, [usersList])
+
+  /** Créditos a mostrar: filtro por email del responsable (por user_id) cuando aplica. */
+  const displayedCredits = useMemo(() => {
+    if (!filters.userEmail) return filteredCredits
+    return filteredCredits.filter((c) => {
+      if (!c.user_id) return false
+      const u = usersList.find((u) => u.id === c.user_id)
+      return u?.email === filters.userEmail
+    })
+  }, [filteredCredits, filters.userEmail, usersList])
 
   const loadCredits = async () => {
     if (!currentBusinessId) {
@@ -72,19 +123,22 @@ export default function CreditsPage() {
         startDate: filters.startDate,
         endDate: filters.endDate,
         userEmail: filters.userEmail || undefined,
-        clientId: filters.clientId || undefined,
+        clientId: filters.clientId || undefined
       }
 
       console.log('📤 Enviando filtros:', creditFilters)
       const data = await creditService.getCreditsWithFilters(creditFilters)
-      console.log('✅ Créditos cargados:', data.length, 'con emails:', data.filter(c => c.user_email).length)
-      
+      console.log('✅ Créditos cargados:', data.length)
+
       if (data.length === 0) {
         console.warn('⚠️ No se encontraron créditos. Verifica:')
-        console.warn('  1. Que existan créditos en la tabla credits con business_id:', currentBusinessId)
+        console.warn(
+          '  1. Que existan créditos en la tabla credits con business_id:',
+          currentBusinessId
+        )
         console.warn('  2. Que las políticas RLS permitan la lectura')
       }
-      
+
       setFilteredCredits(data)
     } catch (err) {
       console.error('❌ Error al cargar créditos:', err)
@@ -99,18 +153,18 @@ export default function CreditsPage() {
   }
 
   const handleExport = () => {
-    const dataToExport = filteredCredits.map(credit => ({
+    const dataToExport = displayedCredits.map((credit) => ({
       'ID Crédito': credit.id,
-      'ID Cliente': credit.client_id,
+      Cliente: credit.client_id ? (clientNameById[credit.client_id] ?? credit.client_id) : '-',
+      Responsable: credit.user_id ? (userNameById[credit.user_id] ?? 'Sin asignar') : 'Sin asignar',
       'Monto Total': formatCurrency(credit.total_amount),
       'Saldo Restante': formatCurrency(credit.total_balance),
       'Valor Cuota': formatCurrency(credit.installment_amount),
       'Cuotas Pagadas': `${credit.paid_installments} / ${credit.total_installments}`,
       'Cuotas Atrasadas': credit.overdue_installments,
       'Próxima Fecha': credit.next_due_date ? formatDate(credit.next_due_date) : 'N/A',
-      'Email Vendedor': credit.user_email || 'N/A',
       'Método de Pago': (credit as any).payment_method || 'N/A',
-      'Fecha Creación': formatDate(credit.created_at),
+      'Fecha Creación': formatDate(credit.created_at)
     }))
     exportToExcel(dataToExport, { filename: 'creditos_recaudopro', sheetName: 'Créditos' })
   }
@@ -118,17 +172,22 @@ export default function CreditsPage() {
   const columns: Column<CreditWithUserEmail>[] = [
     {
       key: 'client_id',
-      header: 'Cliente ID',
-    },
-    {
-      key: 'user_email',
-      header: 'Email Vendedor',
+      header: 'Cliente',
       render: (credit) => (
-        <span className="text-sm text-gray-600 font-medium">
-          {credit.user_email || 'Sin asignar'}
+        <span className="text-sm text-gray-200 font-medium">
+          {credit.client_id ? (clientNameById[credit.client_id] ?? credit.client_id) : '-'}
         </span>
-      ),
+      )
     },
+    // {
+    //   key: 'user_id',
+    //   header: 'Responsable',
+    //   render: (credit) => (
+    //     <span className="text-sm text-gray-200 font-medium">
+    //       {credit.user_id ? (userNameById[credit.user_id] ?? 'Sin asignar') : 'Sin asignar'}
+    //     </span>
+    //   )
+    // },
     {
       key: 'payment_method',
       header: 'Método de Pago',
@@ -146,12 +205,12 @@ export default function CreditsPage() {
             {method}
           </span>
         )
-      },
+      }
     },
     {
       key: 'total_amount',
       header: 'Monto Total',
-      render: (credit) => formatCurrency(credit.total_amount),
+      render: (credit) => formatCurrency(credit.total_amount)
     },
     {
       key: 'total_balance',
@@ -159,16 +218,20 @@ export default function CreditsPage() {
       render: (credit) => {
         const balance = credit.total_balance
         return (
-          <span className={balance === 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+          <span
+            className={
+              balance === 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'
+            }
+          >
             {formatCurrency(balance)}
           </span>
         )
-      },
+      }
     },
     {
       key: 'installment_amount',
       header: 'Valor Cuota',
-      render: (credit) => formatCurrency(credit.installment_amount),
+      render: (credit) => formatCurrency(credit.installment_amount)
     },
     {
       key: 'paid_installments',
@@ -177,26 +240,21 @@ export default function CreditsPage() {
         <span>
           {credit.paid_installments} / {credit.total_installments}
         </span>
-      ),
+      )
     },
     {
       key: 'overdue_installments',
       header: 'Cuotas Atrasadas',
       render: (credit) => {
         const overdue = credit.overdue_installments
-        return (
-          <span className={overdue > 0 ? 'text-red-600 font-semibold' : ''}>
-            {overdue}
-          </span>
-        )
-      },
+        return <span className={overdue > 0 ? 'text-red-600 font-semibold' : ''}>{overdue}</span>
+      }
     },
     {
       key: 'next_due_date',
       header: 'Próxima Fecha',
-      render: (credit) =>
-        credit.next_due_date ? formatDate(credit.next_due_date) : '-',
-    },
+      render: (credit) => (credit.next_due_date ? formatDate(credit.next_due_date) : '-')
+    }
   ]
 
   if (!currentBusinessId) {
@@ -212,7 +270,12 @@ export default function CreditsPage() {
       <div className="flex-shrink-0 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-white">Créditos</h1>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={handleExport} disabled={filteredCredits.length === 0} className="border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={displayedCredits.length === 0}
+            className="border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
+          >
             <Download className="w-4 h-4 mr-2" />
             Exportar a Excel
           </Button>
@@ -233,7 +296,7 @@ export default function CreditsPage() {
 
       <div className="flex-1 min-h-0">
         <DynamicTable
-          data={filteredCredits}
+          data={displayedCredits}
           columns={columns}
           isLoading={isLoading}
           error={error}

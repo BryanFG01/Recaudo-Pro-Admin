@@ -18,10 +18,14 @@ export class AuthRepository implements IAuthRepository {
     try {
       const cleanCode = code.trim()
       if (!cleanCode) throw new Error('El código de negocio no puede estar vacío')
-      const business = await apiClient.get<Business>(`/api/businesses/code/${encodeURIComponent(cleanCode)}`)
+      const business = await apiClient.get<Business>(
+        `/api/businesses/code/${encodeURIComponent(cleanCode)}`
+      )
       return business
     } catch (error) {
-      throw new Error(`Error al buscar negocio: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      throw new Error(
+        `Error al buscar negocio: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      )
     }
   }
   /**
@@ -39,10 +43,19 @@ export class AuthRepository implements IAuthRepository {
       const path = `/api/super-admins/${encodeURIComponent(code)}/users-by-credentials`
       const res = await apiClient.post<unknown>(path, {
         email: request.email.trim(),
-        password: request.password,
+        password: request.password
       })
 
-      type BackendUser = { id: string; number?: string; name: string | null; role: string; phone?: string | null; employee_code?: string | null; is_active: boolean; business_id: string }
+      type BackendUser = {
+        id: string
+        number?: string
+        name: string | null
+        role: string
+        phone?: string | null
+        employee_code?: string | null
+        is_active: boolean
+        business_id: string
+      }
       const list: BackendUser[] = Array.isArray(res)
         ? (res as BackendUser[])
         : res && typeof res === 'object' && 'id' in res
@@ -54,9 +67,7 @@ export class AuthRepository implements IAuthRepository {
         (request.businessId && u.business_id === request.businessId) ||
         (request.businessCode && u.business_id === request.businessCode)
       const chosen =
-        request.businessId || request.businessCode
-          ? list.find(matches) ?? list[0]
-          : list[0]
+        request.businessId || request.businessCode ? (list.find(matches) ?? list[0]) : list[0]
 
       const user: User = {
         id: chosen.id,
@@ -70,7 +81,7 @@ export class AuthRepository implements IAuthRepository {
         commission_percentage: null,
         is_active: chosen.is_active,
         created_at: (chosen as { created_at?: string }).created_at ?? '',
-        updated_at: (chosen as { updated_at?: string }).updated_at ?? '',
+        updated_at: (chosen as { updated_at?: string }).updated_at ?? ''
       }
       return { user, success: true }
     } catch (error) {
@@ -95,12 +106,16 @@ export class AuthRepository implements IAuthRepository {
       }
 
       type ApiUser = User & { password?: unknown }
-      const raw = await apiClient.get<ApiUser[]>(`/api/users/business/${encodeURIComponent(cleanBusinessId)}`)
+      const raw = await apiClient.get<ApiUser[]>(
+        `/api/users/business/${encodeURIComponent(cleanBusinessId)}`
+      )
       const list = Array.isArray(raw) ? raw : []
       // No guardar password en el estado: el backend no debería enviarlo en listados
       return list.map(({ password: _p, ...u }) => u as User)
     } catch (error) {
-      throw new Error(`Error al obtener usuarios: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      throw new Error(
+        `Error al obtener usuarios: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      )
     }
   }
 
@@ -109,7 +124,9 @@ export class AuthRepository implements IAuthRepository {
       const user = await apiClient.get<User>(`/api/users/${encodeURIComponent(id)}`)
       return user
     } catch (error) {
-      throw new Error(`Error al obtener usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      throw new Error(
+        `Error al obtener usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      )
     }
   }
 
@@ -145,7 +162,9 @@ export class AuthRepository implements IAuthRepository {
       const user = await apiClient.post<User>('/api/users', userData)
       return user
     } catch (error) {
-      throw new Error(`Error al crear usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      throw new Error(
+        `Error al crear usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      )
     }
   }
 
@@ -156,9 +175,28 @@ export class AuthRepository implements IAuthRepository {
     try {
       await apiClient.delete(`/api/users/${encodeURIComponent(id)}`)
     } catch (error) {
-      throw new Error(`Error al eliminar usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      throw new Error(
+        `Error al eliminar usuario: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      )
+    }
+  }
+
+  /**
+   * PATCH /api/users/{identifier}
+   * identifier = user.id (UUID). Body: { is_active: true | false }.
+   */
+  async updateUserActive(identifier: string, isActive: boolean): Promise<User> {
+    try {
+      const clean = identifier.trim()
+      if (!clean) throw new Error('El identificador (id) del usuario es requerido')
+      const user = await apiClient.patch<User>(`/api/users/${encodeURIComponent(clean)}`, {
+        is_active: isActive
+      })
+      return user
+    } catch (error) {
+      throw new Error(
+        `Error al actualizar estado: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      )
     }
   }
 }
-
-

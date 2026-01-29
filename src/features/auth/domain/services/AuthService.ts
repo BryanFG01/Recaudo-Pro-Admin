@@ -1,5 +1,5 @@
+import { CreateUserRequest, SignInRequest, SignInResponse, User } from '../models'
 import { IAuthRepository } from '../port'
-import { SignInRequest, SignInResponse, User, CreateUserRequest } from '../models'
 
 export class AuthService {
   constructor(private readonly repository: IAuthRepository) {}
@@ -79,10 +79,13 @@ export class AuthService {
     return this.repository.deleteUser(id.trim())
   }
 
+  async updateUserActive(identifier: string, isActive: boolean): Promise<User> {
+    if (!identifier?.trim()) throw new Error('Identificador (id) del usuario es requerido')
+    return this.repository.updateUserActive(identifier.trim(), isActive)
+  }
+
   private isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     return emailRegex.test(email)
   }
 }
-
-

@@ -1,12 +1,19 @@
-import { ICreditRepository, CreditWithUserEmail } from '../port'
-import { CreateCreditRequest, UpdateCreditRequest } from '../models'
 import { CreditFilters } from '@/shared/types/filters'
+import { CreateCreditRequest, UpdateCreditRequest } from '../models'
+import { CreditWithUserEmail, ICreditRepository } from '../port'
 
 export class CreditService {
   constructor(private readonly repository: ICreditRepository) {}
 
   async getCredits() {
     return this.repository.getCredits()
+  }
+
+  async getCreditsByBusinessId(businessId: string): Promise<CreditWithUserEmail[]> {
+    if (!businessId?.trim()) {
+      throw new Error('ID de negocio es requerido')
+    }
+    return this.repository.getCreditsByBusinessId(businessId.trim())
   }
 
   async getCreditsByClientId(clientId: string) {
@@ -74,5 +81,3 @@ export class CreditService {
     return this.repository.getCreditsWithFilters(filters)
   }
 }
-
-

@@ -1,4 +1,5 @@
 export interface User {
+  document_number: string
   id: string
   /** Puede ser null si el backend no lo tiene (ej. usuario creado sin email). */
   email: string | null
@@ -54,5 +55,3 @@ export interface CreateUserRequest {
   commission_percentage?: number
   is_active?: boolean
 }
-
-
