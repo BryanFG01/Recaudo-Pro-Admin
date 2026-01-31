@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'
-import { useDashboard } from '../hooks/useDashboard'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import StatsCard from '@/shared/components/StatsCard/StatsCard'
+import { AlertTriangle, CreditCard, DollarSign, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { CollectionChart, CreditStatusChart } from '../components'
-import { DollarSign, AlertTriangle, CreditCard, Users } from 'lucide-react'
+import { useDashboard } from '../hooks/useDashboard'
 
-const cardDark = 'bg-[#2D3748] border-gray-600 text-gray-100 [&_.text-muted-foreground]:text-gray-400'
+const cardDark =
+  'bg-[#0f171a] border-gray-600 text-gray-100 [&_.text-muted-foreground]:text-gray-400'
 
 export default function DashboardPage() {
   const { businessId, businessCode, user } = useAuthStore()
@@ -44,13 +45,16 @@ export default function DashboardPage() {
     businessId: currentBusinessId || undefined,
     businessCode: businessCode ?? undefined,
     userId: user?.id,
-    userNumber: user?.number ?? undefined,
+    userNumber: user?.number ?? undefined
   })
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64" role="status" aria-live="polite">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2563EB]" aria-label="Cargando datos del dashboard" />
+        <div
+          className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0f171a]"
+          aria-label="Cargando datos del dashboard"
+        />
         <span className="sr-only">Cargando datos del dashboard...</span>
       </div>
     )
@@ -58,7 +62,11 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-4" role="alert" aria-live="assertive">
+      <div
+        className="bg-red-900/30 border border-red-700/50 rounded-lg p-4"
+        role="alert"
+        aria-live="assertive"
+      >
         <p className="text-red-200">Error al cargar estadísticas: {error.message}</p>
       </div>
     )
@@ -66,9 +74,11 @@ export default function DashboardPage() {
 
   if (!stats) return null
 
-  const btnBase = 'px-4 py-2 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-[#1a2436]'
-  const btnActive = 'bg-[#2563EB] text-white'
-  const btnInactive = 'bg-[#2D3748] border border-gray-600 text-gray-300 hover:bg-white/10 hover:border-gray-500'
+  const btnBase =
+    'px-4 py-2 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-[#0f171a] focus:ring-offset-2 focus:ring-offset-[#1a2436]'
+  const btnActive = 'bg-[#0f171a] text-white'
+  const btnInactive =
+    'bg-[#0f171a] border border-gray-600 text-gray-300 hover:bg-white/10 hover:border-gray-500'
 
   return (
     <div className="space-y-6">
@@ -101,21 +111,60 @@ export default function DashboardPage() {
 
       {/* Stats principales: Total clientes, Total créditos, Total recaudo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatsCard title="Total de Clientes" value={stats.totalClients} icon={<Users className="w-8 h-8" />} className={cardDark} />
-        <StatsCard title="Total de Créditos" value={stats.totalCredits} icon={<CreditCard className="w-8 h-8" />} className={cardDark} />
-        <StatsCard title="Total de Recaudo" value={stats.totalCollected} isCurrency icon={<DollarSign className="w-8 h-8" />} className={cardDark} />
+        <StatsCard
+          title="Total de Clientes"
+          value={stats.totalClients}
+          icon={<Users className="w-8 h-8" />}
+          className={cardDark}
+        />
+        <StatsCard
+          title="Total de Créditos"
+          value={stats.totalCredits}
+          icon={<CreditCard className="w-8 h-8" />}
+          className={cardDark}
+        />
+        <StatsCard
+          title="Total de Recaudo"
+          value={stats.totalCollected}
+          isCurrency
+          icon={<DollarSign className="w-8 h-8" />}
+          className={cardDark}
+        />
       </div>
 
       {/* Stats adicionales: Créditos activos, Clientes en mora */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <StatsCard title="Créditos Activos" value={stats.activeCredits} icon={<CreditCard className="w-8 h-8" />} className={cardDark} />
-        <StatsCard title="Clientes en Mora" value={stats.clientsInArrears} isWarning icon={<AlertTriangle className="w-8 h-8" />} className={cardDark} />
+        <StatsCard
+          title="Créditos Activos"
+          value={stats.activeCredits}
+          icon={<CreditCard className="w-8 h-8" />}
+          className={cardDark}
+        />
+        <StatsCard
+          title="Clientes en Mora"
+          value={stats.clientsInArrears}
+          isWarning
+          icon={<AlertTriangle className="w-8 h-8" />}
+          className={cardDark}
+        />
       </div>
 
       {/* Efectivo y Transacción */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <StatsCard title="Efectivo" value={stats.cashCollection} isCurrency subtitle={`${stats.cashCount} pagos`} className={cardDark} />
-        <StatsCard title="Transacción" value={stats.transactionCollection} isCurrency subtitle={`${stats.transactionCount} pagos`} className={cardDark} />
+        <StatsCard
+          title="Efectivo"
+          value={stats.cashCollection}
+          isCurrency
+          subtitle={`${stats.cashCount} pagos`}
+          className={cardDark}
+        />
+        <StatsCard
+          title="Transacción"
+          value={stats.transactionCollection}
+          isCurrency
+          subtitle={`${stats.transactionCount} pagos`}
+          className={cardDark}
+        />
       </div>
 
       {/* Charts */}
@@ -134,5 +183,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-

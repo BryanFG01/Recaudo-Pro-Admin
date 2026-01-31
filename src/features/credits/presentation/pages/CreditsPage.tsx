@@ -21,10 +21,9 @@ export default function CreditsPage() {
   const [filteredCredits, setFilteredCredits] = useState<CreditWithUserEmail[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [availableEmails, setAvailableEmails] = useState<string[]>([])
-  const [usersList, setUsersList] = useState<User[]>([])
+  const [, setUsersList] = useState<User[]>([])
   const [clientsList, setClientsList] = useState<Client[]>([])
-  const [filters, setFilters] = useState<FilterValues>({})
+  const [filters, setFilters] = useState<FilterValues>({ userId: undefined })
 
   const currentBusinessId = user?.business_id || businessId
 
@@ -56,8 +55,6 @@ export default function CreditsPage() {
     try {
       const users = await getUsersByBusinessId(currentBusinessId)
       setUsersList(users)
-      const emails = users.map((u) => u.email).filter(Boolean) as string[]
-      setAvailableEmails(emails)
     } catch (err) {
       console.error('Error al cargar usuarios:', err)
     }
@@ -88,24 +85,17 @@ export default function CreditsPage() {
     return map
   }, [clientsList])
 
-  /** Mapa user_id -> nombre del usuario responsable (para pintar en tabla). */
-  const userNameById = useMemo(() => {
-    const map: Record<string, string> = {}
-    usersList.forEach((u) => {
-      if (u.id) map[u.id] = u.name?.trim() || u.email || 'Sin nombre'
-    })
-    return map
-  }, [usersList])
+  /** Opciones para filtro por nombre del cliente (id + name para el dropdown). */
+  const availableClients = useMemo(
+    () => clientsList.map((c) => ({ id: c.id, name: c.name?.trim() || 'Sin nombre' })),
+    [clientsList]
+  )
 
-  /** Créditos a mostrar: filtro por email del responsable (por user_id) cuando aplica. */
+  /** Créditos a mostrar: filtro por responsable (userId) cuando aplica. */
   const displayedCredits = useMemo(() => {
-    if (!filters.userEmail) return filteredCredits
-    return filteredCredits.filter((c) => {
-      if (!c.user_id) return false
-      const u = usersList.find((u) => u.id === c.user_id)
-      return u?.email === filters.userEmail
-    })
-  }, [filteredCredits, filters.userEmail, usersList])
+    if (!filters.userId) return filteredCredits
+    return filteredCredits.filter((c) => c.user_id === filters.userId)
+  }, [filteredCredits, filters.userId])
 
   const loadCredits = async () => {
     if (!currentBusinessId) {
@@ -122,7 +112,6 @@ export default function CreditsPage() {
         businessId: currentBusinessId,
         startDate: filters.startDate,
         endDate: filters.endDate,
-        userEmail: filters.userEmail || undefined,
         clientId: filters.clientId || undefined
       }
 
@@ -155,15 +144,13 @@ export default function CreditsPage() {
   const handleExport = () => {
     const dataToExport = displayedCredits.map((credit) => ({
       'ID Crédito': credit.id,
-      Cliente: credit.client_id ? (clientNameById[credit.client_id] ?? credit.client_id) : '-',
-      Responsable: credit.user_id ? (userNameById[credit.user_id] ?? 'Sin asignar') : 'Sin asignar',
+      Cliente: credit.client_id ? clientNameById[credit.client_id] ?? credit.client_id : '-',
       'Monto Total': formatCurrency(credit.total_amount),
       'Saldo Restante': formatCurrency(credit.total_balance),
       'Valor Cuota': formatCurrency(credit.installment_amount),
       'Cuotas Pagadas': `${credit.paid_installments} / ${credit.total_installments}`,
       'Cuotas Atrasadas': credit.overdue_installments,
       'Próxima Fecha': credit.next_due_date ? formatDate(credit.next_due_date) : 'N/A',
-      'Método de Pago': (credit as any).payment_method || 'N/A',
       'Fecha Creación': formatDate(credit.created_at)
     }))
     exportToExcel(dataToExport, { filename: 'creditos_recaudopro', sheetName: 'Créditos' })
@@ -175,37 +162,9 @@ export default function CreditsPage() {
       header: 'Cliente',
       render: (credit) => (
         <span className="text-sm text-gray-200 font-medium">
-          {credit.client_id ? (clientNameById[credit.client_id] ?? credit.client_id) : '-'}
+          {credit.client_id ? clientNameById[credit.client_id] ?? credit.client_id : '-'}
         </span>
       )
-    },
-    // {
-    //   key: 'user_id',
-    //   header: 'Responsable',
-    //   render: (credit) => (
-    //     <span className="text-sm text-gray-200 font-medium">
-    //       {credit.user_id ? (userNameById[credit.user_id] ?? 'Sin asignar') : 'Sin asignar'}
-    //     </span>
-    //   )
-    // },
-    {
-      key: 'payment_method',
-      header: 'Método de Pago',
-      render: (credit) => {
-        const method = (credit as any).payment_method
-        if (!method) return <span className="text-gray-400">-</span>
-        return (
-          <span
-            className={`px-2 py-1 rounded text-xs font-medium ${
-              method.toLowerCase() === 'efectivo'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-blue-100 text-blue-800'
-            }`}
-          >
-            {method}
-          </span>
-        )
-      }
     },
     {
       key: 'total_amount',
@@ -289,8 +248,8 @@ export default function CreditsPage() {
       <div className="flex-shrink-0">
         <FiltersBar
           onFilterChange={handleFilterChange}
-          availableEmails={availableEmails}
-          showClientFilter={false}
+          availableClients={availableClients}
+          showClientFilter={true}
         />
       </div>
 

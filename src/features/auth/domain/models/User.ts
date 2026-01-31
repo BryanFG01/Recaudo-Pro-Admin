@@ -1,6 +1,8 @@
 export interface User {
-  document_number: string
   id: string
+  /** Nombre(s) del usuario. */
+  first_name?: string | null
+  document_number?: string | null
   /** Puede ser null si el backend no lo tiene (ej. usuario creado sin email). */
   email: string | null
   name: string | null

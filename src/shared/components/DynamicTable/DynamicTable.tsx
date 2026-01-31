@@ -39,7 +39,7 @@ export default function DynamicTable<T extends Record<string, any>>({
   onRowClick,
   className
 }: DynamicTableProps<T>) {
-  const cardDark = 'bg-[#2D3748] border-gray-600 text-gray-200'
+  const cardDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
 
   if (isLoading) {
     return (
@@ -108,10 +108,7 @@ export default function DynamicTable<T extends Record<string, any>>({
               <TableRow
                 key={index}
                 onClick={() => onRowClick?.(item)}
-                className={cn(
-                  'border-gray-700 hover:bg-white/5',
-                  onRowClick && 'cursor-pointer'
-                )}
+                className={cn('border-gray-700 hover:bg-white/5', onRowClick && 'cursor-pointer')}
                 role={onRowClick ? 'button' : 'row'}
                 tabIndex={onRowClick ? 0 : undefined}
                 onKeyDown={(e) => {
@@ -120,10 +117,15 @@ export default function DynamicTable<T extends Record<string, any>>({
                     onRowClick(item)
                   }
                 }}
-                aria-label={onRowClick ? `Fila ${index + 1}, hacer clic para ver detalles` : undefined}
+                aria-label={
+                  onRowClick ? `Fila ${index + 1}, hacer clic para ver detalles` : undefined
+                }
               >
                 {columns.map((column) => (
-                  <TableCell key={column.key} className={cn('whitespace-nowrap text-gray-200', column.className)}>
+                  <TableCell
+                    key={column.key}
+                    className={cn('whitespace-nowrap text-gray-200', column.className)}
+                  >
                     {column.render ? column.render(item) : String(item[column.key] ?? '')}
                   </TableCell>
                 ))}

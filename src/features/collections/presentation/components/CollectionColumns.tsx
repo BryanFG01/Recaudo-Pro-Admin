@@ -1,6 +1,6 @@
 import { Column } from '@/shared/components/DynamicTable'
+import { formatCurrency, formatDateTime } from '@/shared/utils/date'
 import { CollectionWithClient } from '../../domain/models'
-import { formatDateTime, formatCurrency } from '@/shared/utils/date'
 
 export const createCollectionColumns = (): Column<CollectionWithClient>[] => [
   {
@@ -41,11 +41,8 @@ export const createCollectionColumns = (): Column<CollectionWithClient>[] => [
       )
     },
   },
-  {
-    key: 'transaction_reference',
-    header: 'Referencia',
-    render: (collection) => collection.transaction_reference || '-',
-  },
+
+
   {
     key: 'notes',
     header: 'Notas',

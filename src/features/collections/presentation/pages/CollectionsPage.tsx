@@ -1,27 +1,31 @@
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
-import { useClients } from '@/features/clients/presentation/hooks/useClients'
+import { Client } from '@/features/clients/domain/models'
+import { ClientRepository } from '@/features/clients/infrastructure/repositories/ClientRepository'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
 import { CollectionFilters } from '@/shared/types/filters'
 import { formatCurrency, formatDateTime } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
-import { Download, Plus } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { CollectionWithUserEmail } from '../../domain/port'
 import { CollectionService } from '../../domain/services/CollectionService'
 import { CollectionRepository } from '../../infrastructure/repositories/CollectionRepository'
 
 export default function CollectionsPage() {
-  const { businessId, user } = useAuthStore()
-  const { getUsersByBusinessId } = useAuth()
-  const { clients } = useClients()
+  const { businessId, businessCode, user } = useAuthStore()
   const [filteredCollections, setFilteredCollections] = useState<CollectionWithUserEmail[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [availableEmails, setAvailableEmails] = useState<string[]>([])
-  const [filters, setFilters] = useState<FilterValues>({})
+  const [clientsList, setClientsList] = useState<Client[]>([])
+  const [filters, setFilters] = useState<FilterValues>({
+    userId: undefined,
+    startDate: undefined,
+    endDate: undefined,
+    clientId: undefined,
+    payment_method: undefined
+  })
 
   const currentBusinessId = user?.business_id || businessId
 
@@ -32,7 +36,7 @@ export default function CollectionsPage() {
 
   useEffect(() => {
     if (currentBusinessId) {
-      loadUsers()
+      loadClients()
       loadCollections()
     }
   }, [currentBusinessId])
@@ -43,16 +47,30 @@ export default function CollectionsPage() {
     }
   }, [filters, currentBusinessId])
 
-  const loadUsers = async () => {
+  const loadClients = async () => {
     if (!currentBusinessId) return
     try {
-      const users = await getUsersByBusinessId(currentBusinessId)
-      const emails = users.map((u) => u.email).filter(Boolean) as string[]
-      setAvailableEmails(emails)
+      const repo = new ClientRepository()
+      const clients = await repo.getClientsWithCredits(
+        currentBusinessId,
+        user?.id ?? '',
+        undefined,
+        businessCode ?? undefined
+      )
+      setClientsList(clients as unknown as Client[])
     } catch (err) {
-      console.error('Error al cargar usuarios:', err)
+      console.error('Error al cargar clientes:', err)
     }
   }
+
+  /** Mapa client_id -> nombre del cliente (para columna Cliente del crédito). */
+  const clientNameById = useMemo(() => {
+    const map: Record<string, string> = {}
+    clientsList.forEach((c) => {
+      if (c.id) map[c.id] = c.name?.trim() || 'Sin nombre'
+    })
+    return map
+  }, [clientsList])
 
   const loadCollections = async () => {
     if (!currentBusinessId) return
@@ -65,9 +83,8 @@ export default function CollectionsPage() {
         businessId: currentBusinessId,
         startDate: filters.startDate,
         endDate: filters.endDate,
-        userEmail: filters.userEmail || undefined,
         clientId: filters.clientId || undefined,
-        payment_method: filters.payment_method || undefined
+        payment_method: normalizePaymentMethodForApi(filters.payment_method)
       }
 
       const data = await collectionService.getCollectionsWithFilters(collectionFilters)
@@ -83,33 +100,41 @@ export default function CollectionsPage() {
     setFilters(newFilters)
   }
 
+  /** Normaliza método de pago para el API: cash->efectivo, transfer->transferencia. */
+  function normalizePaymentMethodForApi(value: string | undefined): string | undefined {
+    if (!value) return undefined
+    const v = value.toLowerCase()
+    if (v === 'cash') return 'efectivo'
+    if (v === 'transfer') return 'transferencia'
+    return value
+  }
+
   const handleExport = () => {
-    const dataToExport = filteredCollections.map((collection) => {
-      return {
-        'ID Recaudo': collection.id,
-        Cliente: collection.name,
-        Monto: formatCurrency(collection.amount),
-        'Fecha de Pago': formatDateTime(collection.payment_date),
-        'Método de Pago': collection.payment_method || 'N/A',
-        Referencia: collection.transaction_reference || 'N/A',
-        'Email Vendedor': collection.user_email || 'N/A',
-        Notas: collection.notes || 'N/A'
-      }
-    })
+    const dataToExport = filteredCollections.map((collection) => ({
+      // 'ID Recaudo': collection.id,
+      Cliente: collection.client_id
+        ? clientNameById[collection.client_id] ?? collection.name ?? '-'
+        : collection.name ?? '-',
+      Monto: formatCurrency(collection.amount),
+      'Fecha de Pago': formatDateTime(collection.payment_date),
+      'Método de Pago': collection.payment_method || 'N/A',
+      Referencia: collection.transaction_reference || 'N/A',
+      Notas: collection.notes || 'N/A'
+    }))
     exportToExcel(dataToExport, { filename: 'recaudos_recaudopro', sheetName: 'Recaudos' })
   }
 
   const columns: Column<CollectionWithUserEmail>[] = [
     {
-      key: 'name',
+      key: 'client_id',
       header: 'Cliente',
-      className: 'font-medium'
-    },
-    {
-      key: 'user_email',
-      header: 'Email Vendedor',
+      className: 'font-medium',
       render: (collection) => (
-        <span className="text-sm text-gray-600">{collection.user_email || 'Sin asignar'}</span>
+        <span className="text-sm text-gray-200 font-medium">
+          {collection.client_id
+            ? clientNameById[collection.client_id] ?? collection.name ?? '-'
+            : collection.name ?? '-'}
+        </span>
       )
     },
     {
@@ -155,9 +180,10 @@ export default function CollectionsPage() {
     }
   ]
 
-  const availableClients = useMemo(() => {
-    return clients.map((c) => ({ id: c.id, name: c.name }))
-  }, [clients])
+  const availableClients = useMemo(
+    () => clientsList.map((c) => ({ id: c.id, name: c.name?.trim() || 'Sin nombre' })),
+    [clientsList]
+  )
 
   if (!currentBusinessId) {
     return (
@@ -170,28 +196,29 @@ export default function CollectionsPage() {
   return (
     <div className="flex flex-col h-full space-y-6">
       <div className="flex-shrink-0 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Recaudos</h1>
+        <h1 className="text-3xl font-bold text-white">Recaudos</h1>
         <div className="flex gap-3">
           <Button
-            {...({ variant: 'outline' } as any)}
             onClick={handleExport}
+            variant="outline"
             disabled={filteredCollections.length === 0}
+            className="border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
           >
             <Download className="w-4 h-4 mr-2" />
             Exportar a Excel
           </Button>
-          <Button>
+          {/* <Button>
             <Plus className="w-4 h-4 mr-2" />
             Nuevo Recaudo
-          </Button>
+          </Button> */}
         </div>
       </div>
 
       <div className="flex-shrink-0">
         <FiltersBar
           onFilterChange={handleFilterChange}
-          availableEmails={availableEmails}
           availableClients={availableClients}
+          showUserFilter={false}
           showPaymentMethodFilter={true}
           isRecaudoPage={true}
         />

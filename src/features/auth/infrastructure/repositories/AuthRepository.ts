@@ -105,13 +105,19 @@ export class AuthRepository implements IAuthRepository {
         throw new Error('ID de negocio no puede estar vacío')
       }
 
-      type ApiUser = User & { password?: unknown }
+      type ApiUser = User & { password?: unknown; firstName?: string | null }
       const raw = await apiClient.get<ApiUser[]>(
         `/api/users/business/${encodeURIComponent(cleanBusinessId)}`
       )
       const list = Array.isArray(raw) ? raw : []
-      // No guardar password en el estado: el backend no debería enviarlo en listados
-      return list.map(({ password: _p, ...u }) => u as User)
+      // Normalizar first_name (API puede enviar first_name o firstName) y quitar password
+      return list.map(({ password: _p, firstName, ...u }) => {
+        const user = u as User
+        return {
+          ...user,
+          first_name: user.first_name ?? firstName ?? null
+        }
+      })
     } catch (error) {
       throw new Error(
         `Error al obtener usuarios: ${error instanceof Error ? error.message : 'Error desconocido'}`

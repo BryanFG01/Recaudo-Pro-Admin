@@ -23,7 +23,7 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null)
   const [availableEmails, setAvailableEmails] = useState<string[]>([])
   const [usersList, setUsersList] = useState<User[]>([])
-  const [filters, setFilters] = useState<FilterValues>({})
+  const [filters, setFilters] = useState<FilterValues>({ userId: undefined })
 
   const currentBusinessId = user?.business_id || businessId
 

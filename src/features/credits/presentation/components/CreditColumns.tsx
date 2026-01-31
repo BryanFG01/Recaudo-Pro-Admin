@@ -1,6 +1,6 @@
 import { Column } from '@/shared/components/DynamicTable'
+import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { Credit } from '../../domain/models'
-import { formatDate, formatCurrency } from '@/shared/utils/date'
 
 export const createCreditColumns = (): Column<Credit>[] => [
   {

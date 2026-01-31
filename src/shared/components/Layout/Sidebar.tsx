@@ -35,7 +35,7 @@ export default function Sidebar() {
   return (
     <>
       <aside
-        className="w-64 bg-[#0f172a] text-white flex flex-col border-r border-gray-700/50"
+        className="w-64 bg-[#0f171a] text-white flex flex-col border-r border-gray-700/50 rounded-r-3xl shadow-xl shadow-black/10"
         aria-label="Navegación principal"
       >
         <div className="p-6 border-b border-gray-700/50">

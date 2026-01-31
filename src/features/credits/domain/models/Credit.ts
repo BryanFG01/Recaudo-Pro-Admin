@@ -13,6 +13,7 @@ export interface Credit {
   business_id: string
   created_at: string
   updated_at: string
+
 }
 
 export interface CreateCreditRequest {
@@ -21,7 +22,8 @@ export interface CreateCreditRequest {
   installment_amount: number
   total_installments: number
   next_due_date?: string | null
-}
+ 
+  }
 
 export interface UpdateCreditRequest {
   id: string

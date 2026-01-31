@@ -14,26 +14,29 @@ import { Calendar, Filter, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 // Tonos alineados con login y panel (fondo #1a2436, superficies #2D3748, acento #2563EB)
-const cardDark = 'bg-[#2D3748] border-gray-600 text-gray-200'
+const cardDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
 const inputDark =
-  'bg-[#2D3748] border-gray-600 text-white placeholder:text-gray-400 data-[placeholder]:text-gray-400 focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]'
+  'bg-[#0f171a] border-gray-600 text-white placeholder:text-gray-400 data-[placeholder]:text-gray-400 focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]'
 const labelDark = 'text-gray-200'
-const selectContentDark = 'bg-[#2D3748] border-gray-600 text-gray-200'
+const selectContentDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
 const selectItemAll = 'data-[highlighted]:bg-[#2563EB]/40 text-blue-200'
-const selectItemDark = 'text-gray-200 data-[highlighted]:bg-white/10'
-const btnClear = 'border-gray-600 text-gray-300 hover:bg-white/10 hover:border-gray-500 hover:text-white'
+const selectItemDark = 'data-[highlighted]:bg-[#2563EB]/40 text-blue-200'
+const btnClear = 'border-gray-600 text-gray-300 hover:bg-[#0f171a]/10 hover:text-white'
 
 export interface FilterValues {
+  userId: string | undefined
   startDate?: string
   endDate?: string
   userEmail?: string
   clientId?: string
   payment_method?: string
+  clientName?: string | undefined
 }
 
 interface FiltersBarProps {
   onFilterChange: (filters: FilterValues) => void
-  availableEmails: string[]
+  availableUsers?: Array<{ id: string; name: string }>
+  availableEmails?: string[]
   availableClients?: Array<{ id: string; name: string }>
   showDateFilter?: boolean
   showUserFilter?: boolean
@@ -44,10 +47,11 @@ interface FiltersBarProps {
 
 export default function FiltersBar({
   onFilterChange,
-  availableEmails,
+  availableUsers: _availableUsers,
+  availableEmails: _availableEmails,
   availableClients = [],
   showDateFilter = true,
-  showUserFilter = true,
+  showUserFilter: _showUserFilter = true,
   showClientFilter = true,
   showPaymentMethodFilter = true,
   isRecaudoPage = false
@@ -55,7 +59,7 @@ export default function FiltersBar({
   const [filters, setFilters] = useState<FilterValues>({
     startDate: undefined,
     endDate: undefined,
-    userEmail: undefined,
+    userId: undefined,
     clientId: undefined,
     payment_method: undefined
   })
@@ -65,7 +69,7 @@ export default function FiltersBar({
     onFilterChange({
       startDate: undefined,
       endDate: undefined,
-      userEmail: undefined,
+      userId: undefined,
       clientId: undefined,
       payment_method: undefined
     })
@@ -84,7 +88,7 @@ export default function FiltersBar({
     const clearedFilters: FilterValues = {
       startDate: undefined,
       endDate: undefined,
-      userEmail: undefined,
+      userId: undefined,
       clientId: undefined,
       payment_method: undefined
     }
@@ -95,7 +99,7 @@ export default function FiltersBar({
   const hasActiveFilters =
     filters.startDate ||
     filters.endDate ||
-    filters.userEmail ||
+    filters.userId ||
     filters.clientId ||
     filters.payment_method
 
@@ -153,32 +157,6 @@ export default function FiltersBar({
                 />
               </div>
             </>
-          )}
-
-          {showUserFilter && (
-            <div className="space-y-1">
-              <Label htmlFor="userEmail" className={labelDark}>
-                Vendedor (Email)
-              </Label>
-              <Select
-                value={filters.userEmail || '__all__'}
-                onValueChange={(value) => handleFilterChange('userEmail', value)}
-              >
-                <SelectTrigger id="userEmail" className={inputDark}>
-                  <SelectValue placeholder="Todos los vendedores" />
-                </SelectTrigger>
-                <SelectContent className={selectContentDark}>
-                  <SelectItem value="__all__" className={selectItemAll}>
-                    Todos los vendedores
-                  </SelectItem>
-                  {availableEmails.map((email) => (
-                    <SelectItem key={email} value={email} className={selectItemDark}>
-                      {email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           )}
 
           {showClientFilter && availableClients.length > 0 && (

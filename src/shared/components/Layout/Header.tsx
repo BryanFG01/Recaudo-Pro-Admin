@@ -4,7 +4,10 @@ export default function Header() {
   const { user } = useAuthStore()
 
   return (
-    <header className="bg-[#1a2436]/95 border-b border-gray-700/50 px-6 py-4 shadow-lg shadow-black/10" role="banner">
+    <header
+      className="bg-[#0f171a]/95 border-b border-gray-700/50 px-6 py-4 shadow-lg shadow-black/10"
+      role="banner"
+    >
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-white">Panel de Administración</h2>
         <div className="flex items-center gap-4" aria-label="Información del usuario">
@@ -28,5 +31,3 @@ export default function Header() {
     </header>
   )
 }
-
-
