@@ -223,69 +223,60 @@ export default function AdminUsersPage() {
     )
   }
 
+  const btnClass =
+    'flex items-center gap-2 min-h-[44px] border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white'
+  const btnPrimary = 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-0'
+  const btnDanger = 'bg-red-600 hover:bg-red-700 text-white border-0'
+
   return (
     <div className="flex flex-col h-full space-y-6">
-      <div className="flex-shrink-0 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Administración de Usuarios</h1>
-          <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
-            {/* Business ID:{' '} */}
-            {/* <span className="font-mono text-gray-300 bg-[#2D3748] border border-gray-600 rounded px-2 py-0.5">
-              {businessId}
-            </span> */}
-          </p>
-          <p className="text-sm text-gray-400 mt-2">Usuarios encontrados: {users.length}</p>
+      <div className="flex-shrink-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Administración de Usuarios</h1>
+          <p className="text-sm text-gray-400 mt-1">Usuarios encontrados: {users.length}</p>
           {deleteMode && (
             <p className="text-sm text-amber-200/90 mt-1">
               Selecciona uno o más usuarios para eliminar.
             </p>
           )}
         </div>
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
           {deleteMode ? (
             <>
-              <Button
-                onClick={cancelDeleteMode}
-                variant="outline"
-                className="flex items-center gap-2 border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
-              >
-                <X className="w-4 h-4" />
+              <Button onClick={cancelDeleteMode} variant="outline" className={btnClass}>
+                <X className="w-4 h-4 shrink-0" />
                 Cancelar
               </Button>
               <Button
                 onClick={handleDeleteSelected}
                 disabled={selectedIds.size === 0 || isDeleting}
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white border-0"
+                className={`${btnClass} ${btnDanger}`}
               >
-                <Trash2 className="w-4 h-4" />
-                Eliminar seleccionados ({selectedIds.size})
+                <Trash2 className="w-4 h-4 shrink-0" />
+                Eliminar ({selectedIds.size})
               </Button>
             </>
           ) : (
             <>
               <Button
                 onClick={() => navigate('/admin/users/create')}
-                className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-0"
+                className={`${btnClass} ${btnPrimary}`}
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 shrink-0" />
                 Crear Usuario
               </Button>
-              <Button
-                onClick={() => setDeleteMode(true)}
-                variant="outline"
-                className="flex items-center gap-2 border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
-              >
-                <Trash2 className="w-4 h-4" />
+              <Button onClick={() => setDeleteMode(true)} variant="outline" className={btnClass}>
+                <Trash2 className="w-4 h-4 shrink-0" />
                 Eliminar usuarios
               </Button>
               <Button
                 onClick={handleExport}
                 disabled={users.length === 0}
                 variant="outline"
-                className="flex items-center gap-2 border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
+                className={btnClass}
               >
-                <Download className="w-4 h-4" />
-                Exportar a Excel
+                <Download className="w-4 h-4 shrink-0" />
+                Exportar Excel
               </Button>
             </>
           )}

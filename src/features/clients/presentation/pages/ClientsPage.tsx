@@ -199,26 +199,19 @@ export default function ClientsPage() {
 
   return (
     <div className="flex flex-col h-full space-y-6">
-      <div className="flex-shrink-0 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Clientes</h1>
-        <div className="flex gap-3">
+      <div className="flex-shrink-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white min-w-0">Clientes</h1>
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={handleExport}
             disabled={filteredClients.length === 0}
-            className="border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
+            className="min-h-[44px] border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
             aria-label="Exportar clientes a Excel"
           >
-            <Download className="w-4 h-4 mr-2" aria-hidden="true" />
+            <Download className="w-4 h-4 mr-2 shrink-0" aria-hidden="true" />
             Exportar a Excel
           </Button>
-          {/* <Button
-            className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-0"
-            aria-label="Crear nuevo cliente"
-          >
-            <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
-            Nuevo Cliente
-          </Button> */}
         </div>
       </div>
 

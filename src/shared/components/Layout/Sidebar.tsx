@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { cn } from '@/shared/utils/cn'
-import { CreditCard, DollarSign, LayoutDashboard, LogOut, UserCog, Users } from 'lucide-react'
+import { CreditCard, DollarSign, LayoutDashboard, LogOut, UserCog, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
@@ -22,7 +22,12 @@ const menuItems = [
   { path: '/collections', label: 'Recaudos', icon: DollarSign }
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
   const location = useLocation()
   const { signOut } = useAuthStore()
   const [openLogout, setOpenLogout] = useState(false)
@@ -32,18 +37,50 @@ export default function Sidebar() {
     setOpenLogout(false)
   }
 
+  const closeSidebar = () => onOpenChange?.(false)
+
   return (
     <>
+      {/* Backdrop móvil: solo visible cuando sidebar abierto en pantallas pequeñas */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Cerrar menú"
+        onClick={closeSidebar}
+        onKeyDown={(e) => e.key === 'Enter' && closeSidebar()}
+        className={cn(
+          'fixed inset-0 z-40 bg-black/60 transition-opacity md:hidden',
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        )}
+      />
+
       <aside
-        className="w-64 bg-[#0f171a] text-white flex flex-col border-r border-gray-700/50 rounded-r-3xl shadow-xl shadow-black/10"
+        className={cn(
+          'w-64 bg-[#0f171a] text-white flex flex-col border-r border-gray-700/50 rounded-r-3xl shadow-xl shadow-black/10',
+          'fixed md:static inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-out',
+          'md:translate-x-0',
+          open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        )}
         aria-label="Navegación principal"
       >
-        <div className="p-6 border-b border-gray-700/50">
-          <h1 className="text-xl font-bold text-white">RecaudoPro</h1>
-          <p className="text-sm text-gray-400">Administrador</p>
+        <div className="p-4 md:p-6 border-b border-gray-700/50 flex items-center justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-bold text-white">RecaudoPro</h1>
+            <p className="text-sm text-gray-400">Administrador</p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={closeSidebar}
+            className="md:hidden shrink-0 h-10 w-10 text-gray-400 hover:bg-[#2D3748] hover:text-white rounded-lg"
+            aria-label="Cerrar menú"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
 
-        <nav className="flex-1 p-4" aria-label="Menú de navegación">
+        <nav className="flex-1 p-4 overflow-y-auto" aria-label="Menú de navegación">
           <ul className="space-y-2" role="list">
             {menuItems.map((item) => {
               const Icon = item.icon
@@ -52,6 +89,7 @@ export default function Sidebar() {
                 <li key={item.path} role="none">
                   <Link
                     to={item.path}
+                    onClick={closeSidebar}
                     className={cn(
                       'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-[#0f172a]',
                       isActive
@@ -60,7 +98,7 @@ export default function Sidebar() {
                     )}
                     aria-current={isActive ? 'page' : undefined}
                   >
-                    <Icon className="w-5 h-5" aria-hidden="true" />
+                    <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
                     <span>{item.label}</span>
                   </Link>
                 </li>

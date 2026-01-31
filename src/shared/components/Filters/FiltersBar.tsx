@@ -10,7 +10,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { cn } from '@/shared/utils/cn'
-import { Calendar, Filter, X } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronUp, Filter, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 // Tonos alineados con login y panel (fondo #1a2436, superficies #2D3748, acento #2563EB)
@@ -103,29 +103,60 @@ export default function FiltersBar({
     filters.clientId ||
     filters.payment_method
 
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
     <Card className={cn('mb-6', cardDark)}>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white">
-            <Filter className="w-5 h-5 text-[#2563EB]" aria-hidden />
-            Filtros
-          </CardTitle>
-          {hasActiveFilters && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleClearFilters}
-              className={btnClear}
-              aria-label="Limpiar todos los filtros"
-            >
-              <X className="w-4 h-4 mr-1" aria-hidden="true" />
-              Limpiar
-            </Button>
-          )}
+      <CardHeader className="pb-2 pt-4 px-4 md:px-6">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            className="flex items-center gap-2 text-left min-w-0 flex-1 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-[#0f171a] rounded-lg py-1"
+            aria-expanded={!collapsed}
+            aria-controls="filters-content"
+            aria-label={collapsed ? 'Mostrar filtros' : 'Ocultar filtros'}
+          >
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white truncate">
+              <Filter className="w-5 h-5 shrink-0 text-[#2563EB]" aria-hidden />
+              Filtros
+              {hasActiveFilters && (
+                <span className="text-sm font-normal text-gray-400">(activos)</span>
+              )}
+            </CardTitle>
+            {collapsed ? (
+              <ChevronDown className="w-5 h-5 shrink-0 text-gray-400" aria-hidden />
+            ) : (
+              <ChevronUp className="w-5 h-5 shrink-0 text-gray-400" aria-hidden />
+            )}
+          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {hasActiveFilters && !collapsed && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleClearFilters}
+                className={btnClear}
+                aria-label="Limpiar todos los filtros"
+              >
+                <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                Limpiar
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <div
+        id="filters-content"
+        role="region"
+        aria-label="Contenido de filtros"
+        className={cn(
+          'grid transition-[grid-template-rows] duration-200 ease-out',
+          collapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'
+        )}
+      >
+      <div className="min-h-0 overflow-hidden">
+      <CardContent className="pt-0 pb-4 px-4 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {showDateFilter && (
             <>
@@ -213,6 +244,8 @@ export default function FiltersBar({
           )}
         </div>
       </CardContent>
+      </div>
+      </div>
     </Card>
   )
 }
