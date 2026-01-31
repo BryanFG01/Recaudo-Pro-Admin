@@ -148,19 +148,24 @@ export default function AdminUsersPage() {
             user.role === 'admin'
               ? 'bg-purple-900/50 text-purple-200 border border-purple-700/50'
               : user.role === 'supervisor'
-                ? 'bg-blue-900/50 text-blue-200 border border-blue-700/50'
-                : 'bg-green-900/50 text-green-200 border border-green-700/50'
+              ? 'bg-blue-900/50 text-blue-200 border border-blue-700/50'
+              : 'bg-green-900/50 text-green-200 border border-green-700/50'
           }`}
         >
           {user.role}
         </span>
       )
     },
-    // {
-    //   key: 'employee_code',
-    //   header: 'Código Empleado',
-    //   render: (user) => <span className="text-gray-300">{user.employee_code || '-'}</span>
-    // },
+    {
+      key: 'number',
+      header: 'Código Empleado',
+      render: (user) => <span className="text-gray-300">{user.number || '-'}</span>
+    },
+    {
+      key: 'password',
+      header: 'Contraseña',
+      render: (user) => <span className="text-gray-300">{user.number || '-'}</span>
+    },
     {
       key: 'commission_percentage',
       header: 'Comisión %',

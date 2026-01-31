@@ -1,4 +1,5 @@
 export interface User {
+  password: string
   id: string
   /** Nombre(s) del usuario. */
   first_name?: string | null
