@@ -87,13 +87,39 @@ export default function CollectionsPage() {
         payment_method: normalizePaymentMethodForApi(filters.payment_method)
       }
 
-      const data = await collectionService.getCollectionsWithFilters(collectionFilters)
+      let data = await collectionService.getCollectionsWithFilters(collectionFilters)
+
+      // Filtrado en cliente por si el backend no aplica clientId o payment_method
+      if (filters.clientId?.trim()) {
+        data = data.filter((c) => (c.client_id || '').trim() === filters.clientId?.trim())
+      }
+      if (filters.payment_method?.trim()) {
+        const expectedPm = normalizePaymentMethodForApi(filters.payment_method)
+        if (expectedPm) {
+          data = data.filter((c) => matchPaymentMethod(c.payment_method, expectedPm))
+        }
+      }
+
       setFilteredCollections(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar recaudos')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  /** Compara payment_method del recaudo con el valor esperado (efectivo | transferencia). */
+  function matchPaymentMethod(
+    collectionMethod: string | null | undefined,
+    expected: string
+  ): boolean {
+    if (!collectionMethod) return false
+    const m = collectionMethod.toLowerCase().trim()
+    const e = expected.toLowerCase().trim()
+    if (e === 'efectivo') return m === 'efectivo'
+    if (e === 'transferencia')
+      return ['transferencia', 'transfer', 'transacción', 'transaccion'].includes(m)
+    return m === e
   }
 
   const handleFilterChange = (newFilters: FilterValues) => {

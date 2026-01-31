@@ -76,14 +76,17 @@ export class DashboardRepository implements IDashboardRepository {
     const dailyCashMap: Record<string, number> = {}
     const dailyTransactionMap: Record<string, number> = {}
 
+    const isTransaction = (pm: string) =>
+      ['transacción', 'transaccion', 'transferencia', 'transfer'].includes(pm)
+
     for (const c of collections) {
       const amount = Number(c.amount) || 0
       totalCollected += amount
-      const pm = (c.payment_method || '').toLowerCase()
+      const pm = (c.payment_method || '').toLowerCase().trim()
       if (pm === 'efectivo') {
         cashCollection += amount
         cashCount++
-      } else if (pm === 'transacción' || pm === 'transaccion') {
+      } else if (isTransaction(pm)) {
         transactionCollection += amount
         transactionCount++
       }
@@ -92,7 +95,7 @@ export class DashboardRepository implements IDashboardRepository {
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
         dailyDataMap[key] = (dailyDataMap[key] || 0) + amount
         if (pm === 'efectivo') dailyCashMap[key] = (dailyCashMap[key] || 0) + amount
-        if (pm === 'transacción' || pm === 'transaccion') dailyTransactionMap[key] = (dailyTransactionMap[key] || 0) + amount
+        if (isTransaction(pm)) dailyTransactionMap[key] = (dailyTransactionMap[key] || 0) + amount
       }
     }
 

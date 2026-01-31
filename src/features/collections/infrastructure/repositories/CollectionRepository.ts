@@ -50,11 +50,18 @@ export class CollectionRepository implements ICollectionRepository {
   async getCollectionsWithFilters(filters: CollectionFilters): Promise<CollectionWithUserEmail[]> {
     const params = new URLSearchParams()
     params.set('businessId', filters.businessId)
-    if (filters.clientId) params.set('clientId', filters.clientId)
+    if (filters.clientId?.trim()) {
+      params.set('clientId', filters.clientId.trim())
+      params.set('client_id', filters.clientId.trim())
+    }
     if (filters.startDate) params.set('startDate', filters.startDate instanceof Date ? filters.startDate.toISOString() : String(filters.startDate))
     if (filters.endDate) params.set('endDate', filters.endDate instanceof Date ? filters.endDate.toISOString() : String(filters.endDate))
-    if (filters.payment_method) params.set('payment_method', filters.payment_method)
-    if (filters.userEmail) params.set('userEmail', filters.userEmail)
+    if (filters.payment_method?.trim()) {
+      const pm = filters.payment_method.trim()
+      params.set('payment_method', pm)
+      params.set('paymentMethod', pm)
+    }
+    if (filters.userEmail?.trim()) params.set('userEmail', filters.userEmail.trim())
 
     const data = await apiClient.get<CollectionWithUserEmail[]>(`/api/collections?${params.toString()}`)
     return data || []
