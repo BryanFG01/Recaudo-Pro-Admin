@@ -20,6 +20,17 @@ function buildUrl(endpoint: string): string {
   return `${apiBase}${path}`
 }
 
+/** Error con código HTTP para que los repositorios/páginas puedan distinguir 404, etc. */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 async function getErrorMessage(response: Response): Promise<string> {
   const err = await response.json().catch(() => ({}))
   if (!err || typeof err !== 'object') return `Error ${response.status}: ${response.statusText}`
@@ -36,7 +47,7 @@ export const apiClient = {
     })
     if (!response.ok) {
       const msg = await getErrorMessage(response)
-      throw new Error(msg)
+      throw new ApiError(msg, response.status)
     }
     return response.json()
   },
@@ -50,7 +61,7 @@ export const apiClient = {
     })
     if (!response.ok) {
       const msg = await getErrorMessage(response)
-      throw new Error(msg)
+      throw new ApiError(msg, response.status)
     }
     return response.json()
   },
@@ -64,7 +75,7 @@ export const apiClient = {
     })
     if (!response.ok) {
       const msg = await getErrorMessage(response)
-      throw new Error(msg)
+      throw new ApiError(msg, response.status)
     }
     return response.json()
   },
@@ -91,7 +102,7 @@ export const apiClient = {
     })
     if (!response.ok) {
       const msg = await getErrorMessage(response)
-      throw new Error(msg)
+      throw new ApiError(msg, response.status)
     }
     if (response.status === 204) return undefined as unknown as T
     return response.json()
@@ -124,7 +135,7 @@ export const apiClient = {
     })
     if (!response.ok) {
       const msg = await getErrorMessage(response)
-      throw new Error(msg)
+      throw new ApiError(msg, response.status)
     }
     const text = await response.text()
     try {

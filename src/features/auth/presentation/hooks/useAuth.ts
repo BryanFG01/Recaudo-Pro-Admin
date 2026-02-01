@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
   buildGetCurrentUserUseCase,
   buildResetPasswordUseCase,
@@ -31,14 +31,13 @@ export const useAuth = () => {
 
   const resetPasswordUseCase = useMemo(() => buildResetPasswordUseCase(authService), [authService])
 
-  // Handlers
-  const getUsersByBusinessId = async (businessId: string) => {
-    try {
+  // Handlers (useCallback para que no dispare efectos en páginas que dependen de esta función)
+  const getUsersByBusinessId = useCallback(
+    async (businessId: string) => {
       return await authService.getUsersByBusinessId(businessId)
-    } catch (error) {
-      throw error
-    }
-  }
+    },
+    [authService]
+  )
 
   const getBusinessByCode = async (code: string) => {
     try {

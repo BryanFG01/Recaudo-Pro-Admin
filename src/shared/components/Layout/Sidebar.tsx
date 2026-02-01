@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { cn } from '@/shared/utils/cn'
-import { CreditCard, DollarSign, LayoutDashboard, LogOut, UserCog, Users, X } from 'lucide-react'
+import { Banknote, CreditCard, DollarSign, LayoutDashboard, LogOut, UserCog, Users, Wallet, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
@@ -17,9 +17,10 @@ const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/admin/users', label: 'Admin Usuarios', icon: UserCog },
   { path: '/clients', label: 'Clientes', icon: Users },
-  // { path: '/admin/clients', label: 'Admin Clientes', icon: Users },
   { path: '/credits', label: 'Créditos', icon: CreditCard },
-  { path: '/collections', label: 'Recaudos', icon: DollarSign }
+  { path: '/collections', label: 'Recaudos', icon: DollarSign },
+  { path: '/cash-sessions', label: 'Saldo inicial', icon: Banknote },
+  { path: '/withdrawals', label: 'Retiros', icon: Wallet }
 ]
 
 interface SidebarProps {

@@ -7,6 +7,8 @@ import ClientsPage from './features/clients/presentation/pages/ClientsPage'
 import CollectionsPage from './features/collections/presentation/pages/CollectionsPage'
 import CreditsPage from './features/credits/presentation/pages/CreditsPage'
 import DashboardPage from './features/dashboard/presentation/pages/DashboardPage'
+import { CashSessionsPage } from './features/cash-sessions/presentation'
+import { WithdrawalsPage } from './features/withdrawals/presentation'
 import { Layout } from './shared/components/Layout'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -85,6 +87,26 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <CollectionsPage />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/cash-sessions"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <CashSessionsPage />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/withdrawals"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <WithdrawalsPage />
               </Layout>
             </PrivateRoute>
           }
