@@ -59,19 +59,20 @@ export class AuthRepository implements IAuthRepository {
       const list: BackendUser[] = Array.isArray(res)
         ? (res as BackendUser[])
         : res && typeof res === 'object' && 'id' in res
-          ? [res as BackendUser]
-          : []
+        ? [res as BackendUser]
+        : []
       if (list.length === 0) throw new Error('La respuesta del servidor no incluye el usuario')
 
       const matches = (u: BackendUser) =>
         (request.businessId && u.business_id === request.businessId) ||
         (request.businessCode && u.business_id === request.businessCode)
       const chosen =
-        request.businessId || request.businessCode ? (list.find(matches) ?? list[0]) : list[0]
+        request.businessId || request.businessCode ? list.find(matches) ?? list[0] : list[0]
 
       const user: User = {
         id: chosen.id,
         email: request.email.trim(),
+        password: request.password,
         name: chosen.name ?? null,
         avatar_url: null,
         business_id: chosen.business_id,
@@ -201,7 +202,9 @@ export class AuthRepository implements IAuthRepository {
       return user
     } catch (error) {
       throw new Error(
-        `Error al actualizar estado: ${error instanceof Error ? error.message : 'Error desconocido'}`
+        `Error al actualizar estado: ${
+          error instanceof Error ? error.message : 'Error desconocido'
+        }`
       )
     }
   }
