@@ -144,8 +144,8 @@ export default function CollectionsPage() {
       Monto: formatCurrency(collection.amount),
       'Fecha de Pago': formatDateTime(collection.payment_date),
       'Método de Pago': collection.payment_method || 'N/A',
-      Referencia: collection.transaction_reference || 'N/A',
-      Notas: collection.notes || 'N/A'
+      Referencia: collection.transaction_reference || 'N/A'
+      // Notas: collection.notes || 'N/A'
     }))
     exportToExcel(dataToExport, { filename: 'recaudos_recaudopro', sheetName: 'Recaudos' })
   }
@@ -196,14 +196,14 @@ export default function CollectionsPage() {
       key: 'transaction_reference',
       header: 'Referencia',
       render: (collection) => collection.transaction_reference || '-'
-    },
-    {
-      key: 'notes',
-      header: 'Notas',
-      render: (collection) => (
-        <span className="text-sm text-gray-600">{collection.notes || '-'}</span>
-      )
     }
+    // {
+    //   key: 'notes',
+    //   header: 'Notas',
+    //   render: (collection) => (
+    //     <span className="text-sm text-gray-600">{collection.notes || '-'}</span>
+    //   )
+    // }
   ]
 
   const availableClients = useMemo(

@@ -6,12 +6,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Column, DynamicTable } from '@/shared/components/DynamicTable'
-import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
-import { formatCurrency, formatDateTime } from '@/shared/utils/date'
+import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import { cn } from '@/shared/utils/cn'
+import { formatCurrency, formatDateTime } from '@/shared/utils/date'
 import { Check, Loader2, Wallet, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Withdrawal } from '../../domain/models'
@@ -59,7 +59,7 @@ export default function WithdrawalsPage() {
           setBusinessUsers(list)
           setSelectedUserId((prev) => {
             if (prev) return prev
-            return user?.id ?? (list[0]?.id ?? '')
+            return user?.id ?? list[0]?.id ?? ''
           })
         }
       })
@@ -101,9 +101,7 @@ export default function WithdrawalsPage() {
     setError(null)
     try {
       await updateWithdrawalApproval(w.id, { is_approved: true })
-      setWithdrawals((prev) =>
-        prev.map((x) => (x.id === w.id ? { ...x, is_approved: true } : x))
-      )
+      setWithdrawals((prev) => prev.map((x) => (x.id === w.id ? { ...x, is_approved: true } : x)))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al aprobar')
     } finally {
@@ -112,13 +110,12 @@ export default function WithdrawalsPage() {
   }
 
   const handleReject = async (w: Withdrawal) => {
+    if (w.is_approved) return
     setUpdatingId(w.id)
     setError(null)
     try {
       await updateWithdrawalApproval(w.id, { is_approved: false })
-      setWithdrawals((prev) =>
-        prev.map((x) => (x.id === w.id ? { ...x, is_approved: false } : x))
-      )
+      setWithdrawals((prev) => prev.map((x) => (x.id === w.id ? { ...x, is_approved: false } : x)))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al rechazar')
     } finally {
@@ -132,7 +129,8 @@ export default function WithdrawalsPage() {
       header: 'Sesión de caja',
       render: (row) => (
         <span className="text-gray-300 font-mono text-xs truncate max-w-[120px] block">
-          {row.cash_session_id || '-'}
+          {/* mostrar el nombre  */}
+          {businessUsers.find((x) => x.id === row.user_id)?.name || '-'}
         </span>
       )
     },
@@ -146,9 +144,7 @@ export default function WithdrawalsPage() {
     {
       key: 'reason',
       header: 'Motivo',
-      render: (row) => (
-        <span className="text-gray-300">{row.reason || '-'}</span>
-      )
+      render: (row) => <span className="text-gray-300">{row.reason || '-'}</span>
     },
     {
       key: 'is_approved',
@@ -180,9 +176,10 @@ export default function WithdrawalsPage() {
       header: 'Acciones',
       render: (row) => {
         const busy = updatingId === row.id
+        const approved = row.is_approved === true
         return (
           <div className="flex flex-wrap items-center gap-2">
-            {!row.is_approved && (
+            {!approved && (
               <Button
                 type="button"
                 size="sm"
@@ -201,29 +198,29 @@ export default function WithdrawalsPage() {
                 )}
               </Button>
             )}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() => handleReject(row)}
-              className={cn(
-                'min-h-[36px]',
-                row.is_approved
-                  ? 'border-amber-600 text-amber-300 hover:bg-amber-900/30'
-                  : 'border-red-600 text-red-300 hover:bg-red-900/30'
-              )}
-              aria-label="Rechazar"
-            >
-              {busy ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <X className="w-4 h-4 mr-1 shrink-0" />
-                  Rechazar
-                </>
-              )}
-            </Button>
+            {!approved && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() => handleReject(row)}
+                className="min-h-[36px] border-red-600 text-red-300 hover:bg-red-900/30"
+                aria-label="Rechazar"
+              >
+                {busy ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <X className="w-4 h-4 mr-1 shrink-0" />
+                    Rechazar
+                  </>
+                )}
+              </Button>
+            )}
+            {approved && (
+              <span className="text-green-400 text-sm">Aprobado</span>
+            )}
           </div>
         )
       }
@@ -257,9 +254,7 @@ export default function WithdrawalsPage() {
 
       {businessIdForUsers && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <label className="text-sm font-medium text-gray-300 shrink-0">
-            Usuario:
-          </label>
+          <label className="text-sm font-medium text-gray-300 shrink-0">Usuario:</label>
           {isLoadingUsers ? (
             <span className="text-gray-400 text-sm flex items-center gap-1">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -284,9 +279,7 @@ export default function WithdrawalsPage() {
                     className="text-gray-200 data-[highlighted]:bg-[#2563EB]/40"
                   >
                     {userLabel(u)}
-                    {u.id === user?.id && (
-                      <span className="ml-1 text-gray-500 text-xs">(tú)</span>
-                    )}
+                    {u.id === user?.id && <span className="ml-1 text-gray-500 text-xs">(tú)</span>}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -297,7 +290,8 @@ export default function WithdrawalsPage() {
 
       {selectedUserId && !isLoading && withdrawals.length === 0 && !error && (
         <p className="text-amber-200/90 text-sm bg-amber-900/20 border border-amber-700/40 rounded-lg p-3">
-          No hay retiros para este usuario. La consulta es <code className="text-xs bg-black/30 px-1 rounded">GET /api/withdrawals/user/{'{userId}'}</code> con el usuario seleccionado.
+          No hay retiros para este usuario{' '}
+          {userLabel(businessUsers.find((x) => x.id === selectedUserId) ?? user ?? ({} as User))}.
         </p>
       )}
 

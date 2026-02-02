@@ -10,17 +10,17 @@ export const createCollectionColumns = (): Column<CollectionWithClient>[] => [
       <span className="font-medium">
         {(collection as CollectionWithClient).clientName || collection.client_id}
       </span>
-    ),
+    )
   },
   {
     key: 'amount',
     header: 'Monto',
-    render: (collection) => formatCurrency(collection.amount),
+    render: (collection) => formatCurrency(collection.amount)
   },
   {
     key: 'payment_date',
     header: 'Fecha de Pago',
-    render: (collection) => formatDateTime(collection.payment_date),
+    render: (collection) => formatDateTime(collection.payment_date)
   },
   {
     key: 'payment_method',
@@ -39,18 +39,16 @@ export const createCollectionColumns = (): Column<CollectionWithClient>[] => [
           {method}
         </span>
       )
-    },
-  },
+    }
+  }
 
-
-  {
-    key: 'notes',
-    header: 'Notas',
-    render: (collection) => (
-      <span className="text-sm text-gray-600">
-        {collection.notes || '-'}
-      </span>
-    ),
-  },
+  // {
+  //   key: 'notes',
+  //   header: 'Notas',
+  //   render: (collection) => (
+  //     <span className="text-sm text-gray-600">
+  //       {collection.notes || '-'}
+  //     </span>
+  //   ),
+  // },
 ]
-
