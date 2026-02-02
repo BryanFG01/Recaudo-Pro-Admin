@@ -146,6 +146,8 @@ export default function CreditsPage() {
       'ID Crédito': credit.id,
       Cliente: credit.client_id ? clientNameById[credit.client_id] ?? credit.client_id : '-',
       'Monto Total': formatCurrency(credit.total_amount),
+      'Tasa interés': credit.interest_rate != null ? `${Number(credit.interest_rate)}%` : '-',
+      'Total con interés': credit.total_interest != null ? formatCurrency(credit.total_interest) : '-',
       'Saldo Restante': formatCurrency(credit.total_balance),
       'Valor Cuota': formatCurrency(credit.installment_amount),
       'Cuotas Pagadas': `${credit.paid_installments} / ${credit.total_installments}`,
@@ -170,6 +172,28 @@ export default function CreditsPage() {
       key: 'total_amount',
       header: 'Monto Total',
       render: (credit) => formatCurrency(credit.total_amount)
+    },
+    {
+      key: 'interest_rate',
+      header: 'Tasa interés',
+      render: (credit) => (
+        <span className="text-gray-300">
+          {credit.interest_rate != null
+            ? `${Number(credit.interest_rate)}%`
+            : '-'}
+        </span>
+      )
+    },
+    {
+      key: 'total_interest',
+      header: 'Total con interés',
+      render: (credit) => (
+        <span className="text-gray-300 font-medium">
+          {credit.total_interest != null
+            ? formatCurrency(credit.total_interest)
+            : '-'}
+        </span>
+      )
     },
     {
       key: 'total_balance',

@@ -13,6 +13,22 @@ export const createCreditColumns = (): Column<Credit>[] => [
     render: (credit) => formatCurrency(credit.total_amount as number),
   },
   {
+    key: 'interest_rate',
+    header: 'Tasa interés',
+    render: (credit) =>
+      credit.interest_rate != null
+        ? `${Number(credit.interest_rate)}%`
+        : '-',
+  },
+  {
+    key: 'total_interest',
+    header: 'Total con interés',
+    render: (credit) =>
+      credit.total_interest != null
+        ? formatCurrency(credit.total_interest as number)
+        : '-',
+  },
+  {
     key: 'total_balance',
     header: 'Saldo Restante',
     render: (credit) => {

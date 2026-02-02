@@ -2,6 +2,10 @@ export interface Credit {
   id: string
   client_id: string
   total_amount: number
+  /** Tasa de interés (ej. 0.05 = 5%). */
+  interest_rate?: number | null
+  /** Total con interés aplicado. */
+  total_interest?: number | null
   installment_amount: number
   total_installments: number
   paid_installments: number
@@ -13,7 +17,6 @@ export interface Credit {
   business_id: string
   created_at: string
   updated_at: string
-
 }
 
 export interface CreateCreditRequest {
