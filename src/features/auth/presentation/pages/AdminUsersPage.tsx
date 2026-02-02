@@ -164,7 +164,11 @@ export default function AdminUsersPage() {
     {
       key: 'password',
       header: 'Contraseña',
-      render: (user) => <span className="text-gray-300">{user.number || '-'}</span>
+      render: (user) => (
+        <span className="text-gray-300 font-mono text-sm">
+          {user.password ?? '-'}
+        </span>
+      )
     },
     {
       key: 'commission_percentage',

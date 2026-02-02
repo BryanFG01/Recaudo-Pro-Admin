@@ -112,10 +112,11 @@ export class AuthRepository implements IAuthRepository {
       )
       const list = Array.isArray(raw) ? raw : []
       // Normalizar first_name (API puede enviar first_name o firstName) y quitar password
-      return list.map(({ password: _p, firstName, ...u }) => {
+      return list.map(({ password: password, firstName, ...u }) => {
         const user = u as User
         return {
           ...user,
+          password: password ?? null,
           first_name: user.first_name ?? firstName ?? null
         }
       })
