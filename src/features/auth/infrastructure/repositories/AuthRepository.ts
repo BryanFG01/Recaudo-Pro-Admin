@@ -31,9 +31,9 @@ export class AuthRepository implements IAuthRepository {
   /**
    * Inicio de sesión super-admin.
    * POST /api/super-admins/{businessCode}/users-by-credentials
-   * - businessCode en la URL (viene del paso 1, ej. ARG01, NEG003).
+   * - businessCode en la URL (viene del paso 1, ej. ARG01, Quantim).
    * - Body: { email, password }.
-   * Respuesta: array o un usuario { id, number, name, role, phone, employee_code, is_active, business_id }.
+   * Respuesta 201: { user?: {...} } o array o objeto con id. Acepta snake_case y camelCase.
    */
   async signInWithEmail(request: SignInRequest): Promise<SignInResponse> {
     try {
@@ -41,33 +41,84 @@ export class AuthRepository implements IAuthRepository {
       if (!code) throw new Error('Código de negocio es requerido para iniciar sesión.')
 
       const path = `/api/super-admins/${encodeURIComponent(code)}/users-by-credentials`
-      const res = await apiClient.post<unknown>(path, {
+      const body = {
         email: request.email.trim(),
         password: request.password
+      }
+
+      let res: unknown
+      try {
+        res = await apiClient.post<unknown>(path, body)
+      } catch (postErr) {
+        const msg = postErr instanceof Error ? postErr.message : String(postErr)
+        if (/unauthorized|401|403|forbidden|credenciales|incorrecto/i.test(msg)) {
+          throw new Error('Correo o contraseña incorrectos.')
+        }
+        throw new Error('Error al iniciar sesión. Intentá de nuevo.')
+      }
+
+      const raw = (r: unknown): Record<string, unknown> | null =>
+        r && typeof r === 'object' && r !== null ? (r as Record<string, unknown>) : null
+
+      const pick = (o: Record<string, unknown>, key: string, alt?: string): unknown =>
+        o[key] ?? (alt ? o[alt] : undefined)
+
+      const toBackendUser = (o: Record<string, unknown>) => ({
+        id: String(pick(o, 'id') ?? ''),
+        number: pick(o, 'number') as string | undefined,
+        name: (pick(o, 'name') as string | null) ?? null,
+        role: String(pick(o, 'role') ?? 'admin'),
+        phone: (pick(o, 'phone') as string | null) ?? null,
+        employee_code: (pick(o, 'employee_code', 'employeeCode') as string | null) ?? null,
+        is_active: pick(o, 'is_active', 'isActive') === true,
+        business_id: String(pick(o, 'business_id', 'businessId') ?? ''),
+        created_at: pick(o, 'created_at', 'createdAt') as string | undefined,
+        updated_at: pick(o, 'updated_at', 'updatedAt') as string | undefined
       })
 
-      type BackendUser = {
-        id: string
-        number?: string
-        name: string | null
-        role: string
-        phone?: string | null
-        employee_code?: string | null
-        is_active: boolean
-        business_id: string
+      let list: ReturnType<typeof toBackendUser>[] = []
+      const obj = raw(res)
+      if (Array.isArray(res)) {
+        list = (res as Record<string, unknown>[]).map((item) => toBackendUser(item))
+      } else if (obj) {
+        if (obj.user && typeof obj.user === 'object' && obj.user !== null) {
+          list = [toBackendUser(obj.user as Record<string, unknown>)]
+        } else if (obj.data && typeof obj.data === 'object' && obj.data !== null) {
+          const data = obj.data
+          list = Array.isArray(data)
+            ? (data as Record<string, unknown>[]).map((item) => toBackendUser(item))
+            : [toBackendUser(data as Record<string, unknown>)]
+        } else if ('id' in obj && obj.id) {
+          list = [toBackendUser(obj)]
+        }
       }
-      const list: BackendUser[] = Array.isArray(res)
-        ? (res as BackendUser[])
-        : res && typeof res === 'object' && 'id' in res
-        ? [res as BackendUser]
-        : []
-      if (list.length === 0) throw new Error('La respuesta del servidor no incluye el usuario')
 
-      const matches = (u: BackendUser) =>
-        (request.businessId && u.business_id === request.businessId) ||
-        (request.businessCode && u.business_id === request.businessCode)
-      const chosen =
-        request.businessId || request.businessCode ? list.find(matches) ?? list[0] : list[0]
+      const businessIdFromRequest = request.businessId ?? request.businessCode ?? code ?? ''
+
+      if (list.length === 0) {
+        // Respuesta vacía []: super admin sin usuarios; permitir entrar para crear usuarios
+        const user: User = {
+          id: `super-${request.email.trim()}`,
+          email: request.email.trim(),
+          password: request.password,
+          name: null,
+          avatar_url: null,
+          business_id: businessIdFromRequest,
+          employee_code: null,
+          phone: null,
+          role: 'admin',
+          commission_percentage: null,
+          is_active: true,
+          created_at: '',
+          updated_at: ''
+        }
+        return { user, success: true }
+      }
+
+      const chosen = list[0]
+      if (!chosen.id) throw new Error('La respuesta del servidor no incluye el usuario')
+
+      const chosenBusinessId = chosen.business_id || businessIdFromRequest
 
       const user: User = {
         id: chosen.id,
@@ -75,19 +126,18 @@ export class AuthRepository implements IAuthRepository {
         password: request.password,
         name: chosen.name ?? null,
         avatar_url: null,
-        business_id: chosen.business_id,
+        business_id: chosenBusinessId,
         employee_code: chosen.employee_code ?? null,
         phone: chosen.phone ?? null,
-        role: chosen.role as User['role'],
+        role: (chosen.role as User['role']) || 'admin',
         commission_percentage: null,
         is_active: chosen.is_active,
-        created_at: (chosen as { created_at?: string }).created_at ?? '',
-        updated_at: (chosen as { updated_at?: string }).updated_at ?? ''
+        created_at: chosen.created_at ?? '',
+        updated_at: chosen.updated_at ?? ''
       }
       return { user, success: true }
     } catch (error) {
       const msg = error instanceof Error ? error.message : ''
-      // No exponer detalles internos, URLs ni mensajes del backend al usuario
       if (/unauthorized|401|403|forbidden|credenciales|incorrecto/i.test(msg)) {
         throw new Error('Correo o contraseña incorrectos.')
       }

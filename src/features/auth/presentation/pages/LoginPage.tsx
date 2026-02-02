@@ -1,16 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Eye,
-  EyeOff,
-  HelpCircle,
-  Loader2,
-  Lock,
-  Mail,
-  Search,
-  Wallet,
-} from 'lucide-react'
+import { Eye, EyeOff, HelpCircle, Loader2, Lock, Mail, Search, Wallet } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -67,13 +58,11 @@ export default function LoginPage() {
         return
       }
 
-      const businessUsers = await getUsersByBusinessId(business.id)
-      if (businessUsers.length === 0) {
-        setError(`No hay usuarios registrados para el negocio: ${code}`)
-        clearTimeout(loadingTimeout)
-        setIsLoading(false)
-        setShowLoading(false)
-        return
+      // No bloquear si no hay usuarios o falla la lista: el super admin se crea en BD y crea los usuarios
+      try {
+        await getUsersByBusinessId(business.id)
+      } catch {
+        // Ignorar: permitir continuar al login (super admin entra con email/password)
       }
 
       setVerifiedBusinessCode(business.code)
@@ -109,7 +98,7 @@ export default function LoginPage() {
         email: email.trim(),
         password,
         businessId: businessId ?? undefined,
-        businessCode: verifiedBusinessCode || undefined,
+        businessCode: verifiedBusinessCode || undefined
       })
       if (!success) {
         setError(signError || 'Credenciales incorrectas')
@@ -293,11 +282,7 @@ export default function LoginPage() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-300 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>

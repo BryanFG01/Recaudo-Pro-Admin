@@ -22,10 +22,7 @@ function buildUrl(endpoint: string): string {
 
 /** Error con código HTTP para que los repositorios/páginas puedan distinguir 404, etc. */
 export class ApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number
-  ) {
+  constructor(message: string, public readonly status: number) {
     super(message)
     this.name = 'ApiError'
   }
@@ -52,12 +49,17 @@ export const apiClient = {
     return response.json()
   },
 
-  async post<T>(endpoint: string, data?: unknown): Promise<T> {
+  async post<T>(
+    endpoint: string,
+    data?: unknown,
+    options?: { credentials?: RequestCredentials }
+  ): Promise<T> {
     const url = buildUrl(endpoint)
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: data ? JSON.stringify(data) : undefined
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: options?.credentials
     })
     if (!response.ok) {
       const msg = await getErrorMessage(response)
@@ -141,8 +143,10 @@ export const apiClient = {
     try {
       const data = JSON.parse(text) as unknown
       if (typeof data === 'string') return data
-      if (data && typeof (data as { url?: string }).url === 'string') return (data as { url: string }).url
-      if (data && typeof (data as { path?: string }).path === 'string') return (data as { path: string }).path
+      if (data && typeof (data as { url?: string }).url === 'string')
+        return (data as { url: string }).url
+      if (data && typeof (data as { path?: string }).path === 'string')
+        return (data as { path: string }).path
     } catch {
       /* no es JSON */
     }

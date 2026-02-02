@@ -75,17 +75,22 @@ export default function DashboardPage() {
   if (!stats) return null
 
   const btnBase =
-    'px-4 py-2 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-[#0f171a] focus:ring-offset-2 focus:ring-offset-[#1a2436]'
-  const btnActive = 'bg-[#0f171a] text-white'
+    'px-3 sm:px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-sm font-medium shrink-0 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-[#1a2436]'
+  const btnActive = 'bg-[#2563EB] text-white border border-transparent'
   const btnInactive =
     'bg-[#0f171a] border border-gray-600 text-gray-300 hover:bg-white/10 hover:border-gray-500'
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <div className="flex gap-2" role="group" aria-label="Filtro de período">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white shrink-0">Dashboard</h1>
+        <div
+          className="flex flex-wrap items-center gap-2 sm:gap-3"
+          role="group"
+          aria-label="Filtro de período"
+        >
           <button
+            type="button"
             onClick={() => setSelectedPeriod(0)}
             className={`${btnBase} ${selectedPeriod === 0 ? btnActive : btnInactive}`}
             aria-pressed={selectedPeriod === 0}
@@ -93,6 +98,7 @@ export default function DashboardPage() {
             Hoy
           </button>
           <button
+            type="button"
             onClick={() => setSelectedPeriod(1)}
             className={`${btnBase} ${selectedPeriod === 1 ? btnActive : btnInactive}`}
             aria-pressed={selectedPeriod === 1}
@@ -100,6 +106,7 @@ export default function DashboardPage() {
             Semana
           </button>
           <button
+            type="button"
             onClick={() => setSelectedPeriod(2)}
             className={`${btnBase} ${selectedPeriod === 2 ? btnActive : btnInactive}`}
             aria-pressed={selectedPeriod === 2}
@@ -110,7 +117,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats principales: Total clientes, Total créditos, Total recaudo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <StatsCard
           title="Total de Clientes"
           value={stats.totalClients}
@@ -133,7 +140,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats adicionales: Créditos activos, Clientes en mora */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <StatsCard
           title="Créditos Activos"
           value={stats.activeCredits}
@@ -168,7 +175,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <CollectionChart
           data={stats.weeklyCollectionData}
           period={selectedPeriod === 0 ? 'day' : selectedPeriod === 1 ? 'week' : 'month'}
