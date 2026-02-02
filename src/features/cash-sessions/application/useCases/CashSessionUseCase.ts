@@ -1,6 +1,7 @@
 import { CashSessionService } from '../../domain/services/CashSessionService'
 import {
   CashSession,
+  CashSessionFlow,
   CreateCashSessionRequest,
   UpdateCashSessionRequest
 } from '../../domain/models'
@@ -32,6 +33,12 @@ export const buildGetCashSessionsByBusinessIdUseCase = (service: CashSessionServ
 export const buildGetCashSessionsByUserIdUseCase = (service: CashSessionService) => {
   return async (userId: string): Promise<CashSession[]> => {
     return service.getByUserId(userId)
+  }
+}
+
+export const buildGetCashSessionFlowUseCase = (service: CashSessionService) => {
+  return async (id: string): Promise<CashSessionFlow | null> => {
+    return service.getFlow(id)
   }
 }
 

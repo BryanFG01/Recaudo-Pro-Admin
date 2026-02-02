@@ -1,6 +1,7 @@
 import { ICashSessionRepository } from '../port'
 import {
   CashSession,
+  CashSessionFlow,
   CreateCashSessionRequest,
   UpdateCashSessionRequest
 } from '../models'
@@ -35,6 +36,11 @@ export class CashSessionService {
   async getByUserId(userId: string): Promise<CashSession[]> {
     if (!userId) throw new Error('user_id es requerido')
     return this.repository.getByUserId(userId)
+  }
+
+  async getFlow(id: string): Promise<CashSessionFlow | null> {
+    if (!id) throw new Error('ID de sesión es requerido')
+    return this.repository.getFlow(id)
   }
 
   async delete(id: string): Promise<void> {

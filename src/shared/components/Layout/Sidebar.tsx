@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { cn } from '@/shared/utils/cn'
-import { Banknote, CreditCard, DollarSign, LayoutDashboard, LogOut, UserCog, Users, Wallet, X } from 'lucide-react'
+import { Banknote, CreditCard, DollarSign, LayoutDashboard, LogOut, TrendingUp, UserCog, Users, Wallet, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
@@ -20,6 +20,7 @@ const menuItems = [
   { path: '/credits', label: 'Créditos', icon: CreditCard },
   { path: '/collections', label: 'Recaudos', icon: DollarSign },
   { path: '/cash-sessions', label: 'Saldo inicial', icon: Banknote },
+  { path: '/cash-sessions/flow', label: 'Seguimiento de saldo', icon: TrendingUp },
   { path: '/withdrawals', label: 'Retiros', icon: Wallet }
 ]
 

@@ -7,6 +7,7 @@ import {
   buildGetCashSessionByIdUseCase,
   buildGetCashSessionsByBusinessIdUseCase,
   buildGetCashSessionsByUserIdUseCase,
+  buildGetCashSessionFlowUseCase,
   buildDeleteCashSessionUseCase
 } from '../../application/useCases'
 import {
@@ -40,6 +41,10 @@ export function useCashSessions() {
     () => buildGetCashSessionsByUserIdUseCase(service),
     [service]
   )
+  const getCashSessionFlowFn = useMemo(
+    () => buildGetCashSessionFlowUseCase(service),
+    [service]
+  )
   const deleteCashSessionFn = useMemo(
     () => buildDeleteCashSessionUseCase(service),
     [service]
@@ -65,6 +70,10 @@ export function useCashSessions() {
     (userId: string) => getCashSessionsByUserIdFn(userId),
     [getCashSessionsByUserIdFn]
   )
+  const getCashSessionFlow = useCallback(
+    (id: string) => getCashSessionFlowFn(id),
+    [getCashSessionFlowFn]
+  )
   const deleteCashSession = useCallback(
     (id: string) => deleteCashSessionFn(id),
     [deleteCashSessionFn]
@@ -76,6 +85,7 @@ export function useCashSessions() {
     getCashSessionById,
     getCashSessionsByBusinessId,
     getCashSessionsByUserId,
+    getCashSessionFlow,
     deleteCashSession
   }
 }
