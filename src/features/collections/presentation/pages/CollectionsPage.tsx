@@ -5,6 +5,7 @@ import { ClientRepository } from '@/features/clients/infrastructure/repositories
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
 import { CollectionFilters } from '@/shared/types/filters'
+import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDateTime } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
 import { Download } from 'lucide-react'
@@ -17,6 +18,7 @@ export default function CollectionsPage() {
   const { businessId, businessCode, user } = useAuthStore()
   const [filteredCollections, setFilteredCollections] = useState<CollectionWithUserEmail[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isClientsLoading, setIsClientsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [clientsList, setClientsList] = useState<Client[]>([])
   const [filters, setFilters] = useState<FilterValues>({
@@ -49,17 +51,19 @@ export default function CollectionsPage() {
 
   const loadClients = async () => {
     if (!currentBusinessId) return
+    setIsClientsLoading(true)
     try {
       const repo = new ClientRepository()
-      const clients = await repo.getClientsWithCredits(
-        currentBusinessId,
-        user?.id ?? '',
-        undefined,
-        businessCode ?? undefined
-      )
-      setClientsList(clients as unknown as Client[])
+      const clients = await repo.getClientsWithFilters({
+        businessId: currentBusinessId,
+        businessCode: businessCode ?? undefined,
+        userId: user?.id || ''
+      })
+      setClientsList(clients as any)
     } catch (err) {
-      console.error('Error al cargar clientes:', err)
+      console.error('Error al cargar catálogo de clientes:', err)
+    } finally {
+      setIsClientsLoading(false)
     }
   }
 
@@ -87,39 +91,34 @@ export default function CollectionsPage() {
         payment_method: normalizePaymentMethodForApi(filters.payment_method)
       }
 
-      let data = await collectionService.getCollectionsWithFilters(collectionFilters)
+      const data = await collectionService.getCollectionsWithFilters(collectionFilters)
 
-      // Filtrado en cliente por si el backend no aplica clientId o payment_method
+      // SECURITY & Business Filter
+      let filtered = data.filter((c) => c.business_id === currentBusinessId)
+
+      // MANUAL FILTERING (Double verification for business logic)
       if (filters.clientId?.trim()) {
-        data = data.filter((c) => (c.client_id || '').trim() === filters.clientId?.trim())
+        filtered = filtered.filter((c) => (c.client_id || '').trim() === filters.clientId?.trim())
       }
       if (filters.payment_method?.trim()) {
         const expectedPm = normalizePaymentMethodForApi(filters.payment_method)
         if (expectedPm) {
-          data = data.filter((c) => matchPaymentMethod(c.payment_method, expectedPm))
+          filtered = filtered.filter((c) => {
+            const m = (c.payment_method || '').toLowerCase().trim()
+            const e = expectedPm.toLowerCase().trim()
+            if (e === 'efectivo') return m === 'efectivo'
+            if (e === 'transferencia') return ['transferencia', 'transfer', 'transacción', 'transaccion'].includes(m)
+            return m === e
+          })
         }
       }
 
-      setFilteredCollections(data)
+      setFilteredCollections(filtered)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar recaudos')
     } finally {
       setIsLoading(false)
     }
-  }
-
-  /** Compara payment_method del recaudo con el valor esperado (efectivo | transferencia). */
-  function matchPaymentMethod(
-    collectionMethod: string | null | undefined,
-    expected: string
-  ): boolean {
-    if (!collectionMethod) return false
-    const m = collectionMethod.toLowerCase().trim()
-    const e = expected.toLowerCase().trim()
-    if (e === 'efectivo') return m === 'efectivo'
-    if (e === 'transferencia')
-      return ['transferencia', 'transfer', 'transacción', 'transaccion'].includes(m)
-    return m === e
   }
 
   const handleFilterChange = (newFilters: FilterValues) => {
@@ -136,17 +135,16 @@ export default function CollectionsPage() {
   }
 
   const handleExport = () => {
-    const dataToExport = filteredCollections.map((collection) => ({
-      // 'ID Recaudo': collection.id,
-      Cliente: collection.client_id
-        ? clientNameById[collection.client_id] ?? collection.name ?? '-'
-        : collection.name ?? '-',
-      Monto: formatCurrency(collection.amount),
-      'Fecha de Pago': formatDateTime(collection.payment_date),
-      'Método de Pago': collection.payment_method || 'N/A',
-      Referencia: collection.transaction_reference || 'N/A'
-      // Notas: collection.notes || 'N/A'
-    }))
+    const dataToExport = filteredCollections.map((collection: any) => {
+      const clientName = collection.clients?.name || collection.client_name || clientNameById[collection.client_id] || collection.name || collection.client_id
+      return {
+        Cliente: clientName,
+        Monto: formatCurrency(collection.amount),
+        'Fecha de Pago': formatDateTime(collection.payment_date),
+        'Método de Pago': collection.payment_method || 'N/A',
+        Referencia: collection.transaction_reference || 'N/A'
+      }
+    })
     exportToExcel(dataToExport, { filename: 'recaudos_recaudopro', sheetName: 'Recaudos' })
   }
 
@@ -154,39 +152,45 @@ export default function CollectionsPage() {
     {
       key: 'client_id',
       header: 'Cliente',
-      className: 'font-medium',
-      render: (collection) => (
-        <span className="text-sm text-gray-200 font-medium">
-          {collection.client_id
-            ? clientNameById[collection.client_id] ?? collection.name ?? '-'
-            : collection.name ?? '-'}
-        </span>
-      )
+      className: 'font-bold',
+      render: (collection: any) => {
+        const clientName = collection.clients?.name || collection.client_name || clientNameById[collection.client_id]
+        return (
+          <span className="text-sm text-info font-bold">
+            {clientName || collection.name || collection.client_id || '-'}
+          </span>
+        )
+      }
     },
     {
       key: 'amount',
       header: 'Monto',
+      isNumeric: true,
       render: (collection) => formatCurrency(collection.amount)
     },
     {
       key: 'payment_date',
-      header: 'Fecha de Pago',
+      header: 'Fecha Pago',
+      className: 'text-muted-foreground/60',
       render: (collection) => formatDateTime(collection.payment_date)
     },
     {
       key: 'payment_method',
-      header: 'Método de Pago',
+      header: 'Método',
+      className: 'text-center',
       render: (collection) => {
-        const method = collection.payment_method
+        const method = collection.payment_method?.toLowerCase()
         if (!method) return '-'
         return (
           <span
-            className={`px-2 py-1 rounded text-xs font-medium ${
-              method.toLowerCase() === 'efectivo'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-blue-100 text-blue-800'
-            }`}
+            className={cn(
+              'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5',
+              method === 'efectivo'
+                ? 'bg-success/10 text-success border border-success/20'
+                : 'bg-primary/10 text-primary border border-primary/20'
+            )}
           >
+            <span className={cn('w-1.5 h-1.5 rounded-full', method === 'efectivo' ? 'bg-success' : 'bg-primary')} />
             {method}
           </span>
         )
@@ -195,15 +199,9 @@ export default function CollectionsPage() {
     {
       key: 'transaction_reference',
       header: 'Referencia',
+      className: 'font-mono text-[10px] text-muted-foreground/40',
       render: (collection) => collection.transaction_reference || '-'
     }
-    // {
-    //   key: 'notes',
-    //   header: 'Notas',
-    //   render: (collection) => (
-    //     <span className="text-sm text-gray-600">{collection.notes || '-'}</span>
-    //   )
-    // }
   ]
 
   const availableClients = useMemo(
@@ -214,24 +212,29 @@ export default function CollectionsPage() {
   if (!currentBusinessId) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-gray-600">No hay business_id disponible. Por favor, inicia sesión.</p>
+         <p className="text-muted-foreground/60 italic font-medium text-center">
+          Inicia sesión para visualizar <br/> el registro de recaudos.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      <div className="flex-shrink-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white min-w-0">Recaudos</h1>
+    <div className="flex flex-col h-full space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white min-w-0">Registro de Recaudos</h1>
+          <p className="text-sm text-muted-foreground/60">Flujo histórico de entradas y abonos a capital por cliente.</p>
+        </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <Button
             onClick={handleExport}
             variant="outline"
             disabled={filteredCollections.length === 0}
-            className="min-h-[44px] border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
+            className="min-h-[44px] px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
           >
-            <Download className="w-4 h-4 mr-2 shrink-0" />
-            Exportar a Excel
+            <Download className="w-4 h-4 mr-2" aria-hidden="true" />
+            Exportar XLS
           </Button>
         </div>
       </div>
@@ -248,11 +251,11 @@ export default function CollectionsPage() {
 
       <div className="flex-1 min-h-0">
         <DynamicTable
-          data={filteredCollections}
+          data={isClientsLoading ? [] : filteredCollections}
           columns={columns}
-          isLoading={isLoading}
+          isLoading={isLoading || isClientsLoading}
           error={error}
-          emptyMessage="No hay recaudos disponibles"
+          emptyMessage="No se han registrado recaudos en este período"
         />
       </div>
     </div>

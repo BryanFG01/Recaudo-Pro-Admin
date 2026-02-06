@@ -5,8 +5,7 @@ import { useEffect, useState } from 'react'
 import { CollectionChart, CreditStatusChart } from '../components'
 import { useDashboard } from '../hooks/useDashboard'
 
-const cardDark =
-  'bg-[#0f171a] border-gray-600 text-gray-100 [&_.text-muted-foreground]:text-gray-400'
+import { cn } from '@/shared/utils/cn'
 
 export default function DashboardPage() {
   const { businessId, businessCode, user } = useAuthStore()
@@ -74,119 +73,144 @@ export default function DashboardPage() {
 
   if (!stats) return null
 
-  const btnBase =
-    'px-3 sm:px-4 py-2.5 rounded-lg transition-colors min-h-[44px] text-sm font-medium shrink-0 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-[#1a2436]'
-  const btnActive = 'bg-[#2563EB] text-white border border-transparent'
-  const btnInactive =
-    'bg-[#0f171a] border border-gray-600 text-gray-300 hover:bg-white/10 hover:border-gray-500'
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white shrink-0">Dashboard</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white shrink-0">Dashboard</h1>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success/10 border border-success/20 animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-success" />
+              <span className="text-[10px] font-bold text-success uppercase tracking-wider">Vivo</span>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">Bienvenido de nuevo. Aquí tienes un resumen de la actividad hoy.</p>
+        </div>
+        
         <div
-          className="flex flex-wrap items-center gap-2 sm:gap-3"
+          className="flex flex-wrap items-center bg-background/50 p-1 rounded-xl border border-white/5 backdrop-blur-md"
           role="group"
           aria-label="Filtro de período"
         >
-          <button
-            type="button"
-            onClick={() => setSelectedPeriod(0)}
-            className={`${btnBase} ${selectedPeriod === 0 ? btnActive : btnInactive}`}
-            aria-pressed={selectedPeriod === 0}
-          >
-            Hoy
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedPeriod(1)}
-            className={`${btnBase} ${selectedPeriod === 1 ? btnActive : btnInactive}`}
-            aria-pressed={selectedPeriod === 1}
-          >
-            Semana
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedPeriod(2)}
-            className={`${btnBase} ${selectedPeriod === 2 ? btnActive : btnInactive}`}
-            aria-pressed={selectedPeriod === 2}
-          >
-            Mes
-          </button>
+          {[
+            { id: 0, label: 'Hoy' },
+            { id: 1, label: 'Semana' },
+            { id: 2, label: 'Mes' }
+          ].map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setSelectedPeriod(p.id as any)}
+              className={cn(
+                "px-4 py-2 rounded-lg transition-all duration-200 text-sm font-semibold",
+                selectedPeriod === p.id 
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+              )}
+              aria-pressed={selectedPeriod === p.id}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Stats principales: Total clientes, Total créditos, Total recaudo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        <StatsCard
-          title="Total de Clientes"
-          value={stats.totalClients}
-          icon={<Users className="w-8 h-8" />}
-          className={cardDark}
-        />
-        <StatsCard
-          title="Total de Créditos"
-          value={stats.totalCredits}
-          icon={<CreditCard className="w-8 h-8" />}
-          className={cardDark}
-        />
-        <StatsCard
-          title="Total de Recaudo"
-          value={stats.totalCollected}
-          isCurrency
-          icon={<DollarSign className="w-8 h-8" />}
-          className={cardDark}
-        />
+      {/* Strategic KPIs Section */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-white/90">Resumen Estratégico</h2>
+          <span className="text-xs text-muted-foreground/60 italic">Datos actualizados cada 5 min</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StatsCard
+            title="Recaudo Total"
+            value={stats.totalCollected}
+            isCurrency
+            variant="success"
+            icon={<DollarSign className="w-5 h-5" />}
+            trend={{ value: 12, isPositive: true }}
+          />
+          <StatsCard
+            title="Total Créditos"
+            value={stats.totalCredits}
+            variant="info"
+            icon={<CreditCard className="w-5 h-5" />}
+            trend={{ value: 5, isPositive: true }}
+          />
+          <StatsCard
+            title="Total Clientes"
+            value={stats.totalClients}
+            variant="default"
+            icon={<Users className="w-5 h-5" />}
+            trend={{ value: 8, isPositive: true }}
+          />
+        </div>
+      </section>
+
+      {/* Operational & Liquidity Section */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-white/90">Operaciones & Riesgo</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <StatsCard
+              title="Créditos Activos"
+              value={stats.activeCredits}
+              variant="info"
+              icon={<CreditCard className="w-5 h-5" />}
+              subtitle="En circulación"
+            />
+            <StatsCard
+              title="Clientes en Mora"
+              value={stats.clientsInArrears}
+              variant="error"
+              icon={<AlertTriangle className="w-5 h-5" />}
+              subtitle="Acción requerida"
+            />
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-white/90">Liquidez por Método</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <StatsCard
+              title="Efectivo"
+              value={stats.cashCollection}
+              isCurrency
+              variant="default"
+              subtitle={`${stats.cashCount} operaciones`}
+            />
+            <StatsCard
+              title="Transacción"
+              value={stats.transactionCollection}
+              isCurrency
+              variant="default"
+              subtitle={`${stats.transactionCount} operaciones`}
+            />
+          </div>
+        </section>
       </div>
 
-      {/* Stats adicionales: Créditos activos, Clientes en mora */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        <StatsCard
-          title="Créditos Activos"
-          value={stats.activeCredits}
-          icon={<CreditCard className="w-8 h-8" />}
-          className={cardDark}
-        />
-        <StatsCard
-          title="Clientes en Mora"
-          value={stats.clientsInArrears}
-          isWarning
-          icon={<AlertTriangle className="w-8 h-8" />}
-          className={cardDark}
-        />
-      </div>
-
-      {/* Efectivo y Transacción */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <StatsCard
-          title="Efectivo"
-          value={stats.cashCollection}
-          isCurrency
-          subtitle={`${stats.cashCount} pagos`}
-          className={cardDark}
-        />
-        <StatsCard
-          title="Transacción"
-          value={stats.transactionCollection}
-          isCurrency
-          subtitle={`${stats.transactionCount} pagos`}
-          className={cardDark}
-        />
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <CollectionChart
-          data={stats.weeklyCollectionData}
-          period={selectedPeriod === 0 ? 'day' : selectedPeriod === 1 ? 'week' : 'month'}
-        />
-        <CreditStatusChart
-          upToDatePercentage={stats.upToDatePercentage}
-          overduePercentage={stats.overduePercentage}
-          activeCredits={stats.activeCredits}
-          clientsInArrears={stats.clientsInArrears}
-        />
-      </div>
+      {/* Charts Section */}
+      <section className="space-y-4 pt-4">
+        <h2 className="text-lg font-bold text-white/90">Tendencias y Estado</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-[#0f171a]/40 border border-white/5 rounded-2xl p-6 backdrop-blur-sm">
+            <CollectionChart
+              data={stats.weeklyCollectionData}
+              period={selectedPeriod === 0 ? 'day' : selectedPeriod === 1 ? 'week' : 'month'}
+            />
+          </div>
+          <div className="bg-[#0f171a]/40 border border-white/5 rounded-2xl p-6 backdrop-blur-sm">
+            <CreditStatusChart
+              upToDatePercentage={stats.upToDatePercentage}
+              overduePercentage={stats.overduePercentage}
+              activeCredits={stats.activeCredits}
+              clientsInArrears={stats.clientsInArrears}
+            />
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

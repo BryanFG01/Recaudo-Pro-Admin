@@ -139,13 +139,13 @@ export default function ClientsPage() {
   }
 
   const columns: Column<ClientWithCredits>[] = [
-    { key: 'name', header: 'Nombre' },
-    { key: 'phone', header: 'Teléfono' },
+    { key: 'name', header: 'Nombre', className: 'font-bold' },
+    { key: 'phone', header: 'Teléfono', className: 'text-muted-foreground/60' },
     {
       key: 'user_id',
       header: 'Asignado a',
       render: (client) => (
-        <span className="text-sm text-gray-200 font-medium">
+        <span className="text-sm text-info font-semibold">
           {client.user_id
             ? (userNameById[client.user_id] ?? client.user_email ?? 'Sin asignar')
             : client.user_email || 'Sin asignar'}
@@ -153,21 +153,23 @@ export default function ClientsPage() {
       )
     },
     { key: 'document_id', header: 'Documento', render: (client) => client.document_id || '-' },
-    { key: 'total_credits', header: 'Total Préstamos' },
+    { key: 'total_credits', header: 'Total Préstamos', isNumeric: true },
     {
       key: 'total_amount',
       header: 'Monto Total',
+      isNumeric: true,
       render: (client) => formatCurrency(client.total_amount)
     },
     {
       key: 'total_balance',
       header: 'Saldo Pendiente',
+      isNumeric: true,
       render: (client) => (
         <span
           className={
             client.total_balance === 0
-              ? 'text-green-300 font-semibold'
-              : 'text-red-300 font-semibold'
+              ? 'text-success font-black'
+              : 'text-error font-black'
           }
         >
           {formatCurrency(client.total_balance)}
@@ -177,6 +179,7 @@ export default function ClientsPage() {
     {
       key: 'created_at',
       header: 'Fecha Creación',
+      className: 'text-muted-foreground/50',
       render: (client) => formatDate(client.created_at)
     }
   ]
@@ -198,19 +201,22 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      <div className="flex-shrink-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white min-w-0">Clientes</h1>
+    <div className="flex flex-col h-full space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white min-w-0">Administración de Clientes</h1>
+          <p className="text-sm text-muted-foreground/60">Gestiona y visualiza la salud financiera de tu cartera de clientes.</p>
+        </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={handleExport}
             disabled={filteredClients.length === 0}
-            className="min-h-[44px] border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
+            className="min-h-[44px] px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
             aria-label="Exportar clientes a Excel"
           >
-            <Download className="w-4 h-4 mr-2 shrink-0" aria-hidden="true" />
-            Exportar a Excel
+            <Download className="w-4 h-4 mr-2" aria-hidden="true" />
+            Exportar XLS
           </Button>
         </div>
       </div>

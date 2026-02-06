@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
 } from '@/components/ui/select'
 import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
@@ -17,8 +17,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { CashSession, CashSessionFlow } from '../../domain/models'
 import { useCashSessions } from '../hooks/useCashSessions'
 
-const cardDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
-const selectContentDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
+const containerStyle = 'bg-[#0f171a]/40 border-white/5 backdrop-blur-md shadow-2xl'
+const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-muted-foreground/40 focus:ring-primary/50 focus:border-primary/50 h-11'
+const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
 
 function userDisplayName(u: User): string {
   return u.name || u.first_name || u.email || u.employee_code || u.id
@@ -27,7 +28,6 @@ function userDisplayName(u: User): string {
 function downloadFlowCsv(flow: CashSessionFlow, sessionDate: string): void {
   const rows = [
     ['Concepto', 'Valor'],
-    // ['Sesión (ID)', flow.cash_session_id],
     ['Fecha sesión', sessionDate],
     ['Saldo inicial', String(flow.initial_balance)],
     ['Total créditos', String(flow.total_credits)],
@@ -155,230 +155,223 @@ export default function CashSessionFlowPage() {
   if (!currentBusinessId) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-gray-400">No hay negocio. Inicia sesión.</p>
+        <p className="text-muted-foreground/60 italic font-medium">Esperando identificador de negocio...</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
-        <TrendingUp className="w-8 h-8 text-[#2563EB]" />
-        Seguimiento de saldo
-      </h1>
-      <p className="text-gray-400 text-sm">
-        Saldo inicial, total recaudado, retiros aprobados y efectivo en caja por sesión.
-      </p>
+    <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="space-y-1">
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+          <TrendingUp className="w-8 h-8 text-primary" />
+          Trazabilidad de Flujo
+        </h1>
+        <p className="text-sm text-muted-foreground/60">Análisis detallado de movimientos, recaudos y retiros por sesión de caja.</p>
+      </div>
 
       {error && (
-        <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3 text-red-200 text-sm">
+        <div className="bg-error/10 border border-error/20 rounded-lg p-3 text-error text-[10px] font-bold uppercase tracking-widest">
           {error}
         </div>
       )}
 
-      <Card className={cn('', cardDark)}>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-white">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <label className="text-sm font-medium text-gray-300 shrink-0">Usuario:</label>
-            {isLoadingUsers ? (
-              <span className="text-gray-400 text-sm flex items-center gap-1">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Cargando…
-              </span>
-            ) : (
-              <Select
-                value={filterUserId || 'all'}
-                onValueChange={(v) => setFilterUserId(v === 'all' ? '' : v)}
-                disabled={isLoadingUsers}
-              >
-                <SelectTrigger className="w-full sm:w-[260px] bg-[#0f171a] border-gray-600 text-white">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent className={selectContentDark}>
-                  <SelectItem
-                    value="all"
-                    className="text-gray-200 data-[highlighted]:bg-[#2563EB]/40"
-                  >
-                    Todos
-                  </SelectItem>
-                  {businessUsers.map((u) => (
-                    <SelectItem
-                      key={u.id}
-                      value={u.id}
-                      className="text-gray-200 data-[highlighted]:bg-[#2563EB]/40"
-                    >
-                      {userDisplayName(u)}
-                      {u.id === user?.id && (
-                        <span className="ml-1 text-gray-500 text-xs">(tú)</span>
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        <div className="xl:col-span-4 space-y-6">
+          <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
+            <CardHeader className="border-b border-white/5 pb-4">
+              <CardTitle className={labelStyle}>Filtrar Colaborador</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {isLoadingUsers ? (
+                <div className={cn(inputStyle, "flex items-center opacity-50")}>Cargando equipo...</div>
+              ) : (
+                <Select
+                  value={filterUserId || 'all'}
+                  onValueChange={(v) => setFilterUserId(v === 'all' ? '' : v)}
+                >
+                  <SelectTrigger className={inputStyle}>
+                    <SelectValue placeholder="Todos los usuarios" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0f171a] border-white/10 text-white">
+                    <SelectItem value="all" className="focus:bg-primary/20">Todos los usuarios</SelectItem>
+                    {businessUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.id} className="focus:bg-primary/20">
+                        {userDisplayName(u)} {u.id === user?.id && '(Tú)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </CardContent>
+          </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className={cn('lg:col-span-1', cardDark)}>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-white">Sesiones de caja</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingSessions ? (
-              <div className="flex items-center justify-center py-8 text-gray-400">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
-            ) : sessions.length === 0 ? (
-              <p className="text-gray-400 text-sm py-4">No hay sesiones.</p>
-            ) : (
-              <ul className="space-y-1 max-h-[400px] overflow-y-auto">
-                {sessions.map((s) => {
-                  const isSelected = s.id === selectedSessionId
-                  return (
-                    <li key={s.id}>
+          <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
+            <CardHeader className="border-b border-white/5 pb-4 flex flex-row items-center justify-between">
+              <CardTitle className={labelStyle}>Historial de Sesiones</CardTitle>
+              <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums">{sessions.length}</span>
+            </CardHeader>
+            <CardContent className="pt-6 px-2">
+              {isLoadingSessions ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <p className="text-center text-muted-foreground/40 py-8 text-[11px] font-bold uppercase tracking-widest">Sin registros</p>
+              ) : (
+                <div className="space-y-2 max-h-[500px] overflow-y-auto px-4 custom-scrollbar">
+                  {sessions.map((s) => {
+                    const isSelected = s.id === selectedSessionId
+                    return (
                       <button
+                        key={s.id}
                         type="button"
                         onClick={() => setSelectedSessionId(s.id)}
                         className={cn(
-                          'w-full text-left px-3 py-2 rounded-lg border transition-colors',
+                          'w-full text-left p-4 rounded-xl border transition-all duration-300',
                           isSelected
-                            ? 'bg-[#2563EB]/30 border-[#2563EB] text-white'
-                            : 'border-gray-600 text-gray-300 hover:bg-gray-800/50 hover:border-gray-500'
+                            ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5'
+                            : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10'
                         )}
                       >
-                        <span className="font-medium">{formatDate(s.session_date)}</span>
-                        <span className="block text-sm text-gray-400 mt-0.5">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className={cn(
+                            "text-xs font-black tracking-tight",
+                            isSelected ? 'text-white' : 'text-muted-foreground'
+                          )}>{formatDate(s.session_date)}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-muted-foreground/40">ID:{s.id.slice(0,4)}</span>
+                        </div>
+                        <span className={cn(
+                          "block text-sm font-black tabular-nums",
+                          isSelected ? 'text-primary' : 'text-muted-foreground/60'
+                        )}>
                           {formatCurrency(s.initial_balance ?? 0)}
                         </span>
                       </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className={cn('lg:col-span-2', cardDark)}>
-          <CardHeader className="flex flex-row items-center justify-between gap-4">
-            <CardTitle className="text-lg font-semibold text-white">
-              Detalle de sesión
-              {selectedSession && (
-                <span className="block text-sm font-normal text-gray-400 mt-1">
-                  {formatDate(selectedSession.session_date)} · Saldo inicial{' '}
-                  {formatCurrency(selectedSession.initial_balance ?? 0)}
-                </span>
+                    )
+                  })}
+                </div>
               )}
-            </CardTitle>
-            {flow && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                className="border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB]/20 shrink-0"
-              >
-                <Download className="w-4 h-4 mr-1" />
-                Exportar CSV
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {!selectedSessionId ? (
-              <p className="text-gray-400 text-sm">Selecciona una sesión.</p>
-            ) : isLoadingFlow ? (
-              <div className="flex items-center justify-center py-12 text-gray-400">
-                <Loader2 className="w-8 h-8 animate-spin" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="xl:col-span-8">
+          <Card className={cn('border transition-all duration-500 overflow-hidden group min-h-[600px]', containerStyle)}>
+            <CardHeader className="border-b border-white/5 flex flex-row items-center justify-between p-6">
+              <div className="space-y-1">
+                <CardTitle className="text-sm font-bold text-white uppercase tracking-widest">
+                  Análisis Operativo
+                </CardTitle>
+                {selectedSession && (
+                  <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
+                    {formatDate(selectedSession.session_date)} · COD PRUEBA
+                  </p>
+                )}
               </div>
-            ) : !flow ? (
-              <p className="text-gray-400 text-sm">No se pudo cargar el flujo de esta sesión.</p>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="rounded-lg border border-gray-600 p-4 bg-black/20">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Saldo inicial</p>
-                    <p className="text-xl font-bold text-white mt-1">
-                      {formatCurrency(flow.initial_balance)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-gray-600 p-4 bg-black/20">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">
-                      Efectivo en caja
-                    </p>
-                    <p className="text-xl font-bold text-[#34D399] mt-1">
-                      {formatCurrency(flow.efectivo_en_caja)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-gray-600 p-4 bg-black/20">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Total recaudado</p>
-                    <p className="text-lg font-semibold text-white mt-1">
-                      {formatCurrency(flow.total_collected)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-gray-600 p-4 bg-black/20">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">
-                      Total retiros aprobados
-                    </p>
-                    <p className="text-lg font-semibold text-amber-300 mt-1">
-                      {formatCurrency(flow.total_withdrawals_approved)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-gray-600 p-4 bg-black/20">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">
-                      Saldo disponible
-                    </p>
-                    <p className="text-lg font-semibold text-white mt-1">
-                      {formatCurrency(flow.saldo_disponible)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-gray-600 p-4 bg-black/20">
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">
-                      Caja inicial restante
-                    </p>
-                    <p className="text-lg font-semibold text-gray-300 mt-1">
-                      {formatCurrency(flow.caja_inicial_restante)}
-                    </p>
-                  </div>
+              {flow && (
+                <Button
+                  onClick={handleExport}
+                  className="h-9 px-4 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[10px]"
+                >
+                  <Download className="w-3.5 h-3.5 mr-2" />
+                  XLS
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="p-8">
+              {!selectedSessionId ? (
+                <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground/20">
+                  <TrendingUp className="w-16 h-16 mb-4 opacity-5" />
+                  <p className="font-bold uppercase tracking-[0.2em] text-[10px]">Selecciona una sesión</p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-600">
-                  <div>
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">Total créditos</p>
-                    <p className="text-gray-200 mt-1">{formatCurrency(flow.total_credits)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-xs uppercase tracking-wide">
-                      Total recaudo mostrado
-                    </p>
-                    <p className="text-gray-200 mt-1">
-                      {formatCurrency(flow.total_recaudo_mostrado)}
-                    </p>
-                  </div>
-                  {flow.session_created_at && (
-                    <div>
-                      <p className="text-gray-400 text-xs uppercase tracking-wide">Creado</p>
-                      <p className="text-gray-300 text-sm mt-1">
-                        {formatDateTime(flow.session_created_at)}
+              ) : isLoadingFlow ? (
+                <div className="flex items-center justify-center h-[400px]">
+                  <Loader2 className="w-12 h-12 animate-spin text-primary/20" />
+                </div>
+              ) : !flow ? (
+                 <div className="flex flex-col items-center justify-center h-[400px] text-error/40">
+                  <p className="font-bold uppercase tracking-widest text-[10px]">Error al procesar flujo</p>
+                </div>
+              ) : (
+                <div className="space-y-12">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
+                    <div className="relative group/val">
+                      <div className="absolute -inset-4 bg-primary/5 rounded-2xl opacity-0 group-hover/val:opacity-100 transition-opacity duration-500" />
+                      <p className={labelStyle}>Caja Inicial</p>
+                      <p className="text-4xl font-extrabold tracking-tighter text-white tabular-nums">
+                        {formatCurrency(flow.initial_balance)}
                       </p>
                     </div>
-                  )}
-                  {flow.session_updated_at && (
-                    <div>
-                      <p className="text-gray-400 text-xs uppercase tracking-wide">Actualizado</p>
-                      <p className="text-gray-300 text-sm mt-1">
-                        {formatDateTime(flow.session_updated_at)}
+                    <div className="relative group/val">
+                      <div className="absolute -inset-4 bg-success/5 rounded-2xl opacity-0 group-hover/val:opacity-100 transition-opacity duration-500" />
+                      <p className={cn(labelStyle, "text-success/60")}>Efectivo en Caja (Neto)</p>
+                      <p className="text-4xl font-extrabold tracking-tighter text-success tabular-nums">
+                        {formatCurrency(flow.efectivo_en_caja)}
                       </p>
+                      <div className="h-0.5 w-12 bg-success mt-1 rounded-full overflow-hidden">
+                        <div className="h-full bg-success/20 animate-[loading_2s_infinite]" />
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-white/5">
+                    <div className="space-y-1">
+                      <p className={labelStyle}>Recaudos</p>
+                      <p className="text-xl font-bold text-white tabular-nums">{formatCurrency(flow.total_collected)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className={labelStyle}>Retiros Autorizados</p>
+                      <p className="text-xl font-bold text-error tabular-nums">{formatCurrency(flow.total_withdrawals_approved)}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className={labelStyle}>Saldo Disponible</p>
+                      <p className="text-xl font-bold text-info tabular-nums">{formatCurrency(flow.saldo_disponible)}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 p-6 rounded-2xl bg-white/[0.01] border border-white/5">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Progreso Operativo</span>
+                        <span className="text-[10px] font-black text-white tabular-nums">
+                          {Math.round((flow.total_collected / (flow.total_credits || 1)) * 100)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                         <div 
+                          className="h-full bg-primary transition-all duration-1000 ease-out" 
+                          style={{ width: `${Math.min((flow.total_collected / (flow.total_credits || 1)) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className={labelStyle}>Emisión Créditos</p>
+                        <p className="text-sm font-bold text-white tabular-nums">{formatCurrency(flow.total_credits)}</p>
+                      </div>
+                      <div>
+                        <p className={labelStyle}>Caja Inicial Remitente</p>
+                        <p className="text-sm font-bold text-white tabular-nums">{formatCurrency(flow.caja_inicial_restante)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-8 grid grid-cols-2 gap-4 opacity-40">
+                     <div>
+                        <p className={labelStyle}>Creación Registro</p>
+                        <p className="text-[10px] font-bold text-white">{flow.session_created_at ? formatDateTime(flow.session_created_at) : '-'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={labelStyle}>Último Sync</p>
+                        <p className="text-[10px] font-bold text-white">{flow.session_updated_at ? formatDateTime(flow.session_updated_at) : '-'}</p>
+                      </div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
