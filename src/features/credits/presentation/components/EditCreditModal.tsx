@@ -180,45 +180,43 @@ export const EditCreditModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1100px] bg-[#0A0F11] border-white/10 text-white shadow-[0_0_80px_-20px_rgba(0,0,0,0.9)] overflow-hidden rounded-[3rem] p-0 animate-in fade-in zoom-in-95 duration-500 max-h-[95vh] flex flex-col">
+      <DialogContent className="w-[95vw] sm:max-w-[1100px] bg-[#0A0F11] border-white/10 text-white shadow-[0_0_80px_-20px_rgba(0,0,0,0.9)] overflow-hidden rounded-2xl sm:rounded-[3rem] p-0 animate-in fade-in zoom-in-95 duration-500 max-h-[92vh] sm:max-h-[95vh] flex flex-col focus:outline-none">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
         
-        <DialogHeader className="p-10 pb-6 relative shrink-0">
-          <div className="flex items-center justify-between">
+        <DialogHeader className="p-6 sm:p-10 pb-4 sm:pb-6 relative shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-4">
             <div className="space-y-1">
-              <DialogTitle className="text-5xl font-black uppercase tracking-tighter text-white flex items-center gap-5">
-                <div className="w-2.5 h-12 bg-primary rounded-full shadow-[0_0_20px_rgba(var(--primary),0.6)]" />
-                Planificación Financiera
+              <DialogTitle className="text-2xl sm:text-5xl font-black uppercase tracking-tighter text-white flex items-center gap-3 sm:gap-5 leading-tight">
+                <div className="w-1.5 sm:w-2.5 h-8 sm:h-12 bg-primary rounded-full shadow-[0_0_20px_rgba(var(--primary),0.6)] shrink-0" />
+                <span className="break-words">Planificación Financiera</span>
               </DialogTitle>
-              <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-primary/40 ml-8">
-                Cálculo de Cuotas por Periodo Operativo
+              <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.5em] text-primary/40 ml-4 sm:ml-8">
+                Cálculo por Periodo Operativo
               </p>
             </div>
-            <div className="flex flex-col items-end gap-3 text-right">
-              <span className="text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground/60 backdrop-blur-sm">
-                ID SISTEMA: {credit.id.slice(0, 16)}
+            <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-3 text-right">
+              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/5 border border-white/10 text-muted-foreground/60 backdrop-blur-sm truncate max-w-[120px] sm:max-w-none">
+                ID: {credit.id.slice(0, 12)}
               </span>
-              <div className="flex gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary">
-                  {formData.business_code || 'ARG01'}
-                </span>
-              </div>
+              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary">
+                {formData.business_code || 'ARG01'}
+              </span>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-10 pb-10 space-y-8 relative scrollbar-hide">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="flex-1 overflow-y-auto px-6 sm:px-10 pb-8 sm:pb-10 space-y-6 sm:space-y-8 relative scrollbar-hide">
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
               
               {/* Bloque 1: Configuración de Capital & Fechas */}
-              <div className={cn("space-y-6 group", containerStyle)}>
+              <div className={cn("space-y-5 sm:space-y-6 group", containerStyle)}>
                 <h3 className={sectionTitleStyle}>
-                  <span className="w-6 h-px bg-primary/40 group-hover:w-10 transition-all duration-500" />
-                  Parámetros de Inversión
+                  <span className="w-6 h-px bg-primary/40 lg:group-hover:w-10 transition-all duration-500" />
+                  Inversión & Capital
                 </h3>
                 
-                <div className="space-y-5">
+                <div className="space-y-4 sm:space-y-5">
                   <div className="space-y-1.5">
                     <label className={labelStyle}>Capital Principal</label>
                     <input
@@ -227,49 +225,51 @@ export const EditCreditModal = ({
                       inputMode="numeric"
                       value={formatFinancial(formData.total_amount)}
                       onChange={handlePriceChange}
-                      className={cn("w-full px-5 py-4 rounded-2xl border focus:outline-none font-mono font-black text-xl", inputStyle)}
+                      className={cn("w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border focus:outline-none font-mono font-black text-lg sm:text-xl", inputStyle)}
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-5">
+                  <div className="grid grid-cols-2 gap-4 sm:gap-5">
                     <div className="space-y-1.5">
-                      <label className={labelStyle}>Tasa Interés (%)</label>
+                      <label className={labelStyle}>Tasa (%)</label>
                       <input
                         name="interest_rate"
                         type="number"
                         step="0.1"
                         value={formData.interest_rate || 0}
                         onChange={handleSimpleChange}
-                        className={cn("w-full px-5 py-4 rounded-2xl border focus:outline-none font-mono font-bold text-success text-center", inputStyle)}
+                        className={cn("w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border focus:outline-none font-mono font-bold text-success text-center", inputStyle)}
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className={labelStyle}>Interés Generado</label>
-                      <div className={cn("w-full px-5 py-4 rounded-2xl border bg-white/[0.01] border-white/5 font-mono text-xl font-black text-success/60 text-center")}>
+                    <div className="space-y-1.5 overflow-hidden">
+                      <label className={labelStyle}>Interés</label>
+                      <div className={cn("w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl sm:rounded-2xl border bg-white/[0.01] border-white/5 font-mono text-base sm:text-xl font-black text-success/60 text-center truncate")}>
                         {formatFinancial(formData.total_interest)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-5 pt-4 border-t border-white/5">
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                     <div className="space-y-1.5">
-                      <label className={labelStyle}>Fecha Inicio</label>
+                      <label className={labelStyle}>Inicio</label>
                       <input
                         name="start_date"
                         type="date"
                         value={formData.start_date || ''}
                         onChange={handleSimpleChange}
-                        className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none font-black text-[11px] uppercase text-center", inputStyle)}
+                        onClick={(e) => e.currentTarget.showPicker()}
+                        className={cn("w-full px-2 sm:px-4 py-3 rounded-xl border focus:outline-none font-black text-[9px] sm:text-[11px] uppercase text-center cursor-pointer hover:border-primary/30 transition-colors", inputStyle)}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className={labelStyle}>Fecha Final</label>
+                      <label className={labelStyle}>Vence</label>
                       <input
                         name="end_date"
                         type="date"
                         value={formData.end_date || ''}
                         onChange={handleSimpleChange}
-                        className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none font-black text-[11px] uppercase text-center", inputStyle)}
+                        onClick={(e) => e.currentTarget.showPicker()}
+                        className={cn("w-full px-2 sm:px-4 py-3 rounded-xl border focus:outline-none font-black text-[9px] sm:text-[11px] uppercase text-center cursor-pointer hover:border-primary/30 transition-colors", inputStyle)}
                       />
                     </div>
                   </div>
@@ -277,45 +277,45 @@ export const EditCreditModal = ({
               </div>
 
               {/* Bloque 2: Balance & Recaudo */}
-              <div className={cn("space-y-6 group", containerStyle)}>
+              <div className={cn("space-y-5 sm:space-y-6 group", containerStyle)}>
                 <h3 className={sectionTitleStyle}>
-                  <span className="w-6 h-px bg-primary/40 group-hover:w-10 transition-all duration-500" />
-                  Proyección de Recaudo
+                  <span className="w-6 h-px bg-primary/40 lg:group-hover:w-10 transition-all duration-500" />
+                  Estado del Recaudo
                 </h3>
                 
-                <div className="space-y-6">
-                  <div className="p-8 rounded-[2rem] bg-error/5 border border-error/20 flex flex-col items-center justify-center text-center space-y-2 relative overflow-hidden">
+                <div className="space-y-5 sm:space-y-6">
+                  <div className="p-6 sm:p-8 rounded-2xl sm:rounded-[2rem] bg-error/5 border border-error/20 flex flex-col items-center justify-center text-center space-y-2 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-error/5 blur-[50px] -translate-y-1/2 translate-x-1/2" />
                     <label className={cn(labelStyle, "text-error/60")}>Saldo Pendiente Actualizado</label>
-                    <div className="text-4xl font-black text-error font-mono tracking-tighter">
+                    <div className="text-2xl sm:text-4xl font-black text-error font-mono tracking-tighter break-all">
                       {formatFinancial(formData.total_balance)}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-5">
-                    <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1">
-                      <label className={labelStyle}>Total a Cobrar</label>
-                      <div className="text-lg font-black text-primary font-mono">
+                  <div className="grid grid-cols-2 gap-4 sm:gap-5">
+                    <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-white/[0.02] border border-white/5 space-y-1 overflow-hidden">
+                      <label className={labelStyle}>Total Cobro</label>
+                      <div className="text-sm sm:text-lg font-black text-primary font-mono truncate">
                         {formatFinancial((formData.total_amount || 0) + (formData.total_interest || 0))}
                       </div>
                     </div>
-                    <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1">
-                      <label className={labelStyle}>Cuotas Totales</label>
-                      <div className="text-2xl font-black text-white font-mono flex items-baseline gap-2">
+                    <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-white/[0.02] border border-white/5 space-y-1">
+                      <label className={labelStyle}>Cuotas</label>
+                      <div className="text-lg sm:text-2xl font-black text-white font-mono flex items-baseline gap-1 sm:gap-2">
                         {formData.total_installments}
-                        <span className="text-[10px] text-muted-foreground/40 font-bold">DÍAS ÚTILES</span>
+                        <span className="text-[8px] sm:text-[10px] text-muted-foreground/40 font-bold uppercase">días útiles</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-6 rounded-2xl bg-info/5 border border-info/20 flex items-center justify-between">
-                    <div>
+                  <div className="p-5 sm:p-6 rounded-xl sm:rounded-2xl bg-info/5 border border-info/20 flex items-center justify-between overflow-hidden">
+                    <div className="overflow-hidden">
                       <label className={cn(labelStyle, "text-info/60")}>Cuota Diaria Estimada</label>
-                      <div className="text-2xl font-black text-info font-mono">
+                      <div className="text-xl sm:text-2xl font-black text-info font-mono truncate">
                         {formatFinancial(formData.installment_amount)}
                       </div>
                     </div>
-                    <div className="w-12 h-12 bg-info/10 rounded-full flex items-center justify-center border border-info/20">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-info/10 rounded-full flex items-center justify-center border border-info/20 hidden sm:flex shrink-0">
                       <span className="text-info font-black text-xl">$</span>
                     </div>
                   </div>
@@ -323,74 +323,74 @@ export const EditCreditModal = ({
               </div>
 
               {/* Fila Inferior: Control de Mora & Próximo Pago */}
-              <div className={cn("md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-8")}>
-                 <div className={cn("p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between", containerStyle)}>
+              <div className={cn("lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8")}>
+                 <div className={cn("p-5 sm:p-6 rounded-xl sm:rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between", containerStyle)}>
                     <div className="space-y-1">
-                        <label className={labelStyle}>Cuotas Pagadas</label>
+                        <label className={labelStyle}>Pagadas</label>
                         <input
                           name="paid_installments"
                           type="number"
                           value={formData.paid_installments || 0}
                           onChange={handleSimpleChange}
-                          className={cn("bg-transparent border-none p-0 focus:ring-0 font-mono text-3xl text-success font-black w-24", "placeholder:text-success/20")}
+                          className={cn("bg-transparent border-none p-0 focus:ring-0 font-mono text-2xl sm:text-3xl text-success font-black w-20", "placeholder:text-success/20")}
                         />
                     </div>
-                    <div className="h-12 w-px bg-white/5" />
+                    <div className="h-10 sm:h-12 w-px bg-white/5" />
                     <div className="text-right">
-                      <label className={labelStyle}>Vencimiento SIG.</label>
-                      <div className="font-mono text-[11px] text-muted-foreground font-black text-right uppercase">
-                        {formData.next_due_date ? new Date(formData.next_due_date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'PENDIENTE'}
+                      <label className={labelStyle}>Siguiente</label>
+                      <div className="font-mono text-[9px] sm:text-[11px] text-muted-foreground font-black text-right uppercase">
+                        {formData.next_due_date ? new Date(formData.next_due_date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : '---'}
                       </div>
                     </div>
                  </div>
 
-                 <div className={cn("p-6 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between col-span-1 md:col-span-1", containerStyle)}>
+                 <div className={cn("p-5 sm:p-6 rounded-xl sm:rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between", containerStyle)}>
                     <div className="space-y-1">
-                        <label className={labelStyle}>Cuotas en Mora</label>
+                        <label className={labelStyle}>En Mora</label>
                         <input
                           name="overdue_installments"
                           type="number"
                           value={formData.overdue_installments || 0}
                           onChange={handleSimpleChange}
-                          className={cn("bg-transparent border-none p-0 focus:ring-0 font-mono text-3xl text-error font-black w-24")}
+                          className={cn("bg-transparent border-none p-0 focus:ring-0 font-mono text-2xl sm:text-3xl text-error font-black w-20")}
                         />
                     </div>
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border font-black", 
+                    <div className={cn("w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border font-black", 
                       (formData.overdue_installments || 0) > 0 ? "bg-error/20 border-error/40 text-error animate-pulse" : "bg-white/5 border-white/10 text-white/20")}>
                       !
                     </div>
                  </div>
 
-                 <div className={cn("p-6 rounded-2xl bg-primary/5 border border-primary/20 flex flex-col justify-center", containerStyle)}>
-                    <label className={cn(labelStyle, "text-primary/60")}>Resumen de Operación</label>
-                    <div className="text-[10px] text-white/60 font-medium leading-relaxed italic">
-                      Crédito re-calculado sobre {formData.total_installments} días activos entre {formData.start_date} y {formData.end_date}.
+                 <div className={cn("p-5 sm:p-6 rounded-xl sm:rounded-2xl bg-primary/5 border border-primary/20 flex flex-col justify-center sm:col-span-2 lg:col-span-1", containerStyle)}>
+                    <label className={cn(labelStyle, "text-primary/60")}>Resumen Operativo</label>
+                    <div className="text-[9px] sm:text-[10px] text-white/60 font-medium leading-relaxed italic">
+                      {formData.total_installments} días entre {formData.start_date || '...'} / {formData.end_date || '...'}.
                     </div>
                  </div>
               </div>
 
             </div>
 
-            <DialogFooter className="gap-6 pt-10 flex items-center justify-between border-t border-white/5 backdrop-blur-3xl px-2">
-              <div className="flex items-center gap-4">
-                <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
-                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-success/60">Algoritmo Financiero Escaneando</span>
+            <DialogFooter className="gap-4 sm:gap-6 py-6 sm:pt-10 flex flex-col sm:flex-row items-center justify-between border-t border-white/5 backdrop-blur-3xl px-2">
+              <div className="flex items-center gap-3 self-start sm:self-center">
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-success animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)] shrink-0" />
+                <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-success/60">Sistema Financiero Activo</span>
               </div>
-              <div className="flex gap-4">
+              <div className="flex w-full sm:w-auto gap-3">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={onClose}
-                  className="px-10 h-14 text-[10px] font-black uppercase tracking-[0.5em] text-muted-foreground/40 hover:text-white hover:bg-white/5 transition-all rounded-2xl"
+                  className="flex-1 sm:flex-none px-4 sm:px-10 h-10 sm:h-14 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.5em] text-muted-foreground/40 hover:text-white hover:bg-white/5 transition-all rounded-xl sm:rounded-2xl border border-white/5"
                 >
-                  Descartar
+                  Cerrar
                 </Button>
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="h-14 px-16 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.4em] text-[11px] shadow-[0_20px_50px_-10px_rgba(var(--primary),0.4)] hover:shadow-[0_20px_60px_-10px_rgba(var(--primary),0.5)] transition-all active:scale-[0.97] rounded-2xl border-t border-white/10"
+                  className="flex-[2] sm:flex-none h-10 sm:h-14 px-6 sm:px-16 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] text-[9px] sm:text-[11px] shadow-lg transition-all active:scale-[0.97] rounded-xl sm:rounded-2xl border-t border-white/10"
                 >
-                  {loading ? 'Aplicando Cambios...' : 'Sincronizar Plan Financiero'}
+                  {loading ? 'Sincronizando...' : 'Actualizar Plan'}
                 </Button>
               </div>
             </DialogFooter>

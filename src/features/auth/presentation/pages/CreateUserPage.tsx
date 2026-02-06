@@ -193,7 +193,7 @@ export default function CreateUserPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-1.5">
                   <label htmlFor="email" className={labelStyle}>Correo Electrónico *</label>
-                  <input id="email" name="email" type="email" required value={formData.email} onChange={handleChange}
+                  <input id="email" name="email" type="email"  value={formData.email} onChange={handleChange}
                     className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none", inputStyle)} placeholder="ejemplo@correo.com" />
                 </div>
                 <div className="space-y-1.5">
