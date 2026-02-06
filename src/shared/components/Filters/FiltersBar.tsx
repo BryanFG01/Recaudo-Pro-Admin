@@ -1,27 +1,17 @@
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
 } from '@/components/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { Calendar, ChevronDown, ChevronUp, Filter, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-
-// Tonos alineados con login y panel (fondo #1a2436, superficies #2D3748, acento #2563EB)
-const cardDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
-const inputDark =
-  'bg-[#0f171a] border-gray-600 text-white placeholder:text-gray-400 data-[placeholder]:text-gray-400 focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]'
-const labelDark = 'text-gray-200'
-const selectContentDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
-const selectItemAll = 'data-[highlighted]:bg-[#2563EB]/40 text-blue-200'
-const selectItemDark = 'data-[highlighted]:bg-[#2563EB]/40 text-blue-200'
-const btnClear = 'border-gray-600 text-gray-300 hover:bg-[#0f171a]/10 hover:text-white'
 
 export interface FilterValues {
   userId: string | undefined
@@ -45,6 +35,10 @@ interface FiltersBarProps {
   isRecaudoPage?: boolean
 }
 
+const containerStyle = 'bg-[#0f171a]/40 border-white/5 backdrop-blur-md shadow-2xl'
+const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-muted-foreground/40 focus:ring-primary/50 focus:border-primary/50'
+const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
+
 export default function FiltersBar({
   onFilterChange,
   availableUsers: _availableUsers,
@@ -64,7 +58,6 @@ export default function FiltersBar({
     payment_method: undefined
   })
 
-  // Sincronizar estado inicial con el padre para que "Todos" (sin filtros) muestre datos desde el primer load
   useEffect(() => {
     onFilterChange({
       startDate: undefined,
@@ -73,11 +66,9 @@ export default function FiltersBar({
       clientId: undefined,
       payment_method: undefined
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleFilterChange = (key: keyof FilterValues, value: string) => {
-    // Convertir valor especial "__all__" a undefined
     const normalizedValue = value === '__all__' ? undefined : value
     const newFilters = { ...filters, [key]: normalizedValue }
     setFilters(newFilters)
@@ -106,108 +97,102 @@ export default function FiltersBar({
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <Card className={cn('mb-6', cardDark)}>
-      <CardHeader className="pb-2 pt-4 px-4 md:px-6">
-        <div className="flex items-center justify-between gap-2">
+    <Card className={cn('mb-8 border transition-all duration-500 overflow-hidden group', containerStyle)}>
+      <CardHeader className="p-0 border-b border-white/5">
+        <div className="flex items-center justify-between px-6 py-4">
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className="flex items-center gap-2 text-left min-w-0 flex-1 focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-[#0f171a] rounded-lg py-1"
-            aria-expanded={!collapsed}
-            aria-controls="filters-content"
-            aria-label={collapsed ? 'Mostrar filtros' : 'Ocultar filtros'}
+            className="flex items-center gap-3 group/btn"
           >
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white truncate">
-              <Filter className="w-5 h-5 shrink-0 text-[#2563EB]" aria-hidden />
-              Filtros
-              {hasActiveFilters && (
-                <span className="text-sm font-normal text-gray-400">(activos)</span>
-              )}
-            </CardTitle>
+            <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 text-primary group-hover/btn:scale-110 transition-transform">
+              <Filter className="w-4 h-4" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-sm font-bold text-white tracking-tight">Filtros Avanzados</h3>
+              <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">
+                {hasActiveFilters ? 'Filtros aplicados' : 'Sin filtros activos'}
+              </p>
+            </div>
             {collapsed ? (
-              <ChevronDown className="w-5 h-5 shrink-0 text-gray-400" aria-hidden />
+              <ChevronDown className="w-4 h-4 text-muted-foreground/40" />
             ) : (
-              <ChevronUp className="w-5 h-5 shrink-0 text-gray-400" aria-hidden />
+              <ChevronUp className="w-4 h-4 text-muted-foreground/40" />
             )}
           </button>
-          <div className="flex items-center gap-2 shrink-0">
-            {hasActiveFilters && !collapsed && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleClearFilters}
-                className={btnClear}
-                aria-label="Limpiar todos los filtros"
-              >
-                <X className="w-4 h-4 mr-1" aria-hidden="true" />
-                Limpiar
-              </Button>
-            )}
-          </div>
+          
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilters}
+              className="h-8 text-[10px] font-bold uppercase tracking-widest text-error hover:bg-error/10 hover:text-error"
+            >
+              <X className="w-3 h-3 mr-1.5" />
+              Limpiar Todo
+            </Button>
+          )}
         </div>
       </CardHeader>
+
       <div
-        id="filters-content"
-        role="region"
-        aria-label="Contenido de filtros"
         className={cn(
-          'grid transition-[grid-template-rows] duration-200 ease-out',
-          collapsed ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'
+          'transition-all duration-300 ease-in-out px-6',
+          collapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100 py-6'
         )}
       >
-      <div className="min-h-0 overflow-hidden">
-      <CardContent className="pt-0 pb-4 px-4 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {showDateFilter && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="startDate" className={cn('flex items-center gap-1.5', labelDark)}>
-                  <Calendar className="w-4 h-4 text-gray-400" aria-hidden />
-                  Fecha Inicio
-                </Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={filters.startDate ?? ''}
-                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                  className={inputDark}
-                />
+              <div className="space-y-1">
+                <Label htmlFor="startDate" className={labelStyle}>Desde</Label>
+                <div 
+                  className="relative cursor-pointer group/input"
+                  onClick={() => (document.getElementById('startDate') as HTMLInputElement)?.showPicker()}
+                >
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none group-hover/input:text-primary transition-colors" />
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={filters.startDate ?? ''}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                    className={cn(inputStyle, "pl-10 h-11 cursor-pointer")}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="endDate" className={cn('flex items-center gap-1.5', labelDark)}>
-                  <Calendar className="w-4 h-4 text-gray-400" aria-hidden />
-                  Fecha Fin
-                </Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={filters.endDate ?? ''}
-                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                  className={inputDark}
-                  aria-label="Fecha de fin para filtrar"
-                />
+              <div className="space-y-1">
+                <Label htmlFor="endDate" className={labelStyle}>Hasta</Label>
+                <div 
+                  className="relative cursor-pointer group/input"
+                  onClick={() => (document.getElementById('endDate') as HTMLInputElement)?.showPicker()}
+                >
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none group-hover/input:text-primary transition-colors" />
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={filters.endDate ?? ''}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                    className={cn(inputStyle, "pl-10 h-11 cursor-pointer")}
+                  />
+                </div>
               </div>
             </>
           )}
 
           {showClientFilter && availableClients.length > 0 && (
             <div className="space-y-1">
-              <Label htmlFor="clientId" className={labelDark}>
-                Cliente
-              </Label>
+              <Label htmlFor="clientId" className={labelStyle}>Cliente</Label>
               <Select
                 value={filters.clientId || '__all__'}
                 onValueChange={(value) => handleFilterChange('clientId', value)}
               >
-                <SelectTrigger id="clientId" className={inputDark}>
-                  <SelectValue placeholder="Todos los clientes" />
+                <SelectTrigger id="clientId" className={cn(inputStyle, "h-11")}>
+                  <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent className={selectContentDark}>
-                  <SelectItem value="__all__" className={selectItemAll}>
-                    Todos los clientes
-                  </SelectItem>
+                <SelectContent className="bg-[#0f171a] border-white/10 text-white shadow-2xl">
+                  <SelectItem value="__all__" className="focus:bg-primary/20 focus:text-white">Todos</SelectItem>
                   {availableClients.map((client) => (
-                    <SelectItem key={client.id} value={client.id} className={selectItemDark}>
+                    <SelectItem key={client.id} value={client.id} className="focus:bg-primary/20 focus:text-white">
                       {client.name}
                     </SelectItem>
                   ))}
@@ -218,33 +203,23 @@ export default function FiltersBar({
 
           {showPaymentMethodFilter && isRecaudoPage && (
             <div className="space-y-1">
-              <Label htmlFor="payment_method" className={labelDark}>
-                Método de Pago
-              </Label>
+              <Label htmlFor="payment_method" className={labelStyle}>Método</Label>
               <Select
                 value={filters.payment_method || '__all__'}
                 onValueChange={(value) => handleFilterChange('payment_method', value)}
               >
-                <SelectTrigger id="payment_method" className={inputDark}>
-                  <SelectValue placeholder="Todos los métodos de pago" />
+                <SelectTrigger id="payment_method" className={cn(inputStyle, "h-11")}>
+                  <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent className={selectContentDark}>
-                  <SelectItem value="__all__" className={selectItemAll}>
-                    Todos los métodos de pago
-                  </SelectItem>
-                  <SelectItem value="cash" className={selectItemDark}>
-                    Efectivo
-                  </SelectItem>
-                  <SelectItem value="transfer" className={selectItemDark}>
-                    Transacción
-                  </SelectItem>
+                <SelectContent className="bg-[#0f171a] border-white/10 text-white shadow-2xl">
+                  <SelectItem value="__all__" className="focus:bg-primary/20 focus:text-white">Todos</SelectItem>
+                  <SelectItem value="cash" className="focus:bg-primary/20 focus:text-white">Efectivo</SelectItem>
+                  <SelectItem value="transfer" className="focus:bg-primary/20 focus:text-white">Transacción</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           )}
         </div>
-      </CardContent>
-      </div>
       </div>
     </Card>
   )

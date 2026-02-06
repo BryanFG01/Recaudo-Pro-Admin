@@ -9,27 +9,25 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Column, DynamicTable } from '@/shared/components/DynamicTable'
-import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { Switch } from '@/components/ui/switch'
 import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
-import { formatCurrency, formatDate } from '@/shared/utils/date'
+import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import { cn } from '@/shared/utils/cn'
+import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { Banknote, Loader2, Save, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CashSession } from '../../domain/models'
 import { useCashSessions } from '../hooks/useCashSessions'
 
-const cardDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
-const inputDark =
-  'bg-[#0f171a] border-gray-600 text-white placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-[#2563EB]'
-const selectContentDark = 'bg-[#0f171a] border-gray-600 text-gray-200'
-const selectItemDark = 'data-[highlighted]:bg-[#2563EB]/40 text-blue-200'
+const containerStyle = 'bg-[#0f171a]/40 border-white/5 backdrop-blur-md shadow-2xl'
+const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-muted-foreground/40 focus:ring-primary/50 focus:border-primary/50 h-11'
+const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
 
 function userLabel(u: User): string {
   const name = u.name || u.first_name || u.email || u.employee_code || u.id
-  const extra = u.email && name !== u.email ? ` (${u.email})` : ''
-  return `${name}${extra}`
+  return name
 }
 
 export default function CashSessionsPage() {
@@ -95,7 +93,6 @@ export default function CashSessionsPage() {
     }
   }, [currentBusinessId, getUsersByBusinessId])
 
-  // Al cambiar de negocio, limpiar lista y selección para no mostrar datos del negocio anterior
   useEffect(() => {
     if (currentBusinessId !== prevBusinessIdRef.current) {
       prevBusinessIdRef.current = currentBusinessId
@@ -108,7 +105,6 @@ export default function CashSessionsPage() {
     if (currentBusinessId) loadUsers()
   }, [currentBusinessId, loadUsers])
 
-  // Valor por defecto del selector cuando hay lista; si la selección ya no está en la lista, corregir
   useEffect(() => {
     if (businessUsers.length === 0) return
     const firstId = businessUsers[0]?.id ?? ''
@@ -125,28 +121,23 @@ export default function CashSessionsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentBusinessId) {
-      setError('Falta el negocio (business_id). Inicia sesión con un negocio.')
+      setError('Negocio no identificado.')
       return
     }
     if (!selectedUserId) {
-      setError('Selecciona el usuario al que se asignará el saldo inicial (user_id).')
+      setError('Selecciona un usuario.')
       return
     }
     const amount = Number(initialBalance)
     if (Number.isNaN(amount) || amount < 0) {
-      setError('Saldo inicial debe ser un número mayor o igual a 0.')
+      setError('Saldo inválido.')
       return
     }
     setIsSubmitting(true)
     setError(null)
     setSuccess(null)
-    // Backend espera business_id (UUID) y opcionalmente business_code (ej. ARG01)
+    
     const businessIdForCreate = businessId || currentBusinessId
-    if (!businessIdForCreate) {
-      setError('No hay negocio seleccionado. Iniciá sesión con un código de negocio.')
-      setIsSubmitting(false)
-      return
-    }
     try {
       await createCashSession({
         business_id: businessIdForCreate,
@@ -156,7 +147,7 @@ export default function CashSessionsPage() {
         initial_balance: amount,
         allowed_to_withdraw: allowedToWithdraw
       })
-      setSuccess('Sesión de caja creada correctamente.')
+      setSuccess('Sesión de caja aperturada.')
       setInitialBalance('0')
       loadSessions()
     } catch (err) {
@@ -184,7 +175,7 @@ export default function CashSessionsPage() {
     setSuccess(null)
     try {
       await deleteCashSession(session.id)
-      setSuccess('Sesión de caja eliminada.')
+      setSuccess('Sesión eliminada.')
       setEditingId((prev) => (prev === session.id ? null : prev))
       loadSessions()
     } catch (err) {
@@ -198,10 +189,6 @@ export default function CashSessionsPage() {
     e.preventDefault()
     if (!editingId) return
     const amount = Number(editInitialBalance)
-    if (Number.isNaN(amount) || amount < 0) {
-      setError('Saldo inicial debe ser un número mayor o igual a 0.')
-      return
-    }
     setIsSubmitting(true)
     setError(null)
     setSuccess(null)
@@ -225,61 +212,72 @@ export default function CashSessionsPage() {
     {
       key: 'session_date',
       header: 'Fecha',
+      className: 'font-mono text-[11px] text-muted-foreground/60',
       render: (row) => formatDate(row.session_date || '')
     },
     {
       key: 'user_id',
-      header: 'A nombre de',
+      header: 'Responsable',
+      className: 'font-bold',
       render: (row) => {
         const u = businessUsers.find((x) => x.id === row.user_id)
         const displayName = u
           ? (u.name || u.first_name || u.email || u.employee_code || '-')
           : (row.user_id || '-')
-        return <span className="text-gray-300">{displayName}</span>
+        return <span className="text-info">{displayName}</span>
       }
     },
     {
       key: 'initial_balance',
       header: 'Saldo inicial',
+      isNumeric: true,
       render: (row) => formatCurrency(row.initial_balance ?? 0)
     },
     {
       key: 'allowed_to_withdraw',
-      header: 'Permitir retiros',
-      render: (row) => (row.allowed_to_withdraw ? 'Sí' : 'No')
+      header: 'Retiros',
+      className: 'text-center',
+      render: (row) => (
+        <span className={cn(
+          "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border",
+          row.allowed_to_withdraw ? 'bg-success/10 text-success border-success/20' : 'bg-error/10 text-error border-error/20'
+        )}>
+          {row.allowed_to_withdraw ? 'Autorizado' : 'Bloqueado'}
+        </span>
+      )
     },
     {
       key: 'actions',
       header: 'Acciones',
+      className: 'text-right',
       render: (row) => {
         const isEditing = editingId === row.id
         const isDeleting = deletingId === row.id
-        if (isEditing) return <span className="text-gray-400 text-sm">Editando...</span>
+        if (isEditing) return <span className="text-primary font-bold text-[10px] uppercase animate-pulse">Editando</span>
         return (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center justify-end gap-1">
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="text-[#2563EB] hover:bg-[#2563EB]/20"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-white"
               onClick={() => startEdit(row)}
               disabled={!!deletingId}
             >
-              Editar
+              <Save className="w-3.5 h-3.5" />
             </Button>
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="text-red-400 hover:bg-red-500/20 hover:text-red-300"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-error"
               onClick={() => handleDelete(row)}
               disabled={!!deletingId}
-              aria-label="Eliminar sesión"
             >
               {isDeleting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               )}
             </Button>
           </div>
@@ -291,205 +289,137 @@ export default function CashSessionsPage() {
   if (!currentBusinessId) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-gray-400">No hay business_id disponible. Inicia sesión.</p>
+        <p className="text-muted-foreground/60 italic font-medium">Esperando identificador de negocio...</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
-        <Banknote className="w-8 h-8 text-[#2563EB]" />
-        Saldo inicial (Sesión de caja)
-      </h1>
+    <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="space-y-1">
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+          <Banknote className="w-8 h-8 text-primary" />
+          Apertura de Caja
+        </h1>
+        <p className="text-sm text-muted-foreground/60">Define el capital inicial para cada cobrador al iniciar la jornada.</p>
+      </div>
 
-      {error && (
-        <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3 text-red-200 text-sm">
-          {error}
+      {(error || success) && (
+        <div className={cn(
+          "rounded-lg p-3 text-[10px] font-black uppercase tracking-widest border",
+          error ? "bg-error/10 border-error/20 text-error" : "bg-success/10 border-success/20 text-success"
+        )}>
+          {error || success}
         </div>
       )}
-      {success && (
-        <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-3 text-green-200 text-sm">
-          {success}
-        </div>
-      )}
 
-      <Card className={cn('mb-6', cardDark)}>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-white">
-            Crear nueva sesión de caja
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2 md:col-span-2 min-h-[72px]">
-              <Label htmlFor="assign_user" className="text-gray-200 block">
-                Asignar saldo inicial a (user_id)
-              </Label>
-              {isLoadingUsers ? (
-                <div className={cn(inputDark, 'min-h-[40px] rounded-md border flex items-center px-3 text-gray-400 text-sm')}>
-                  Cargando usuarios…
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        <div className="xl:col-span-4 sticky top-0">
+          <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
+            <CardHeader className="border-b border-white/5 pb-4">
+              <CardTitle className="text-sm font-bold text-white uppercase tracking-widest text-muted-foreground/40">
+                Nueva Sesión
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <form onSubmit={editingId ? handleUpdate : handleCreate} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="assign_user" className={labelStyle}>Responsable</Label>
+                  {isLoadingUsers ? (
+                    <div className={cn(inputStyle, "flex items-center opacity-50")}>Cargando...</div>
+                  ) : (
+                    <Select
+                      value={editingId ? '' : selectedUserId}
+                      onValueChange={setSelectedUserId}
+                      disabled={!!editingId}
+                    >
+                      <SelectTrigger id="assign_user" className={inputStyle}>
+                        <SelectValue placeholder="Seleccionar cobrador" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0f171a] border-white/10 text-white">
+                        {businessUsers.map((u) => (
+                          <SelectItem key={u.id} value={u.id} className="focus:bg-primary/20">{userLabel(u)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
-              ) : businessUsers.length === 0 && currentBusinessId ? (
-                <p className="text-amber-200/90 text-xs bg-amber-900/20 border border-amber-700/40 rounded-lg p-3">
-                  No hay usuarios del negocio. Revisa que el backend exponga /api/users/business/{'{businessId}'}.
-                </p>
-              ) : businessUsers.length > 0 && selectedUserId ? (
-                <Select
-                  value={selectedUserId}
-                  onValueChange={setSelectedUserId}
-                  disabled={false}
-                >
-                  <SelectTrigger id="assign_user" className={cn(inputDark, 'min-h-[40px]')}>
-                    <SelectValue placeholder="Selecciona un usuario" />
-                  </SelectTrigger>
-                  <SelectContent className={selectContentDark}>
-                    {businessUsers.map((u) => (
-                      <SelectItem key={u.id} value={u.id} className={selectItemDark}>
-                        {userLabel(u)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className={cn(inputDark, 'min-h-[40px] rounded-md border flex items-center px-3 text-gray-400 text-sm')}>
-                  Preparando…
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="session_date" className="text-gray-200">
-                Fecha de sesión
-              </Label>
-              <Input
-                id="session_date"
-                type="date"
-                value={sessionDate}
-                onChange={(e) => setSessionDate(e.target.value)}
-                className={inputDark}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="initial_balance" className="text-gray-200">
-                Saldo inicial
-              </Label>
-              <Input
-                id="initial_balance"
-                type="number"
-                min={0}
-                step={0.01}
-                value={initialBalance}
-                onChange={(e) => setInitialBalance(e.target.value)}
-                className={inputDark}
-                placeholder="0"
-                required
-              />
-            </div>
-            <div className="space-y-2 flex flex-col justify-end">
-              <Label className="text-gray-200 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={allowedToWithdraw}
-                  onChange={(e) => setAllowedToWithdraw(e.target.checked)}
-                  className="rounded border-gray-600 bg-[#0f171a] text-[#2563EB] focus:ring-[#2563EB]"
-                />
-                Permitir retiros
-              </Label>
-            </div>
-            <div className="flex items-end">
-              <Button
-                type="submit"
-                disabled={isSubmitting || !selectedUserId}
-                className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white min-h-[44px] disabled:opacity-50"
-                title={!selectedUserId ? 'Selecciona el usuario al que se asignará el saldo inicial' : undefined}
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                Crear sesión
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
 
-      {editingId && (
-        <Card className={cn('mb-6 border-[#2563EB]/50', cardDark)}>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-white">
-              Editar sesión
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label className="text-gray-200">Fecha</Label>
-                <Input
-                  type="date"
-                  value={editSessionDate}
-                  onChange={(e) => setEditSessionDate(e.target.value)}
-                  className={inputDark}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-200">Saldo inicial</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={editInitialBalance}
-                  onChange={(e) => setEditInitialBalance(e.target.value)}
-                  className={inputDark}
-                />
-              </div>
-              <div className="space-y-2 flex flex-col justify-end">
-                <Label className="text-gray-200 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={editAllowedToWithdraw}
-                    onChange={(e) => setEditAllowedToWithdraw(e.target.checked)}
-                    className="rounded border-gray-600 bg-[#0f171a] text-[#2563EB] focus:ring-[#2563EB]"
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="session_date" className={labelStyle}>Fecha</Label>
+                    <Input
+                      id="session_date"
+                      type="date"
+                      value={editingId ? editSessionDate : sessionDate}
+                      onChange={(e) => editingId ? setEditSessionDate(e.target.value) : setSessionDate(e.target.value)}
+                      className={inputStyle}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="initial_balance" className={labelStyle}>Saldo Inicial</Label>
+                    <Input
+                      id="initial_balance"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={editingId ? editInitialBalance : initialBalance}
+                      onChange={(e) => editingId ? setEditInitialBalance(e.target.value) : setInitialBalance(e.target.value)}
+                      className={inputStyle}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
+                  <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase cursor-pointer mb-0" htmlFor="withdraw_check">
+                    Permitir Retiros
+                  </Label>
+                  <Switch
+                    id="withdraw_check"
+                    checked={editingId ? editAllowedToWithdraw : allowedToWithdraw}
+                    onCheckedChange={(checked) => editingId ? setEditAllowedToWithdraw(checked) : setAllowedToWithdraw(checked)}
+                    className="data-[state=checked]:bg-success"
                   />
-                  Permitir retiros
-                </Label>
-              </div>
-              <div className="flex items-end gap-2">
-                <Button type="submit" disabled={isSubmitting} className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white min-h-[44px]">
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
-                </Button>
-                <Button type="button" variant="outline" onClick={cancelEdit} className="border-gray-600 text-gray-300 min-h-[44px]">
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+                </div>
 
-      <Card className={cn(cardDark)}>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-white">
-            Sesiones de caja
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!isLoadingList && sessions.length === 0 && !error && (
-            <p className="text-amber-200/90 text-sm mb-3 bg-amber-900/20 border border-amber-700/40 rounded-lg p-3">
-              No hay sesiones. Si el backend no tiene la ruta <code className="text-xs bg-black/30 px-1 rounded">/api/cash-sessions</code> aún, la lista estará vacía.
-            </p>
-          )}
+                <div className="flex gap-2 pt-2">
+                  {editingId ? (
+                    <>
+                      <Button type="submit" disabled={isSubmitting} className="flex-1 h-11 bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[10px]">
+                        Actualizar
+                      </Button>
+                      <Button type="button" variant="outline" onClick={cancelEdit} className="h-11 px-4 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[10px]">
+                        X
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || !selectedUserId}
+                      className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+                    >
+                      {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Abrir Caja'}
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="xl:col-span-8">
           <DynamicTable
             data={sessions}
             columns={columns}
             isLoading={isLoadingList}
             error={error}
-            emptyMessage="No hay sesiones de caja"
+            emptyMessage="No se registran sesiones de caja activas"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

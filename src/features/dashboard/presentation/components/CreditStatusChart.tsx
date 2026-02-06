@@ -1,4 +1,4 @@
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 
 interface CreditStatusChartProps {
   upToDatePercentage: number
@@ -14,51 +14,75 @@ export default function CreditStatusChart({
   clientsInArrears
 }: CreditStatusChartProps) {
   const data = [
-    { name: 'Al Día', value: upToDatePercentage, count: activeCredits - clientsInArrears },
-    { name: 'Atrasados', value: overduePercentage, count: clientsInArrears }
+    { name: 'Saldos al Día', value: upToDatePercentage, count: activeCredits - clientsInArrears, color: '#10b981' },
+    { name: 'En Mora', value: overduePercentage, count: clientsInArrears, color: '#ef4444' }
   ]
 
-  const COLORS = ['#10b981', '#ef4444']
-
   return (
-    <div className="bg-[#0f171a] border border-gray-600 rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold mb-4 text-white">Estado de Créditos</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-            outerRadius={80}
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {data.map((_, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: '#1f2937',
-              border: '1px solid #4b5563',
-              borderRadius: '6px'
-            }}
-          />
-          <Legend wrapperStyle={{ color: '#e5e7eb' }} />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="mt-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-400">Al Día:</span>
-          <span className="font-semibold text-gray-100">
-            {activeCredits - clientsInArrears} créditos
-          </span>
+    <div className="w-full h-full min-h-[300px]">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-base font-bold text-white/90 tracking-tight">Estado de Créditos</h3>
+        <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Cartera Actual</span>
+      </div>
+      
+      <div className="flex flex-col md:flex-row items-center gap-8">
+        <div className="relative w-full md:w-1/2 h-[220px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={85}
+                paddingAngle={5}
+                dataKey="value"
+                stroke="none"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(15, 23, 26, 0.8)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px',
+                }}
+                itemStyle={{ color: '#fff' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-2xl font-black text-white tabular-nums">{activeCredits}</span>
+            <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Total</span>
+          </div>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-400">Atrasados:</span>
-          <span className="font-semibold text-red-400">{clientsInArrears} créditos</span>
+
+        <div className="w-full md:w-1/2 space-y-4">
+          {data.map((item) => (
+            <div key={item.name} className="group p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] transition-all duration-300">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" 
+                    style={{ backgroundColor: item.color }} 
+                  />
+                  <span className="text-xs font-bold text-muted-foreground group-hover:text-white/80 transition-colors uppercase tracking-wide">
+                    {item.name}
+                  </span>
+                </div>
+                <span className="text-xs font-black text-white tabular-nums">
+                  {item.value.toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-lg font-extrabold text-white tabular-nums">{item.count}</span>
+                <span className="text-[10px] text-muted-foreground/50 font-medium italic">créditos</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

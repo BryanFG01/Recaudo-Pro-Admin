@@ -1,5 +1,5 @@
-import { Collection, CreateCollectionRequest } from '../models'
 import { CollectionFilters } from '@/shared/types/filters'
+import { Collection, CreateCollectionRequest } from '../models'
 
 export interface CollectionWithUserEmail extends Collection {
   user_email?: string | null

@@ -7,13 +7,16 @@ import { ClientRepository } from '@/features/clients/infrastructure/repositories
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
 import { CreditFilters } from '@/shared/types/filters'
+import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
-import { Download, Plus } from 'lucide-react'
+import { Download, Edit2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Credit } from '../../domain/models'
 import { CreditWithUserEmail } from '../../domain/port'
 import { CreditService } from '../../domain/services/CreditService'
 import { CreditRepository } from '../../infrastructure/repositories/CreditRepository'
+import { EditCreditModal } from '../components/EditCreditModal'
 
 export default function CreditsPage() {
   const { businessId, businessCode, user } = useAuthStore()
@@ -24,6 +27,10 @@ export default function CreditsPage() {
   const [, setUsersList] = useState<User[]>([])
   const [clientsList, setClientsList] = useState<Client[]>([])
   const [filters, setFilters] = useState<FilterValues>({ userId: undefined })
+
+  // State for Edit Modal
+  const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   const currentBusinessId = user?.business_id || businessId
 
@@ -158,12 +165,18 @@ export default function CreditsPage() {
     exportToExcel(dataToExport, { filename: 'creditos_recaudopro', sheetName: 'Créditos' })
   }
 
+  const handleEditClick = (credit: Credit) => {
+    setSelectedCredit(credit)
+    setIsEditModalOpen(true)
+  }
+
   const columns: Column<CreditWithUserEmail>[] = [
     {
       key: 'client_id',
       header: 'Cliente',
+      className: 'font-bold',
       render: (credit) => (
-        <span className="text-sm text-gray-200 font-medium">
+        <span className="text-sm text-info font-bold">
           {credit.client_id ? clientNameById[credit.client_id] ?? credit.client_id : '-'}
         </span>
       )
@@ -171,13 +184,15 @@ export default function CreditsPage() {
     {
       key: 'total_amount',
       header: 'Monto Total',
+      isNumeric: true,
       render: (credit) => formatCurrency(credit.total_amount)
     },
     {
       key: 'interest_rate',
-      header: 'Tasa interés',
+      header: 'Interés',
+      isNumeric: true,
       render: (credit) => (
-        <span className="text-gray-300">
+        <span className="text-muted-foreground/60 font-bold">
           {credit.interest_rate != null
             ? `${Number(credit.interest_rate)}%`
             : '-'}
@@ -186,9 +201,10 @@ export default function CreditsPage() {
     },
     {
       key: 'total_interest',
-      header: 'Total con interés',
+      header: 'Valor Final',
+      isNumeric: true,
       render: (credit) => (
-        <span className="text-gray-300 font-medium">
+        <span className="text-white font-extrabold">
           {credit.total_interest != null
             ? formatCurrency(credit.total_interest)
             : '-'}
@@ -197,14 +213,16 @@ export default function CreditsPage() {
     },
     {
       key: 'total_balance',
-      header: 'Saldo Restante',
+      header: 'Saldo Pendiente',
+      isNumeric: true,
       render: (credit) => {
         const balance = credit.total_balance
         return (
           <span
-            className={
-              balance === 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'
-            }
+            className={cn(
+              'px-2 py-0.5 rounded-md font-black',
+              balance === 0 ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
+            )}
           >
             {formatCurrency(balance)}
           </span>
@@ -214,58 +232,95 @@ export default function CreditsPage() {
     {
       key: 'installment_amount',
       header: 'Valor Cuota',
+      isNumeric: true,
       render: (credit) => formatCurrency(credit.installment_amount)
     },
     {
       key: 'paid_installments',
-      header: 'Cuotas Pagadas',
+      header: 'Progreso',
+      className: 'text-center',
       render: (credit) => (
-        <span>
-          {credit.paid_installments} / {credit.total_installments}
-        </span>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-[10px] font-black tabular-nums text-white">
+            {credit.paid_installments} / {credit.total_installments}
+          </span>
+          <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary" 
+              style={{ width: `${(credit.paid_installments / credit.total_installments) * 100}%` }}
+            />
+          </div>
+        </div>
       )
     },
     {
       key: 'overdue_installments',
-      header: 'Cuotas Atrasadas',
+      header: 'Mora',
+      isNumeric: true,
       render: (credit) => {
         const overdue = credit.overdue_installments
-        return <span className={overdue > 0 ? 'text-red-600 font-semibold' : ''}>{overdue}</span>
+        return (
+          <span className={cn(
+            "tabular-nums font-black",
+            overdue > 0 ? 'text-error' : 'text-muted-foreground/20'
+          )}>
+            {overdue}
+          </span>
+        )
       }
     },
     {
       key: 'next_due_date',
-      header: 'Próxima Fecha',
+      header: 'Vencimiento',
+      className: 'text-muted-foreground/50 text-[11px]',
       render: (credit) => (credit.next_due_date ? formatDate(credit.next_due_date) : '-')
+    },
+    {
+      key: 'id',
+      header: 'Acciones',
+      className: 'text-right',
+      render: (credit) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleEditClick(credit as Credit)}
+          className="hover:bg-primary/20 hover:text-primary transition-colors h-8 w-8"
+        >
+          <Edit2 className="w-4 h-4" />
+        </Button>
+      )
     }
   ]
 
   if (!currentBusinessId) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-gray-600">No hay business_id disponible. Por favor, inicia sesión.</p>
+        <p className="text-muted-foreground/60 italic font-medium">Esperando identificador de negocio...</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      <div className="flex-shrink-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white min-w-0">Créditos</h1>
+    <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white min-w-0">Gestión de Créditos</h1>
+          <p className="text-sm text-muted-foreground/60">Monitorea el estado de los préstamos, cuotas y niveles de recaudo.</p>
+        </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={handleExport}
             disabled={displayedCredits.length === 0}
-            className="min-h-[44px] border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white"
+            className="min-h-[44px] px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
           >
-            <Download className="w-4 h-4 mr-2 shrink-0" />
-            Exportar a Excel
+            <Download className="w-4 h-4 mr-2" />
+            Exportar XLS
           </Button>
-          <Button className="min-h-[44px] bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-0">
-            <Plus className="w-4 h-4 mr-2 shrink-0" />
+          {/* <Button className="min-h-[44px] px-6 bg-primary hover:bg-primary/90 text-white border-0 shadow-lg shadow-primary/20 transition-all font-bold uppercase tracking-widest text-[10px]">
+            <Plus className="w-4 h-4 mr-2" />
             Nuevo Crédito
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -283,9 +338,16 @@ export default function CreditsPage() {
           columns={columns}
           isLoading={isLoading}
           error={error}
-          emptyMessage="No hay créditos disponibles"
+          emptyMessage="No hay créditos encontrados para este período"
         />
       </div>
+
+      <EditCreditModal
+        isOpen={isEditModalOpen}
+        credit={selectedCredit}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={loadCredits}
+      />
     </div>
   )
 }

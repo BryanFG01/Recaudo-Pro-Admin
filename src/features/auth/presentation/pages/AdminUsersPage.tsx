@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
-import { Download, Plus, Trash2, X } from 'lucide-react'
+import { Download, Eye, EyeOff, Plus, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User } from '../../domain/models'
@@ -116,41 +117,54 @@ export default function AdminUsersPage() {
     [updateUserActive]
   )
 
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
+
+  const togglePasswordVisibility = (userId: string) => {
+    setVisiblePasswords((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
+  }
+
   const baseColumns: Column<User>[] = [
     {
       key: 'email',
       header: 'Email',
-      className: 'font-medium',
-      render: (user) => <span className="text-gray-200">{user.email || '-'}</span>
+      className: 'font-bold',
+      render: (user) => <span className="text-white">{user.email || '-'}</span>
     },
     {
-      // document
       key: 'document_id',
-      header: 'Número de documento',
-      render: (user) => <span className="text-gray-300">{user.document_number || '-'}</span>
+      header: 'Documento',
+      className: 'text-muted-foreground/60',
+      render: (user) => <span className="tabular-nums">{user.document_number || '-'}</span>
     },
     {
       key: 'name',
       header: 'Nombre',
-      render: (user) => <span className="text-gray-200">{user.name || '-'}</span>
+      render: (user) => <span className="text-white font-semibold">{user.name || '-'}</span>
     },
     {
       key: 'phone',
       header: 'Teléfono',
-      render: (user) => <span className="text-gray-300">{user.phone || '-'}</span>
+      className: 'text-muted-foreground/60 tabular-nums',
+      render: (user) => user.phone || '-'
     },
     {
       key: 'role',
       header: 'Rol',
       render: (user) => (
         <span
-          className={`px-2 py-1 rounded text-xs font-medium ${
+          className={cn(
+            'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border',
             user.role === 'admin'
-              ? 'bg-purple-900/50 text-purple-200 border border-purple-700/50'
+              ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
               : user.role === 'supervisor'
-              ? 'bg-blue-900/50 text-blue-200 border border-blue-700/50'
-              : 'bg-green-900/50 text-green-200 border border-green-700/50'
-          }`}
+              ? 'bg-info/10 text-info border-info/20'
+              : 'bg-primary/10 text-primary border-primary/20'
+          )}
         >
           {user.role}
         </span>
@@ -158,23 +172,41 @@ export default function AdminUsersPage() {
     },
     {
       key: 'number',
-      header: 'Código Empleado',
-      render: (user) => <span className="text-gray-300">{user.number || '-'}</span>
+      header: 'Personal',
+      className: 'text-center',
+      render: (user) => <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">#{user.number || '-'}</span>
     },
     {
       key: 'password',
-      header: 'Contraseña',
-      render: (user) => (
-        <span className="text-gray-300 font-mono text-sm">
-          {user.password ?? '-'}
-        </span>
-      )
+      header: 'Acceso',
+      render: (user) => {
+        const isVisible = visiblePasswords.has(user.id)
+        return (
+          <div className="flex items-center gap-2 group">
+            <span className={cn(
+              "font-mono text-[11px] transition-colors",
+              isVisible ? "text-primary font-bold" : "text-muted-foreground/30"
+            )}>
+              {user.password ? (isVisible ? user.password : '••••••••') : '-'}
+            </span>
+            {user.password && (
+              <button
+                onClick={() => togglePasswordVisibility(user.id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-white text-muted-foreground/40"
+              >
+                {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        )
+      }
     },
     {
       key: 'commission_percentage',
-      header: 'Comisión %',
+      header: 'Comisión',
+      isNumeric: true,
       render: (user) => (
-        <span className="text-gray-300">
+        <span className="text-success font-black tabular-nums">
           {user.commission_percentage !== null ? `${user.commission_percentage}%` : '-'}
         </span>
       )
@@ -186,36 +218,41 @@ export default function AdminUsersPage() {
       render: (user) => {
         const isUpdating = user.id != null && updatingIdentifier === user.id
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Switch
               checked={user.is_active}
               onCheckedChange={(checked) => handleToggleActive(user, checked)}
               disabled={isUpdating || deleteMode}
-              aria-label={user.is_active ? 'Activo' : 'Inactivo'}
+              className="data-[state=checked]:bg-success"
             />
-            <span className="text-sm text-gray-400">{user.is_active ? 'Activo' : 'Inactivo'}</span>
+            <span className={cn(
+              "text-[10px] font-black uppercase tracking-widest",
+              user.is_active ? 'text-success' : 'text-muted-foreground/40'
+            )}>
+              {user.is_active ? 'Activo' : 'Off'}
+            </span>
           </div>
         )
       }
     },
     {
       key: 'created_at',
-      header: 'Fecha Creación',
-      render: (user) => <span className="text-gray-300">{formatDate(user.created_at)}</span>
+      header: 'Alta',
+      className: 'text-muted-foreground/40 text-[10px]',
+      render: (user) => formatDate(user.created_at)
     }
   ]
 
   const selectColumn: Column<User> = {
     key: '_select',
-    header: 'Sel.',
+    header: 'Sel',
     render: (user) => (
       <input
         type="checkbox"
         checked={selectedIds.has(user.id)}
         onChange={() => toggleSelect(user.id)}
         onClick={(e) => e.stopPropagation()}
-        className="h-4 w-4 rounded border-gray-500 bg-[#2D3748] text-[#2563EB] focus:ring-[#2563EB]"
-        aria-label={`Seleccionar ${user.email || user.name || user.id}`}
+        className="h-4 w-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/50"
       />
     )
   }
@@ -225,67 +262,64 @@ export default function AdminUsersPage() {
   if (!businessId) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <p className="text-gray-400">No hay business_id disponible. Por favor, inicia sesión.</p>
-        </div>
+        <p className="text-muted-foreground/60 italic font-medium">Esperando identificador de negocio...</p>
       </div>
     )
   }
 
-  const btnClass =
-    'flex items-center gap-2 min-h-[44px] border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white'
-  const btnPrimary = 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-0'
-  const btnDanger = 'bg-red-600 hover:bg-red-700 text-white border-0'
-
   return (
-    <div className="flex flex-col h-full space-y-6">
-      <div className="flex-shrink-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Administración de Usuarios</h1>
-          <p className="text-sm text-gray-400 mt-1">Usuarios encontrados: {users.length}</p>
-          {deleteMode && (
-            <p className="text-sm text-amber-200/90 mt-1">
-              Selecciona uno o más usuarios para eliminar.
-            </p>
-          )}
+    <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">Equipo de Trabajo</h1>
+            <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] font-black text-muted-foreground/60 uppercase tabular-nums">
+              {users.length}
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground/60">Gestiona roles, permisos y porcentajes de comisión de tus colaboradores.</p>
         </div>
-        <div className="flex flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           {deleteMode ? (
-            <>
-              <Button onClick={cancelDeleteMode} variant="outline" className={btnClass}>
-                <X className="w-4 h-4 shrink-0" />
+            <div className="flex items-center gap-2 p-1 rounded-xl bg-error/5 border border-error/10">
+              <Button onClick={cancelDeleteMode} variant="ghost" className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-white/5">
+                <X className="w-4 h-4 mr-2" />
                 Cancelar
               </Button>
               <Button
                 onClick={handleDeleteSelected}
                 disabled={selectedIds.size === 0 || isDeleting}
-                className={`${btnClass} ${btnDanger}`}
+                className="h-9 px-4 bg-error hover:bg-error/90 text-white font-bold text-[10px] uppercase tracking-widest"
               >
-                <Trash2 className="w-4 h-4 shrink-0" />
+                <Trash2 className="w-4 h-4 mr-2" />
                 Eliminar ({selectedIds.size})
               </Button>
-            </>
+            </div>
           ) : (
             <>
               <Button
                 onClick={() => navigate('/admin/users/create')}
-                className={`${btnClass} ${btnPrimary}`}
+                className="h-11 px-6 bg-primary hover:bg-primary/90 text-white border-0 shadow-lg shadow-primary/20 transition-all font-bold uppercase tracking-widest text-[10px]"
               >
-                <Plus className="w-4 h-4 shrink-0" />
-                Crear Usuario
+                <Plus className="w-4 h-4 mr-2" />
+                Alta Usuario
               </Button>
-              <Button onClick={() => setDeleteMode(true)} variant="outline" className={btnClass}>
-                <Trash2 className="w-4 h-4 shrink-0" />
-                Eliminar usuarios
+              <Button 
+                onClick={() => setDeleteMode(true)} 
+                variant="outline" 
+                className="h-11 px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[10px]"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Modo Borrado
               </Button>
               <Button
                 onClick={handleExport}
                 disabled={users.length === 0}
                 variant="outline"
-                className={btnClass}
+                className="h-11 px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[10px]"
               >
-                <Download className="w-4 h-4 shrink-0" />
-                Exportar Excel
+                <Download className="w-4 h-4 mr-2" />
+                XLS
               </Button>
             </>
           )}
@@ -298,7 +332,7 @@ export default function AdminUsersPage() {
           columns={columns}
           isLoading={isLoading}
           error={error}
-          emptyMessage="No se encontraron usuarios para este business_id"
+          emptyMessage="No hay colaboradores registrados en este negocio"
         />
       </div>
     </div>
