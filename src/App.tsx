@@ -3,11 +3,12 @@ import AdminUsersPage from './features/auth/presentation/pages/AdminUsersPage'
 import CreateUserPage from './features/auth/presentation/pages/CreateUserPage'
 import LoginPage from './features/auth/presentation/pages/LoginPage'
 import { useAuthStore } from './features/auth/presentation/store/authStore'
+import { CashSessionFlowPage, CashSessionsPage } from './features/cash-sessions/presentation'
+import ClientMapPage from './features/clients/presentation/pages/ClientMapPage'
 import ClientsPage from './features/clients/presentation/pages/ClientsPage'
 import CollectionsPage from './features/collections/presentation/pages/CollectionsPage'
 import CreditsPage from './features/credits/presentation/pages/CreditsPage'
 import DashboardPage from './features/dashboard/presentation/pages/DashboardPage'
-import { CashSessionsPage, CashSessionFlowPage } from './features/cash-sessions/presentation'
 import { WithdrawalsPage } from './features/withdrawals/presentation'
 import { Layout } from './shared/components/Layout'
 
@@ -37,6 +38,16 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <ClientsPage />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/clients/map"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <ClientMapPage />
               </Layout>
             </PrivateRoute>
           }

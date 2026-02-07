@@ -12,7 +12,7 @@ import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDate, formatDateTime } from '@/shared/utils/date'
-import { Download, Loader2, TrendingUp } from 'lucide-react'
+import { DollarSign, Download, Loader2, TrendingUp } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CashSession, CashSessionFlow } from '../../domain/models'
 import { useCashSessions } from '../hooks/useCashSessions'
@@ -294,78 +294,118 @@ export default function CashSessionFlowPage() {
                   <p className="font-bold uppercase tracking-widest text-[10px]">Error al procesar flujo</p>
                 </div>
               ) : (
-                <div className="space-y-12">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
-                    <div className="relative group/val">
-                      <div className="absolute -inset-4 bg-primary/5 rounded-2xl opacity-0 group-hover/val:opacity-100 transition-opacity duration-500" />
-                      <p className={labelStyle}>Caja Inicial</p>
-                      <p className="text-4xl font-extrabold tracking-tighter text-white tabular-nums">
-                        {formatCurrency(flow.initial_balance)}
-                      </p>
-                    </div>
-                    <div className="relative group/val">
-                      <div className="absolute -inset-4 bg-success/5 rounded-2xl opacity-0 group-hover/val:opacity-100 transition-opacity duration-500" />
-                      <p className={cn(labelStyle, "text-success/60")}>Efectivo en Caja (Neto)</p>
-                      <p className="text-4xl font-extrabold tracking-tighter text-success tabular-nums">
-                        {formatCurrency(flow.efectivo_en_caja)}
-                      </p>
-                      <div className="h-0.5 w-12 bg-success mt-1 rounded-full overflow-hidden">
-                        <div className="h-full bg-success/20 animate-[loading_2s_infinite]" />
+                <div className="space-y-10">
+                  {/* Bloque 1: Fondo Inicial y Colocación */}
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 border-b border-primary/10 pb-2">Gestión de Caja Inicial & Ventas</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                      <div className="space-y-1 group/val relative">
+                        <p className={labelStyle}>Caja Inicial Recibida</p>
+                        <p className="text-2xl font-black tracking-tight text-white tabular-nums">
+                          {formatCurrency(flow.initial_balance)}
+                        </p>
+                      </div>
+                      <div className="space-y-1 group/val relative">
+                        <p className={cn(labelStyle, "text-error/60")}>Ventas (Capital Prestado)</p>
+                        <p className="text-2xl font-black tracking-tight text-error/80 tabular-nums">
+                          -{formatCurrency(flow.total_credits)}
+                        </p>
+                      </div>
+                      <div className="space-y-1 group/val relative">
+                        <p className={cn(labelStyle, "text-success/60")}>Efectivo Restante de Caja</p>
+                        <p className="text-2xl font-black tracking-tight text-success tabular-nums">
+                          {formatCurrency(flow.caja_inicial_restante)}
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-white/5">
-                    <div className="space-y-1">
-                      <p className={labelStyle}>Recaudos</p>
-                      <p className="text-xl font-bold text-white tabular-nums">{formatCurrency(flow.total_collected)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className={labelStyle}>Retiros Autorizados</p>
-                      <p className="text-xl font-bold text-error tabular-nums">{formatCurrency(flow.total_withdrawals_approved)}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className={labelStyle}>Saldo Disponible</p>
-                      <p className="text-xl font-bold text-info tabular-nums">{formatCurrency(flow.saldo_disponible)}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 p-6 rounded-2xl bg-white/[0.01] border border-white/5">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Progreso Operativo</span>
-                        <span className="text-[10px] font-black text-white tabular-nums">
-                          {Math.round((flow.total_collected / (flow.total_credits || 1)) * 100)}%
-                        </span>
+                  {/* Bloque 2: Operatividad de la Sesión */}
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-info/60 border-b border-info/10 pb-2">Flujo de Movimientos (Operatividad)</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                      <div className="space-y-1">
+                        <p className={labelStyle}>Total Recaudado</p>
+                        <p className="text-xl font-bold text-white tabular-nums">
+                          +{formatCurrency(flow.total_collected)}
+                        </p>
                       </div>
-                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                         <div 
-                          className="h-full bg-primary transition-all duration-1000 ease-out" 
-                          style={{ width: `${Math.min((flow.total_collected / (flow.total_credits || 1)) * 100, 100)}%` }}
-                        />
+                      <div className="space-y-1">
+                        <p className={labelStyle}>Retiros Autorizados</p>
+                        <p className="text-xl font-bold text-error/60 tabular-nums">
+                          -{formatCurrency(flow.total_withdrawals_approved)}
+                        </p>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className={labelStyle}>Emisión Créditos</p>
-                        <p className="text-sm font-bold text-white tabular-nums">{formatCurrency(flow.total_credits)}</p>
-                      </div>
-                      <div>
-                        <p className={labelStyle}>Caja Inicial Remitente</p>
-                        <p className="text-sm font-bold text-white tabular-nums">{formatCurrency(flow.caja_inicial_restante)}</p>
+                      <div className="space-y-1">
+                        <p className={cn(labelStyle, flow.total_recaudo_mostrado >= 0 ? "text-success/60" : "text-error/60")}>Margen de Sesión</p>
+                        <p className={cn(
+                          "text-xl font-bold tabular-nums",
+                          flow.total_recaudo_mostrado >= 0 ? "text-success" : "text-error"
+                        )}>
+                          {flow.total_recaudo_mostrado >= 0 ? '+' : ''}{formatCurrency(flow.total_recaudo_mostrado)}
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-8 grid grid-cols-2 gap-4 opacity-40">
-                     <div>
-                        <p className={labelStyle}>Creación Registro</p>
-                        <p className="text-[10px] font-bold text-white">{flow.session_created_at ? formatDateTime(flow.session_created_at) : '-'}</p>
+                  {/* Bloque 3: Resultado Final & Cuadre */}
+                  <div className="space-y-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 border-b border-primary/10 pb-2">Resultado Final & Arqueo de Caja</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="relative p-6 rounded-3xl bg-primary/5 border border-primary/10 overflow-hidden group/result">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/result:opacity-20 transition-opacity">
+                          <DollarSign className="w-12 h-12" />
+                        </div>
+                        <div className="relative z-10 space-y-2">
+                          <p className={cn(labelStyle, "text-primary/60 mb-0")}>Saldo Neto Liquidado</p>
+                          <p className="text-4xl font-black tracking-tighter text-white tabular-nums">
+                            {formatCurrency(flow.saldo_disponible)}
+                          </p>
+                          <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest italic">Balance después de préstamos</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className={labelStyle}>Último Sync</p>
-                        <p className="text-[10px] font-bold text-white">{flow.session_updated_at ? formatDateTime(flow.session_updated_at) : '-'}</p>
+
+                      <div className="relative p-6 rounded-3xl bg-success/5 border border-success/10 overflow-hidden group/cash">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/cash:opacity-20 transition-opacity">
+                          <TrendingUp className="w-12 h-12" />
+                        </div>
+                        <div className="relative z-10 space-y-2">
+                          <p className={cn(labelStyle, "text-success/60 mb-0")}>Efectivo en Caja (Estimado)</p>
+                          <p className="text-4xl font-black tracking-tighter text-success tabular-nums">
+                            {formatCurrency(flow.efectivo_en_caja)}
+                          </p>
+                          <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest italic">Total recaudado + inicial restante</p>
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 p-6 rounded-2xl bg-white/[0.01] border border-white/5 items-center">
+                      <div className="w-full space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Progreso Operativo (Ventas vs Recaudos)</span>
+                          <span className="text-[10px] font-black text-white tabular-nums">
+                            {Math.round((flow.total_collected / (flow.total_credits || 1)) * 100)}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary transition-all duration-1000 ease-out" 
+                            style={{ width: `${Math.min((flow.total_collected / (flow.total_credits || 1)) * 100, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-6 opacity-40">
+                        <div className="text-right">
+                          <p className={labelStyle}>Creación Registro</p>
+                          <p className="text-[10px] font-bold text-white">{flow.session_created_at ? formatDateTime(flow.session_created_at) : '-'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={labelStyle}>Último Sync</p>
+                          <p className="text-[10px] font-bold text-white">{flow.session_updated_at ? formatDateTime(flow.session_updated_at) : '-'}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

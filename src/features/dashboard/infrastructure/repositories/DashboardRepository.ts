@@ -1,6 +1,6 @@
-import { IDashboardRepository } from '../../domain/port'
-import { DashboardStats, DashboardStatsRequest, DailyCollectionData } from '../../domain/models'
-import { apiClient } from '@/shared/config/api'
+import { apiClient } from '@/shared/config/api';
+import { DailyCollectionData, DashboardStats, DashboardStatsRequest } from '../../domain/models';
+import { IDashboardRepository } from '../../domain/port';
 
 type CollectionRow = { amount: number; payment_date: string; payment_method?: string | null }
 type CreditRow = { client_id: string; total_balance: number; overdue_installments: number }
@@ -25,7 +25,8 @@ export class DashboardRepository implements IDashboardRepository {
     // 1. Recaudos del período
     let collections: CollectionRow[] = []
     try {
-      const params = new URLSearchParams({ businessId })
+      const params = new URLSearchParams()
+      params.set('business_id', businessId)
       if (startDate) params.set('startDate', startDate.toISOString())
       if (endDate) params.set('endDate', endDate.toISOString())
       const data = await apiClient.get<CollectionRow[]>(`/api/collections?${params.toString()}`)
@@ -37,7 +38,7 @@ export class DashboardRepository implements IDashboardRepository {
     // 2. Créditos del negocio
     let credits: CreditRow[] = []
     try {
-      const data = await apiClient.get<CreditRow[]>(`/api/credits?businessId=${encodeURIComponent(businessId)}`)
+      const data = await apiClient.get<CreditRow[]>(`/api/credits?business_id=${encodeURIComponent(businessId)}`)
       credits = Array.isArray(data) ? data : []
     } catch {
       credits = []

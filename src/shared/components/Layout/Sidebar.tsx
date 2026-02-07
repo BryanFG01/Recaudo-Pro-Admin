@@ -3,13 +3,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { cn } from '@/shared/utils/cn'
-import { Banknote, CreditCard, DollarSign, LayoutDashboard, LogOut, TrendingUp, UserCog, Users, Wallet, X } from 'lucide-react'
+import { Banknote, CreditCard, DollarSign, LayoutDashboard, LogOut, Navigation, TrendingUp, UserCog, Users, Wallet, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
@@ -17,6 +15,7 @@ const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/admin/users', label: 'Admin Usuarios', icon: UserCog },
   { path: '/clients', label: 'Clientes', icon: Users },
+  { path: '/clients/map', label: 'Mapa de Clientes', icon: Navigation },
   { path: '/credits', label: 'Créditos', icon: CreditCard },
   { path: '/collections', label: 'Recaudos', icon: DollarSign },
   { path: '/cash-sessions', label: 'Saldo inicial', icon: Banknote },
@@ -123,32 +122,41 @@ export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
 
       <Dialog open={openLogout} onOpenChange={setOpenLogout}>
         <DialogContent
-          className="bg-[#2D3748] border-gray-600 text-gray-200 shadow-xl [&>button]:text-gray-400 [&>button]:hover:text-white [&>button]:opacity-100 [&>button]:focus:ring-[#2563EB] [&>button]:focus:ring-offset-[#1a2436]"
+          className="bg-[#0f171a]/95 border-white/5 text-gray-200 shadow-2xl backdrop-blur-xl sm:max-w-[400px] p-0 overflow-hidden rounded-3xl"
           aria-describedby="logout-description"
         >
-          <DialogHeader>
-            <DialogTitle className="text-white">Cerrar sesión</DialogTitle>
-            <DialogDescription id="logout-description" className="text-gray-400">
-              ¿Estás seguro de que deseas cerrar sesión?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-row gap-2 sm:justify-end pt-4">
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => setOpenLogout(false)}
-              className="border-gray-600 text-gray-300 hover:bg-white/10 hover:border-gray-500 hover:text-white"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={handleLogout}
-              className="bg-[#2563EB] hover:bg-[#1d4ed8] text-white border-0"
-            >
-              Cerrar sesión
-            </Button>
-          </DialogFooter>
+          <div className="p-8 space-y-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-2">
+                <LogOut className="w-8 h-8 text-red-500" />
+              </div>
+              
+              <div className="space-y-1">
+                <DialogTitle className="text-2xl font-black text-white tracking-tight">Cerrar Sesión</DialogTitle>
+                <DialogDescription id="logout-description" className="text-sm text-muted-foreground/60 font-medium">
+                   ¿Estás seguro de que deseas finalizar tu sesión actual? Tendrás que volver a ingresar tus credenciales.
+                </DialogDescription>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 pt-2">
+              <Button
+                type="button"
+                onClick={handleLogout}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest text-[10px] h-12 rounded-xl shadow-lg shadow-red-600/20 border-0"
+              >
+                Confirmar Salida
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setOpenLogout(false)}
+                className="w-full text-muted-foreground hover:text-white hover:bg-white/5 font-bold uppercase tracking-widest text-[10px] h-12 rounded-xl border border-transparent hover:border-white/5"
+              >
+                Mantener Sesión
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

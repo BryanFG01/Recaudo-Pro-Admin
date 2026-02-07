@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import StatsCard from '@/shared/components/StatsCard/StatsCard'
-import { AlertTriangle, CreditCard, DollarSign, Users } from 'lucide-react'
+import { AlertTriangle, CreditCard, DollarSign, Loader2, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CollectionChart, CreditStatusChart } from '../components'
 import { useDashboard } from '../hooks/useDashboard'
@@ -49,11 +49,9 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64" role="status" aria-live="polite">
-        <div
-          className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0f171a]"
-          aria-label="Cargando datos del dashboard"
-        />
+      <div className="flex flex-col items-center justify-center min-h-[400px] w-full space-y-4" role="status" aria-live="polite">
+        <Loader2 className="h-10 w-10 animate-spin text-primary/80" />
+        <p className="text-sm text-muted-foreground animate-pulse">Cargando estadísticas...</p>
         <span className="sr-only">Cargando datos del dashboard...</span>
       </div>
     )
