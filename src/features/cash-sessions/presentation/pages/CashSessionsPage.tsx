@@ -133,10 +133,17 @@ export default function CashSessionsPage() {
       setError('Saldo inválido.')
       return
     }
+    const isDuplicateDate = sessions.some(
+      (s) => s.session_date && s.session_date.slice(0, 10) === sessionDate
+    )
+    if (isDuplicateDate) {
+      setError('Ya existe una sesión de caja para esta fecha. Elige otra fecha o edita la sesión existente.')
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
     setSuccess(null)
-    
     const businessIdForCreate = businessId || currentBusinessId
     try {
       await createCashSession({
@@ -151,7 +158,15 @@ export default function CashSessionsPage() {
       setInitialBalance('0')
       loadSessions()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear sesión')
+      const msg = err instanceof Error ? err.message : 'Error al crear sesión'
+      const isDuplicateConstraint =
+        typeof msg === 'string' &&
+        (msg.includes('cash_sessions_business_date_unique') || msg.includes('duplicate key'))
+      setError(
+        isDuplicateConstraint
+          ? 'Ya existe una sesión de caja para este negocio en esta fecha. Elige otra fecha o edita la sesión existente.'
+          : msg
+      )
     } finally {
       setIsSubmitting(false)
     }
