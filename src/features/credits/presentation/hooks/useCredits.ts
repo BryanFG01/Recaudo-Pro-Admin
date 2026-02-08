@@ -6,6 +6,7 @@ import {
   buildGetCreditsUseCase,
   buildGetCreditsByClientIdUseCase,
   buildGetCreditByIdUseCase,
+  buildGetCreditSummaryUseCase,
   buildCreateCreditUseCase,
   buildUpdateCreditUseCase,
 } from '../../application/useCases'
@@ -32,6 +33,11 @@ export const useCredits = () => {
 
   const getCreditByIdUseCase = useMemo(
     () => buildGetCreditByIdUseCase(creditService),
+    [creditService]
+  )
+
+  const getCreditSummaryUseCase = useMemo(
+    () => buildGetCreditSummaryUseCase(creditService),
     [creditService]
   )
 
@@ -68,6 +74,10 @@ export const useCredits = () => {
     return result
   }
 
+  const getCreditSummary = async (id: string) => {
+    return getCreditSummaryUseCase(id)
+  }
+
   return {
     credits: data || [],
     error,
@@ -77,6 +87,7 @@ export const useCredits = () => {
     updateCredit,
     getCreditsByClientId: getCreditsByClientIdUseCase,
     getCreditById: getCreditByIdUseCase,
+    getCreditSummary,
   }
 }
 

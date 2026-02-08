@@ -1,5 +1,5 @@
 import { CreditFilters } from '@/shared/types/filters'
-import { CreateCreditRequest, UpdateCreditRequest } from '../models'
+import { CreateCreditRequest, CreditSummary, UpdateCreditRequest } from '../models'
 import { CreditWithUserEmail, ICreditRepository } from '../port'
 
 export class CreditService {
@@ -28,6 +28,26 @@ export class CreditService {
       throw new Error('ID de crédito es requerido')
     }
     return this.repository.getCreditById(id)
+  }
+
+  async getCreditSummary(id: string): Promise<CreditSummary | null> {
+    if (!id) {
+      throw new Error('ID de crédito es requerido')
+    }
+    return this.repository.getCreditSummary(id)
+  }
+
+  async getCreditSummariesByBusinessAndUser(
+    businessId: string,
+    userId: string
+  ): Promise<CreditSummary[]> {
+    if (!businessId?.trim() || !userId?.trim()) {
+      return []
+    }
+    return this.repository.getCreditSummariesByBusinessAndUser(
+      businessId.trim(),
+      userId.trim()
+    )
   }
 
   async createCredit(request: CreateCreditRequest, businessId: string) {

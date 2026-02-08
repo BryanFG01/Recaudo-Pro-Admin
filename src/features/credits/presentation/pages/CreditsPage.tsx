@@ -12,7 +12,7 @@ import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
 import { Download, Edit2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Credit } from '../../domain/models'
+import { Credit, CreditSummary } from '../../domain/models'
 import { CreditWithUserEmail } from '../../domain/port'
 import { CreditService } from '../../domain/services/CreditService'
 import { CreditRepository } from '../../infrastructure/repositories/CreditRepository'
@@ -31,6 +31,9 @@ export default function CreditsPage() {
   // State for Edit Modal
   const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  /** Saldos desde GET /api/credits/summary/:id para pintar Saldo Pendiente correcto (la lista a veces trae 0). */
+  const [summaryByCreditId, setSummaryByCreditId] = useState<Record<string, CreditSummary>>({})
 
   const currentBusinessId = user?.business_id || businessId
 
@@ -136,6 +139,28 @@ export default function CreditsPage() {
       }
 
       setFilteredCredits(data)
+
+      // Enriquecer con GET /api/credits/summary/:id para que Saldo Pendiente no salga en cero
+      const CONCURRENCY = 6
+      const ids = data.map((c) => c.id).filter(Boolean)
+      const next: Record<string, CreditSummary> = {}
+      for (let i = 0; i < ids.length; i += CONCURRENCY) {
+        const chunk = ids.slice(i, i + CONCURRENCY)
+        const results = await Promise.all(
+          chunk.map(async (id) => {
+            try {
+              const s = await creditService.getCreditSummary(id)
+              return { id, summary: s }
+            } catch {
+              return { id, summary: null }
+            }
+          })
+        )
+        results.forEach(({ id, summary }) => {
+          if (summary) next[id] = summary
+        })
+      }
+      setSummaryByCreditId(next)
     } catch (err) {
       console.error('❌ Error al cargar créditos:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar créditos')
@@ -149,19 +174,29 @@ export default function CreditsPage() {
   }
 
   const handleExport = () => {
-    const dataToExport = displayedCredits.map((credit) => ({
+    const dataToExport = displayedCredits.map((credit) => {
+      const s = summaryByCreditId[credit.id]
+      const totalPaid = s?.total_paid != null && !Number.isNaN(Number(s.total_paid)) ? Number(s.total_paid) : 0
+      const saldo = s?.total_balance ?? credit.total_balance
+      const saldoNum = saldo != null && !Number.isNaN(Number(saldo)) ? Number(saldo) : 0
+      const paid = s?.paid_installments ?? credit.paid_installments
+      const total = s?.total_installments ?? credit.total_installments
+      const overdue = s?.overdue_installments ?? credit.overdue_installments
+      return {
       'ID Crédito': credit.id,
       Cliente: credit.client_id ? clientNameById[credit.client_id] ?? credit.client_id : '-',
       'Monto Total': formatCurrency(credit.total_amount),
       'Tasa interés': credit.interest_rate != null ? `${Number(credit.interest_rate)}%` : '-',
       'Total con interés': credit.total_interest != null ? formatCurrency(credit.total_interest) : '-',
-      'Saldo Restante': formatCurrency(credit.total_balance),
+      'Total pagado': formatCurrency(totalPaid),
+      'Saldo Restante': formatCurrency(saldoNum),
       'Valor Cuota': formatCurrency(credit.installment_amount),
-      'Cuotas Pagadas': `${credit.paid_installments} / ${credit.total_installments}`,
-      'Cuotas Atrasadas': credit.overdue_installments,
+      'Cuotas Pagadas': `${paid} / ${total}`,
+      'Cuotas Atrasadas': overdue,
       'Próxima Fecha': credit.next_due_date ? formatDate(credit.next_due_date) : 'N/A',
       'Fecha Creación': formatDate(credit.created_at)
-    }))
+    }
+    })
     exportToExcel(dataToExport, { filename: 'creditos_recaudopro', sheetName: 'Créditos' })
   }
 
@@ -212,11 +247,27 @@ export default function CreditsPage() {
       )
     },
     {
+      key: 'total_paid',
+      header: 'Total pagado',
+      isNumeric: true,
+      render: (credit) => {
+        const raw = summaryByCreditId[credit.id]?.total_paid
+        const value = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
+        return (
+          <span className="font-mono font-semibold text-success">
+            {formatCurrency(value)}
+          </span>
+        )
+      }
+    },
+    {
       key: 'total_balance',
       header: 'Saldo Pendiente',
       isNumeric: true,
       render: (credit) => {
-        const balance = credit.total_balance
+        // Preferir total_balance de GET /api/credits/summary/:id (va bajando con cada abono)
+        const raw = summaryByCreditId[credit.id]?.total_balance ?? credit.total_balance
+        const balance = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
         return (
           <span
             className={cn(
@@ -239,32 +290,38 @@ export default function CreditsPage() {
       key: 'paid_installments',
       header: 'Progreso',
       className: 'text-center',
-      render: (credit) => (
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-[10px] font-black tabular-nums text-white">
-            {credit.paid_installments} / {credit.total_installments}
-          </span>
-          <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary" 
-              style={{ width: `${(credit.paid_installments / credit.total_installments) * 100}%` }}
-            />
+      render: (credit) => {
+        const s = summaryByCreditId[credit.id]
+        const paid = s?.paid_installments ?? credit.paid_installments
+        const total = s?.total_installments ?? credit.total_installments
+        const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0
+        return (
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[10px] font-black tabular-nums text-white">
+              {paid} / {total}
+            </span>
+            <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
           </div>
-        </div>
-      )
+        )
+      }
     },
     {
       key: 'overdue_installments',
       header: 'Mora',
       isNumeric: true,
       render: (credit) => {
-        const overdue = credit.overdue_installments
+        const overdue = summaryByCreditId[credit.id]?.overdue_installments ?? credit.overdue_installments
         return (
           <span className={cn(
             "tabular-nums font-black",
-            overdue > 0 ? 'text-error' : 'text-muted-foreground/20'
+            (overdue ?? 0) > 0 ? 'text-error' : 'text-muted-foreground/20'
           )}>
-            {overdue}
+            {overdue ?? 0}
           </span>
         )
       }

@@ -1,5 +1,5 @@
 import { CreditService } from '../../domain/services/CreditService'
-import { Credit, CreateCreditRequest, UpdateCreditRequest } from '../../domain/models'
+import { Credit, CreateCreditRequest, CreditSummary, UpdateCreditRequest } from '../../domain/models'
 
 export const buildGetCreditsUseCase = (service: CreditService) => {
   return async (): Promise<Credit[]> => {
@@ -16,6 +16,12 @@ export const buildGetCreditsByClientIdUseCase = (service: CreditService) => {
 export const buildGetCreditByIdUseCase = (service: CreditService) => {
   return async (id: string): Promise<Credit | null> => {
     return service.getCreditById(id)
+  }
+}
+
+export const buildGetCreditSummaryUseCase = (service: CreditService) => {
+  return async (id: string): Promise<CreditSummary | null> => {
+    return service.getCreditSummary(id)
   }
 }
 

@@ -1,6 +1,6 @@
 import { apiClient } from '@/shared/config/api'
 import { CreditFilters } from '@/shared/types/filters'
-import { CreateCreditRequest, Credit, UpdateCreditRequest } from '../../domain/models'
+import { CreateCreditRequest, Credit, CreditSummary, UpdateCreditRequest } from '../../domain/models'
 import { CreditWithUserEmail, ICreditRepository } from '../../domain/port'
 
 /**
@@ -8,6 +8,8 @@ import { CreditWithUserEmail, ICreditRepository } from '../../domain/port'
  * - GET /api/credits
  * - GET /api/credits?clientId=
  * - GET /api/credits/:id
+ * - GET /api/credits/summary/:id (resumen de un crédito)
+ * - GET /api/credits/summary?business_id=&user_id= (resúmenes por cobrador)
  * - GET /api/credits?businessId=&clientId=&startDate=&endDate=&userEmail= (devuelve CreditWithUserEmail[])
  * - POST /api/credits (body: CreateCreditRequest + business_id)
  * - PATCH /api/credits/:id (body: campos a actualizar)
@@ -37,6 +39,38 @@ export class CreditRepository implements ICreditRepository {
     } catch (e) {
       if (e instanceof Error && e.message.includes('404')) return null
       throw e
+    }
+  }
+
+  async getCreditSummary(id: string): Promise<CreditSummary | null> {
+    try {
+      return await apiClient.get<CreditSummary>(
+        `/api/credits/summary/${encodeURIComponent(id)}`
+      )
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('404')) return null
+      throw e
+    }
+  }
+
+  /** GET /api/credits/summary?business_id=&user_id= — resúmenes del cobrador (ventas por usuario). */
+  async getCreditSummariesByBusinessAndUser(
+    businessId: string,
+    userId: string
+  ): Promise<CreditSummary[]> {
+    try {
+      const params = new URLSearchParams({
+        business_id: businessId,
+        user_id: userId
+      })
+      const data = await apiClient.get<CreditSummary[] | CreditSummary>(
+        `/api/credits/summary?${params.toString()}`
+      )
+      if (Array.isArray(data)) return data
+      if (data && typeof data === 'object' && 'total_amount' in data) return [data as CreditSummary]
+      return []
+    } catch {
+      return []
     }
   }
 

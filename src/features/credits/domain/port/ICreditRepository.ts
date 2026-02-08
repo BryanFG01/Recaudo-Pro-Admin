@@ -1,5 +1,5 @@
 import { CreditFilters } from '@/shared/types/filters'
-import { CreateCreditRequest, Credit, UpdateCreditRequest } from '../models'
+import { CreateCreditRequest, Credit, CreditSummary, UpdateCreditRequest } from '../models'
 
 export interface CreditWithUserEmail extends Credit {
   /** ID del usuario responsable (para mostrar nombre). */
@@ -14,7 +14,11 @@ export interface ICreditRepository {
   getCreditsByBusinessId(businessId: string): Promise<CreditWithUserEmail[]>
   getCreditsByClientId(clientId: string): Promise<Credit[]>
   getCreditById(id: string): Promise<Credit | null>
-  getCreditsWithFilters(filters: CreditFilters): Promise<CreditWithUserEmail[]> 
+  /** GET /api/credits/summary/:id — resumen detallado del crédito. */
+  getCreditSummary(id: string): Promise<CreditSummary | null>
+  /** GET /api/credits/summary?business_id=&user_id= — resúmenes por cobrador. */
+  getCreditSummariesByBusinessAndUser(businessId: string, userId: string): Promise<CreditSummary[]>
+  getCreditsWithFilters(filters: CreditFilters): Promise<CreditWithUserEmail[]>
   createCredit(request: CreateCreditRequest, businessId: string): Promise<Credit>
   updateCredit(request: UpdateCreditRequest, businessId: string): Promise<Credit>
 }

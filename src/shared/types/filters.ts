@@ -11,6 +11,8 @@ export interface CreditFilters extends DateFilter {
 
 export interface CollectionFilters extends DateFilter {
   businessId: string
+  /** Filtro por usuario: GET /api/collections?business_id=&user_id= */
+  userId?: string
   clientId?: string
   userEmail?: string
   payment_method?: string

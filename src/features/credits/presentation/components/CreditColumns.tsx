@@ -32,7 +32,8 @@ export const createCreditColumns = (): Column<Credit>[] => [
     key: 'total_balance',
     header: 'Saldo Restante',
     render: (credit) => {
-      const balance = credit.total_balance as number
+      const raw = credit.total_balance as number | null | undefined
+      const balance = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
       return (
         <span className={balance === 0 ? 'text-success font-semibold' : ''}>
           {formatCurrency(balance)}

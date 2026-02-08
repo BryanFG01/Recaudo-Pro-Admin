@@ -9,7 +9,7 @@ import { CollectionWithUserEmail, ICollectionRepository } from '../../domain/por
  * - GET /api/collections?limit=
  * - GET /api/collections?clientId=
  * - GET /api/collections?creditId=
- * - GET /api/collections?businessId=&clientId=&startDate=&endDate=&payment_method=&userEmail=
+ * - GET /api/collections?businessId=&business_id=&userId=&user_id=&clientId=&startDate=&endDate=&payment_method=&userEmail=
  * - POST /api/collections (body: CreateCollectionRequest + business_id, user_id)
  */
 export class CollectionRepository implements ICollectionRepository {
@@ -50,6 +50,11 @@ export class CollectionRepository implements ICollectionRepository {
   async getCollectionsWithFilters(filters: CollectionFilters): Promise<CollectionWithUserEmail[]> {
     const params = new URLSearchParams()
     params.set('businessId', filters.businessId)
+    params.set('business_id', filters.businessId)
+    if (filters.userId?.trim()) {
+      params.set('userId', filters.userId.trim())
+      params.set('user_id', filters.userId.trim())
+    }
     if (filters.clientId?.trim()) {
       params.set('clientId', filters.clientId.trim())
       params.set('client_id', filters.clientId.trim())

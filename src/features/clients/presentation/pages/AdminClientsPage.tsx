@@ -12,7 +12,10 @@ import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { CreditRepository } from '@/features/credits/infrastructure/repositories/CreditRepository'
+import { CreditService } from '@/features/credits/domain/services/CreditService'
+import { CreditSummary } from '@/features/credits/domain/models'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
+import { formatCurrency } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
 import { Download, Filter } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -47,7 +50,10 @@ export default function AdminClientsPage() {
     return new ClientService(repository)
   }, [])
 
-  const creditRepository = useMemo(() => new CreditRepository(), [])
+  const creditService = useMemo(() => {
+    const repo = new CreditRepository()
+    return new CreditService(repo)
+  }, [])
 
   useEffect(() => {
     if (currentBusinessId && user?.id) {
@@ -98,18 +104,50 @@ export default function AdminClientsPage() {
           businessCode ?? undefined,
           user.number ?? undefined
         ),
-        creditRepository.getCreditsByBusinessId(currentBusinessId)
+        creditService.getCreditsByBusinessId(currentBusinessId)
       ])
 
-      // Enriquecer cada cliente con totales de sus créditos (total préstamos, monto total, saldo pendiente)
+      // Saldos reales desde GET /api/credits/summary/:id (la lista a veces trae total_balance en 0)
+      const summaryByCreditId: Record<string, CreditSummary> = {}
+      const CONCURRENCY = 6
+      const creditIds = credits.map((c) => c.id).filter(Boolean)
+      for (let i = 0; i < creditIds.length; i += CONCURRENCY) {
+        const chunk = creditIds.slice(i, i + CONCURRENCY)
+        const results = await Promise.all(
+          chunk.map(async (id) => {
+            try {
+              const s = await creditService.getCreditSummary(id)
+              return { id, summary: s }
+            } catch {
+              return { id, summary: null }
+            }
+          })
+        )
+        results.forEach(({ id, summary }) => {
+          if (summary) summaryByCreditId[id] = summary
+        })
+      }
+
+      // Enriquecer cada cliente con totales de sus créditos (desde summary: total_paid sube y total_balance baja al abonar)
       const enriched: ClientWithCredits[] = clientsFromApi.map((client) => {
         const clientCredits = credits.filter((c) => c.client_id === client.id)
         const total_amount = clientCredits.reduce((s, c) => s + (c.total_amount ?? 0), 0)
-        const total_balance = clientCredits.reduce((s, c) => s + (c.total_balance ?? 0), 0)
+        let total_paid = 0
+        let total_balance = 0
+        clientCredits.forEach((c) => {
+          const s = summaryByCreditId[c.id]
+          const paid = s?.total_paid != null && !Number.isNaN(Number(s.total_paid)) ? Number(s.total_paid) : 0
+          const balance = s?.total_balance != null && !Number.isNaN(Number(s.total_balance))
+            ? Number(s.total_balance)
+            : (c.total_balance != null && !Number.isNaN(Number(c.total_balance)) ? Number(c.total_balance) : 0)
+          total_paid += paid
+          total_balance += balance
+        })
         return {
           ...client,
           total_credits: clientCredits.length,
           total_amount,
+          total_paid,
           total_balance
         }
       })
@@ -127,30 +165,27 @@ export default function AdminClientsPage() {
   }
 
   const handleExport = () => {
-    const exportData = filteredClients.map((client) => ({
+    const exportData = filteredClients.map((client) => {
+      const saldo = client.total_balance != null && !Number.isNaN(Number(client.total_balance)) ? Number(client.total_balance) : 0
+      const pagado = client.total_paid != null && !Number.isNaN(Number(client.total_paid)) ? Number(client.total_paid) : 0
+      return {
       Nombre: client.name,
       Teléfono: client.phone,
       'Asignado a': client.user_id
         ? (userNameById[client.user_id] ?? client.user_email ?? 'N/A')
         : client.user_email || 'N/A',
       'Total Préstamos': client.total_credits,
-      'Monto Total': client.total_amount,
-      'Cuanto Debe': client.total_balance,
+      'Monto Total': formatCurrency(client.total_amount),
+      'Total pagado': formatCurrency(pagado),
+      'Saldo Pendiente': formatCurrency(saldo),
       Documento: client.document_id || 'N/A'
-    }))
+    }
+    })
 
     exportToExcel(exportData, {
       filename: `clientes_${new Date().toISOString().split('T')[0]}`,
       sheetName: 'Clientes'
     })
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount)
   }
 
   const columns: Column<ClientWithCredits>[] = [
@@ -174,10 +209,20 @@ export default function AdminClientsPage() {
       render: (client) => formatCurrency(client.total_amount)
     },
     {
+      key: 'total_paid',
+      header: 'Total pagado',
+      render: (client) => (
+        <span className="font-semibold text-green-300">
+          {formatCurrency(client.total_paid != null && !Number.isNaN(Number(client.total_paid)) ? client.total_paid : 0)}
+        </span>
+      )
+    },
+    {
       key: 'total_balance',
-      header: 'Cuanto Debe',
+      header: 'Saldo Pendiente',
       render: (client) => {
-        const balance = client.total_balance
+        const raw = client.total_balance
+        const balance = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
         return (
           <span
             className={balance > 0 ? 'text-red-300 font-semibold' : 'text-green-300 font-semibold'}

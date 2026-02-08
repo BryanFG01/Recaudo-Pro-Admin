@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/shared/utils/cn'
 import { useEffect, useState } from 'react'
-import { Credit, UpdateCreditRequest } from '../../domain/models'
+import { Credit, CreditSummary, UpdateCreditRequest } from '../../domain/models'
 import { useCredits } from '../hooks/useCredits'
 
 interface EditCreditModalProps {
@@ -29,15 +29,24 @@ const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-m
 const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
 const sectionTitleStyle = 'text-[11px] font-black uppercase tracking-[0.2em] text-primary/80 mb-6 flex items-center gap-2'
 
+const STATUS_LABELS: Record<string, { label: string; className: string }> = {
+  pending: { label: 'Pendiente', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
+  up_to_date: { label: 'Al día', className: 'bg-success/20 text-success border-success/30' },
+  overdue: { label: 'En mora', className: 'bg-error/20 text-error border-error/30' },
+  paid: { label: 'Pagado', className: 'bg-primary/20 text-primary border-primary/30' },
+}
+
 export const EditCreditModal = ({
   credit,
   isOpen,
   onClose,
   onSuccess,
 }: EditCreditModalProps) => {
-  const { updateCredit } = useCredits()
+  const { updateCredit, getCreditSummary } = useCredits()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<ExtendedFormData>({})
+  const [summary, setSummary] = useState<CreditSummary | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
 
   // Formatter for display: 1.026.595,74
   const formatFinancial = (val: number | null | undefined) => {
@@ -65,10 +74,29 @@ export const EditCreditModal = ({
     return count
   }
 
+  // Cargar resumen del crédito desde GET /api/credits/summary/:id al abrir el modal
+  useEffect(() => {
+    if (!isOpen || !credit?.id) {
+      setSummary(null)
+      return
+    }
+    let cancelled = false
+    setSummaryLoading(true)
+    getCreditSummary(credit.id)
+      .then((data) => {
+        if (!cancelled) setSummary(data ?? null)
+      })
+      .finally(() => {
+        if (!cancelled) setSummaryLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [isOpen, credit?.id, getCreditSummary])
+
   useEffect(() => {
     if (credit) {
-      const round = (val: number | null | undefined) => 
+      const round = (val: number | null | undefined) =>
         val != null ? Math.round((val + Number.EPSILON) * 100) / 100 : 0
+      const source = summary ?? credit
 
       setFormData({
         id: credit.id,
@@ -76,22 +104,22 @@ export const EditCreditModal = ({
         document_id: credit.document_id,
         user_number: credit.user_number,
         business_code: credit.business_code,
-        total_amount: round(credit.total_amount),
-        interest_rate: round(credit.interest_rate),
-        total_interest: round(credit.total_interest),
-        installment_amount: round(credit.installment_amount),
-        total_installments: credit.total_installments,
-        paid_installments: credit.paid_installments,
-        total_balance: round(credit.total_balance),
-        overdue_installments: credit.overdue_installments,
-        last_payment_amount: round(credit.last_payment_amount),
-        last_payment_date: credit.last_payment_date ? new Date(credit.last_payment_date).toISOString().split('T')[0] : '',
+        total_amount: round(source.total_amount),
+        interest_rate: round((source as CreditSummary).interest_rate ?? (credit as Credit).interest_rate),
+        total_interest: round(source.total_interest),
+        installment_amount: round(source.installment_amount),
+        total_installments: source.total_installments,
+        paid_installments: source.paid_installments,
+        total_balance: round(source.total_balance),
+        overdue_installments: source.overdue_installments,
+        last_payment_amount: round(source.last_payment_amount),
+        last_payment_date: source.last_payment_date ? new Date(source.last_payment_date).toISOString().split('T')[0] : '',
         start_date: credit.created_at ? new Date(credit.created_at).toISOString().split('T')[0] : '',
-        end_date: credit.next_due_date ? new Date(credit.next_due_date).toISOString().split('T')[0] : '',
-        next_due_date: credit.next_due_date ? new Date(credit.next_due_date).toISOString().split('T')[0] : '',
+        end_date: source.next_due_date ? new Date(source.next_due_date).toISOString().split('T')[0] : '',
+        next_due_date: source.next_due_date ? new Date(source.next_due_date).toISOString().split('T')[0] : '',
       })
     }
-  }, [credit])
+  }, [credit, summary])
 
   // Automatic Calculation Logic
   useEffect(() => {
@@ -206,6 +234,69 @@ export const EditCreditModal = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 sm:px-10 pb-8 sm:pb-10 space-y-6 sm:space-y-8 relative scrollbar-hide">
+          {/* Resumen del crédito desde GET /api/credits/summary/:id */}
+          {summaryLoading && (
+            <div className={cn("rounded-2xl border border-white/5 p-6 flex items-center justify-center gap-3", containerStyle)}>
+              <span className="text-muted-foreground/60 text-sm">Cargando resumen del crédito...</span>
+            </div>
+          )}
+          {!summaryLoading && summary && (
+            <div className={cn("rounded-2xl border border-white/10 p-5 sm:p-6 space-y-4", containerStyle)}>
+              <h3 className={sectionTitleStyle}>
+                <span className="w-6 h-px bg-primary/40 transition-all duration-500" />
+                Resumen del crédito
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <div className="col-span-2 sm:col-span-1 flex flex-col gap-1">
+                  <span className={labelStyle}>Estado</span>
+                  <span className={cn(
+                    "inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase border w-fit",
+                    STATUS_LABELS[summary.credit_status]?.className ?? "bg-white/10 text-white/70 border-white/10"
+                  )}>
+                    {STATUS_LABELS[summary.credit_status]?.label ?? summary.credit_status}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={labelStyle}>Total pagado</span>
+                  <span className="font-mono font-black text-success text-sm sm:text-base">{formatFinancial(summary.total_paid)}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={labelStyle}>Saldo pendiente</span>
+                  <span className="font-mono font-black text-error text-sm sm:text-base">{formatFinancial(summary.total_balance)}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={labelStyle}>Cuotas pendientes</span>
+                  <span className="font-mono font-bold text-white">{summary.pending_installments}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className={labelStyle}>Parciales</span>
+                  <span className="font-mono font-bold text-white/80">{summary.partial_installments}</span>
+                </div>
+                {summary.next_pending_due_date && (
+                  <div className="col-span-2 flex flex-col gap-1">
+                    <span className={labelStyle}>Próximo vencimiento pendiente</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {new Date(summary.next_pending_due_date).toLocaleDateString('es-CO', { dateStyle: 'medium' })}
+                    </span>
+                  </div>
+                )}
+                {(summary.last_payment_amount != null || summary.last_payment_date) && (
+                  <div className="col-span-2 flex flex-col gap-1">
+                    <span className={labelStyle}>Último pago</span>
+                    <span className="font-mono text-[11px] text-white/80">
+                      {summary.last_payment_amount != null && formatFinancial(summary.last_payment_amount)}
+                      {summary.last_payment_date && (
+                        <span className="text-muted-foreground/80 ml-1">
+                          · {new Date(summary.last_payment_date).toLocaleDateString('es-CO', { dateStyle: 'short' })}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
               

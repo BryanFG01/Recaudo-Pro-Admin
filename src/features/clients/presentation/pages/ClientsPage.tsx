@@ -3,6 +3,8 @@ import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { CreditRepository } from '@/features/credits/infrastructure/repositories/CreditRepository'
+import { CreditService } from '@/features/credits/domain/services/CreditService'
+import { CreditSummary } from '@/features/credits/domain/models'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar'
 import { ClientFilters } from '@/shared/types/filters'
@@ -32,7 +34,10 @@ export default function ClientsPage() {
     return new ClientService(repository)
   }, [])
 
-  const creditRepository = useMemo(() => new CreditRepository(), [])
+  const creditService = useMemo(() => {
+    const repo = new CreditRepository()
+    return new CreditService(repo)
+  }, [])
 
   useEffect(() => {
     if (currentBusinessId && user?.id) {
@@ -91,18 +96,52 @@ export default function ClientsPage() {
 
       const [clientsFromApi, credits] = await Promise.all([
         clientService.getClientsWithFilters(clientFilters),
-        creditRepository.getCreditsByBusinessId(currentBusinessId)
+        creditService.getCreditsByBusinessId(currentBusinessId)
       ])
 
-      // Enriquecer cada cliente con totales de sus créditos (total préstamos, monto total, saldo pendiente)
+      // Saldos reales desde GET /api/credits/summary/:id (la lista trae total_balance en 0)
+      const summaryByCreditId: Record<string, CreditSummary> = {}
+      const CONCURRENCY = 6
+      const creditIds = credits.map((c) => c.id).filter(Boolean)
+      for (let i = 0; i < creditIds.length; i += CONCURRENCY) {
+        const chunk = creditIds.slice(i, i + CONCURRENCY)
+        const results = await Promise.all(
+          chunk.map(async (id) => {
+            try {
+              const s = await creditService.getCreditSummary(id)
+              return { id, summary: s }
+            } catch {
+              return { id, summary: null }
+            }
+          })
+        )
+        results.forEach(({ id, summary }) => {
+          if (summary) summaryByCreditId[id] = summary
+        })
+      }
+
+      // Enriquecer cada cliente con totales de sus créditos (saldo pendiente desde summary)
+      const normalizedId = (id: string | null | undefined) => (id != null ? String(id).trim().toLowerCase() : '')
       const enriched: ClientWithCredits[] = clientsFromApi.map((client) => {
-        const clientCredits = credits.filter((c) => c.client_id === client.id)
+        const clientIdNorm = normalizedId(client.id)
+        const clientCredits = credits.filter((c) => normalizedId(c.client_id) === clientIdNorm)
         const total_amount = clientCredits.reduce((s, c) => s + (c.total_amount ?? 0), 0)
-        const total_balance = clientCredits.reduce((s, c) => s + (c.total_balance ?? 0), 0)
+        let total_paid = 0
+        let total_balance = 0
+        clientCredits.forEach((c) => {
+          const s = summaryByCreditId[c.id]
+          const paid = s?.total_paid != null && !Number.isNaN(Number(s.total_paid)) ? Number(s.total_paid) : 0
+          const balance = s?.total_balance != null && !Number.isNaN(Number(s.total_balance))
+            ? Number(s.total_balance)
+            : (c.total_balance != null && !Number.isNaN(Number(c.total_balance)) ? Number(c.total_balance) : 0)
+          total_paid += paid
+          total_balance += balance
+        })
         return {
           ...client,
           total_credits: clientCredits.length,
           total_amount,
+          total_paid,
           total_balance
         }
       })
@@ -121,7 +160,10 @@ export default function ClientsPage() {
   }
 
   const handleExport = () => {
-    const dataToExport = filteredClients.map((client) => ({
+    const dataToExport = filteredClients.map((client) => {
+      const saldo = client.total_balance != null && !Number.isNaN(Number(client.total_balance)) ? Number(client.total_balance) : 0
+      const pagado = client.total_paid != null && !Number.isNaN(Number(client.total_paid)) ? Number(client.total_paid) : 0
+      return {
       'ID Cliente': client.id,
       Nombre: client.name,
       Teléfono: client.phone,
@@ -132,9 +174,11 @@ export default function ClientsPage() {
       Dirección: client.address || 'N/A',
       'Total Préstamos': client.total_credits,
       'Monto Total Préstamos': formatCurrency(client.total_amount),
-      'Saldo Pendiente': formatCurrency(client.total_balance),
+      'Total pagado': formatCurrency(pagado),
+      'Saldo Pendiente': formatCurrency(saldo),
       'Fecha Creación': formatDate(client.created_at)
-    }))
+    }
+    })
     exportToExcel(dataToExport, { filename: 'clientes_recaudopro', sheetName: 'Clientes' })
   }
 
@@ -161,20 +205,32 @@ export default function ClientsPage() {
       render: (client) => formatCurrency(client.total_amount)
     },
     {
+      key: 'total_paid',
+      header: 'Total pagado',
+      isNumeric: true,
+      render: (client) => (
+        <span className="font-semibold text-success">
+          {formatCurrency(client.total_paid != null && !Number.isNaN(Number(client.total_paid)) ? client.total_paid : 0)}
+        </span>
+      )
+    },
+    {
       key: 'total_balance',
       header: 'Saldo Pendiente',
       isNumeric: true,
-      render: (client) => (
-        <span
-          className={
-            client.total_balance === 0
-              ? 'text-success font-black'
-              : 'text-error font-black'
-          }
-        >
-          {formatCurrency(client.total_balance)}
-        </span>
-      )
+      render: (client) => {
+        const raw = client.total_balance
+        const balance = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
+        return (
+          <span
+            className={
+              balance === 0 ? 'text-success font-black' : 'text-error font-black'
+            }
+          >
+            {formatCurrency(balance)}
+          </span>
+        )
+      }
     },
     {
       key: 'created_at',
