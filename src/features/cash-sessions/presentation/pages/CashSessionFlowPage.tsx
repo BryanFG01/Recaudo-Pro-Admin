@@ -228,6 +228,14 @@ export default function CashSessionFlowPage() {
   const displayTotalRecaudo = effectiveUserId ? (userTotalRecaudo != null ? userTotalRecaudo : 0) : null
   const displayTotalVentas = effectiveUserId ? (userTotalVentas != null ? userTotalVentas : 0) : null
   const showCobradorTotals = !!effectiveUserId
+  /** Mismo valor que mostramos en "Efectivo Restante de Caja": con cobrador = inicial − ventas (no el del API, que puede ser caja inicial). */
+  const efectivoRestanteDeCaja = showCobradorTotals
+    ? Math.max(0, displayFlow.initial_balance - (displayTotalVentas ?? 0))
+    : (displayFlow.caja_inicial_restante ?? 0)
+  /** Efectivo que queda en caja = Efectivo Restante de Caja + recaudo (nunca Caja Inicial + recaudo). */
+  const efectivoQueQuedaEnCaja = showCobradorTotals
+    ? (displayTotalRecaudo ?? 0) + efectivoRestanteDeCaja
+    : displayFlow.efectivo_en_caja
   const handleExport = () => {
     if (flow) downloadFlowCsv(flow, flow.session_date)
   }
@@ -404,15 +412,13 @@ export default function CashSessionFlowPage() {
                       Totales del cobrador seleccionado. Sin sesión de caja: si ingresa caja inicial, aparecerá abajo.
                     </div>
                   )}
-                  {/* Bloque 1: Caja Inicial y Ventas — caja inicial a favor; lo prestado (ventas) sale como negativo; restante = inicial − préstamos */}
+                  {/* Bloque 1: Caja Inicial → Ventas (lo que se presta) → Efectivo restante = inicial − ventas */}
                   <div className="space-y-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 border-b border-primary/10 pb-2">
                       Gestión de Caja Inicial & Ventas
-                      {displayFlow.initial_balance > 0 && (
-                        <span className="block font-normal normal-case tracking-normal text-muted-foreground/50 mt-1">
-                          Caja inicial ingresada; lo prestado (ventas) sale de esa caja; el restante es inicial − préstamos.
-                        </span>
-                      )}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground/50 normal-case">
+                      Caja inicial recibida; ventas = lo que se presta (sale de caja); efectivo restante = inicial − ventas (negativo de lo prestado).
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                       <div className="space-y-1 group/val relative">
@@ -425,27 +431,25 @@ export default function CashSessionFlowPage() {
                         )}
                       </div>
                       <div className="space-y-1 group/val relative">
-                        <p className={cn(labelStyle, "text-error/60")}>Ventas (Capital Prestado)</p>
+                        <p className={cn(labelStyle, "text-error/60")}>Ventas (Lo que se presta)</p>
                         <p className="text-2xl font-black tracking-tight text-error/80 tabular-nums">
                           {showCobradorTotals ? `-${formatCurrency(displayTotalVentas ?? 0)}` : '—'}
                         </p>
-                        <p className="text-[9px] text-muted-foreground/40 italic">
-                          {showCobradorTotals ? 'Salida de caja por préstamos (negativo).' : 'Solo por cobrador.'}
-                        </p>
+                        <p className="text-[9px] text-muted-foreground/40 italic">Salida de caja por préstamos.</p>
                       </div>
                       <div className="space-y-1 group/val relative">
                         <p className={cn(labelStyle, "text-success/60")}>Efectivo Restante de Caja</p>
                         <p className="text-2xl font-black tracking-tight text-success tabular-nums">
-                          {formatCurrency(displayFlow.caja_inicial_restante)}
+                          {formatCurrency(efectivoRestanteDeCaja)}
                         </p>
                         <p className="text-[9px] text-muted-foreground/40 italic">
-                          {displayFlow.initial_balance > 0 ? 'Caja inicial − lo prestado.' : 'Con sesión de caja inicial se actualiza aquí.'}
+                          {showCobradorTotals ? 'Inicial − ventas (negativo de lo prestado).' : 'Caja inicial − lo prestado.'}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Bloque 2: Operatividad de la Sesión */}
+                  {/* Bloque 2: Recaudo, Retiros, Margen */}
                   <div className="space-y-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-info/60 border-b border-info/10 pb-2">Flujo de Movimientos (Operatividad)</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
@@ -473,10 +477,25 @@ export default function CashSessionFlowPage() {
                     </div>
                   </div>
 
-                  {/* Bloque 3: Resultado Final & Cuadre */}
+                  {/* Bloque 3: Margen de sesión + Saldo neto + Efectivo en caja (organizado) */}
                   <div className="space-y-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 border-b border-primary/10 pb-2">Resultado Final & Arqueo de Caja</p>
+
+                    {/* Margen de sesión destacado */}
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex flex-row items-center justify-between">
+                      <div>
+                        <p className={cn(labelStyle, displayFlow.total_recaudo_mostrado >= 0 ? "text-success/60" : "text-error/60")}>Margen de Sesión</p>
+                        <p className={cn(
+                          "text-2xl font-black tabular-nums",
+                          displayFlow.total_recaudo_mostrado >= 0 ? "text-success" : "text-error"
+                        )}>
+                          {displayFlow.total_recaudo_mostrado >= 0 ? '+' : ''}{formatCurrency(displayFlow.total_recaudo_mostrado)}
+                        </p>
+                      </div>
+                      <span className="text-[9px] text-muted-foreground/50 uppercase">Recaudo − retiros</span>
+                    </div>
                     
+                    {/* Saldo neto y Efectivo en caja — ordenados */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="relative p-6 rounded-3xl bg-primary/5 border border-primary/10 overflow-hidden group/result">
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/result:opacity-20 transition-opacity">
@@ -496,11 +515,11 @@ export default function CashSessionFlowPage() {
                           <TrendingUp className="w-12 h-12" />
                         </div>
                         <div className="relative z-10 space-y-2">
-                          <p className={cn(labelStyle, "text-success/60 mb-0")}>Efectivo en Caja (Estimado)</p>
+                          <p className={cn(labelStyle, "text-success/60 mb-0")}>Efectivo que queda en caja</p>
                           <p className="text-4xl font-black tracking-tighter text-success tabular-nums">
-                            {formatCurrency(displayFlow.efectivo_en_caja)}
+                            {formatCurrency(efectivoQueQuedaEnCaja)}
                           </p>
-                          <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest italic">Total recaudado + inicial restante</p>
+                          <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest italic">Efectivo Restante de Caja + recaudo</p>
                         </div>
                       </div>
                     </div>
