@@ -31,7 +31,9 @@ function userLabel(u: User): string {
 export default function WithdrawalsPage() {
   const { user, businessId } = useAuthStore()
   const { getUsersByBusinessId } = useAuth()
-  const { getWithdrawalsByUserId, updateWithdrawalApproval } = useWithdrawals()
+  const { getWithdrawalsByUserId, getAllWithdrawals, updateWithdrawalApproval } = useWithdrawals()
+
+  const FILTER_ALL = '__all__'
 
   const businessIdForUsers = (user?.business_id || businessId) ?? ''
   const prevBusinessIdRef = useRef<string | null>(null)
@@ -47,13 +49,13 @@ export default function WithdrawalsPage() {
   useEffect(() => {
     if (!businessIdForUsers) {
       setBusinessUsers([])
-      setSelectedUserId((prev) => (prev || user?.id) ?? '')
+      setSelectedUserId((prev) => (prev || FILTER_ALL) || '')
       return
     }
     if (prevBusinessIdRef.current !== businessIdForUsers) {
       prevBusinessIdRef.current = businessIdForUsers
       setBusinessUsers([])
-      setSelectedUserId(user?.id ?? '')
+      setSelectedUserId(FILTER_ALL)
     }
     let cancelled = false
     setIsLoadingUsers(true)
@@ -85,7 +87,10 @@ export default function WithdrawalsPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await getWithdrawalsByUserId(selectedUserId)
+      const data =
+        selectedUserId === FILTER_ALL
+          ? await getAllWithdrawals()
+          : await getWithdrawalsByUserId(selectedUserId)
       setWithdrawals(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar retiros')
@@ -93,7 +98,7 @@ export default function WithdrawalsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [selectedUserId, getWithdrawalsByUserId])
+  }, [selectedUserId, getWithdrawalsByUserId, getAllWithdrawals])
 
   useEffect(() => {
     loadWithdrawals()
@@ -235,6 +240,9 @@ export default function WithdrawalsPage() {
                     <SelectValue placeholder="Seleccionar usuario" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#0f171a] border-white/10 text-white">
+                    <SelectItem value={FILTER_ALL} className="focus:bg-primary/20 font-bold">
+                      Todos
+                    </SelectItem>
                     {businessUsers.map((u) => (
                       <SelectItem key={u.id} value={u.id} className="focus:bg-primary/20">
                         {userLabel(u)} {u.id === user?.id && <span className="text-primary/40 font-bold ml-2">(Tú)</span>}

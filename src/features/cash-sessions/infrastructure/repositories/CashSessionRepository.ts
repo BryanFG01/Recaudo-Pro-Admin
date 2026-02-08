@@ -35,9 +35,12 @@ function normalizeFlow(raw: Record<string, unknown>): CashSessionFlow {
 
 export class CashSessionRepository implements ICashSessionRepository {
   /**
-   * POST /api/cash-sessions
-   * Body esperado por el backend: business_id (UUID), business_code, user_id (UUID),
-   * session_date (YYYY-MM-DD), initial_balance (number), allowed_to_withdraw (boolean).
+   * POST /api/cash-sessions — crea una sesión de caja con saldo inicial.
+   * La caja es por usuario: user_id es requerido; solo una sesión por usuario por día
+   * (varios cobradores pueden tener sesión el mismo día en el mismo negocio).
+   * Si ya existe sesión para ese usuario y fecha, el backend responde 400.
+   * Body: business_id, business_code (opc.), user_id, session_date (YYYY-MM-DD),
+   * initial_balance, allowed_to_withdraw.
    */
   async create(request: CreateCashSessionRequest): Promise<CashSession> {
     const body: Record<string, unknown> = {

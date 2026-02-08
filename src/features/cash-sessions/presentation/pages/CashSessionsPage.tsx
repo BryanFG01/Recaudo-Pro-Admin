@@ -14,6 +14,7 @@ import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
+import { ApiError } from '@/shared/config/api'
 import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { Banknote, Loader2, Save, Trash2 } from 'lucide-react'
@@ -133,11 +134,14 @@ export default function CashSessionsPage() {
       setError('Saldo inválido.')
       return
     }
-    const isDuplicateDate = sessions.some(
-      (s) => s.session_date && s.session_date.slice(0, 10) === sessionDate
+    const isDuplicateResponsableYFecha = sessions.some(
+      (s) =>
+        s.session_date &&
+        s.session_date.slice(0, 10) === sessionDate &&
+        s.user_id === selectedUserId
     )
-    if (isDuplicateDate) {
-      setError('Ya existe una sesión de caja para esta fecha. Elige otra fecha o edita la sesión existente.')
+    if (isDuplicateResponsableYFecha) {
+      setError('Ya existe una sesión de caja para este responsable en esta fecha. Elige otra fecha o edita la sesión existente.')
       return
     }
 
@@ -159,12 +163,14 @@ export default function CashSessionsPage() {
       loadSessions()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al crear sesión'
-      const isDuplicateConstraint =
+      const is400Duplicate = err instanceof ApiError && err.status === 400
+      const isDuplicateMessage =
         typeof msg === 'string' &&
         (msg.includes('cash_sessions_business_date_unique') || msg.includes('duplicate key'))
+      const isDuplicate = is400Duplicate || isDuplicateMessage
       setError(
-        isDuplicateConstraint
-          ? 'Ya existe una sesión de caja para este negocio en esta fecha. Elige otra fecha o edita la sesión existente.'
+        isDuplicate
+          ? 'Ya existe una sesión de caja para este responsable en esta fecha. Elige otra fecha o edita la sesión existente.'
           : msg
       )
     } finally {
