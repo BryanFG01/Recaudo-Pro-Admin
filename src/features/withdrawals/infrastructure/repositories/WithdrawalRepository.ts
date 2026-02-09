@@ -57,6 +57,20 @@ export class WithdrawalRepository implements IWithdrawalRepository {
     }
   }
 
+  /** GET /api/withdrawals?business_id=xxx — retiros del negocio. Evita mostrar datos de otro business. */
+  async getAllByBusinessId(businessId: string): Promise<Withdrawal[]> {
+    if (!businessId) return []
+    try {
+      const params = new URLSearchParams({ business_id: businessId })
+      const raw = await apiClient.get<Withdrawal[] | { data: Withdrawal[] }>(
+        `/api/withdrawals?${params.toString()}`
+      )
+      return normalizeWithdrawalsList(raw)
+    } catch {
+      return []
+    }
+  }
+
   /**
    * PATCH /api/withdrawals/{id} — aprueba o rechaza un retiro.
    * Body: { is_approved }.

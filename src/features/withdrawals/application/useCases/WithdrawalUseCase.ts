@@ -13,6 +13,12 @@ export const buildGetAllWithdrawalsUseCase = (service: WithdrawalService) => {
   }
 }
 
+export const buildGetAllWithdrawalsByBusinessIdUseCase = (service: WithdrawalService) => {
+  return async (businessId: string): Promise<Withdrawal[]> => {
+    return service.getAllByBusinessId(businessId)
+  }
+}
+
 export const buildUpdateWithdrawalApprovalUseCase = (service: WithdrawalService) => {
   return async (
     id: string,

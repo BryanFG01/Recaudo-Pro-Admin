@@ -3,7 +3,7 @@ import { WithdrawalService } from '../../domain/services/WithdrawalService'
 import { WithdrawalRepository } from '../../infrastructure/repositories/WithdrawalRepository'
 import {
   buildGetWithdrawalsByUserIdUseCase,
-  buildGetAllWithdrawalsUseCase,
+  buildGetAllWithdrawalsByBusinessIdUseCase,
   buildUpdateWithdrawalApprovalUseCase
 } from '../../application/useCases'
 import { UpdateWithdrawalApprovalRequest } from '../../domain/models'
@@ -15,14 +15,17 @@ export function useWithdrawals() {
   }, [])
 
   const getByUserIdFn = useMemo(() => buildGetWithdrawalsByUserIdUseCase(service), [service])
-  const getAllFn = useMemo(() => buildGetAllWithdrawalsUseCase(service), [service])
+  const getAllByBusinessIdFn = useMemo(() => buildGetAllWithdrawalsByBusinessIdUseCase(service), [service])
   const updateApprovalFn = useMemo(() => buildUpdateWithdrawalApprovalUseCase(service), [service])
 
   const getWithdrawalsByUserId = useCallback(
     (userId: string) => getByUserIdFn(userId),
     [getByUserIdFn]
   )
-  const getAllWithdrawals = useCallback(() => getAllFn(), [getAllFn])
+  const getAllWithdrawalsByBusinessId = useCallback(
+    (businessId: string) => getAllByBusinessIdFn(businessId),
+    [getAllByBusinessIdFn]
+  )
   const updateWithdrawalApproval = useCallback(
     (id: string, request: UpdateWithdrawalApprovalRequest) => updateApprovalFn(id, request),
     [updateApprovalFn]
@@ -30,7 +33,7 @@ export function useWithdrawals() {
 
   return {
     getWithdrawalsByUserId,
-    getAllWithdrawals,
+    getAllWithdrawalsByBusinessId,
     updateWithdrawalApproval
   }
 }

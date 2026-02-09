@@ -31,7 +31,7 @@ function userLabel(u: User): string {
 export default function WithdrawalsPage() {
   const { user, businessId } = useAuthStore()
   const { getUsersByBusinessId } = useAuth()
-  const { getWithdrawalsByUserId, getAllWithdrawals, updateWithdrawalApproval } = useWithdrawals()
+  const { getWithdrawalsByUserId, getAllWithdrawalsByBusinessId, updateWithdrawalApproval } = useWithdrawals()
 
   const FILTER_ALL = '__all__'
 
@@ -84,21 +84,46 @@ export default function WithdrawalsPage() {
       setError(null)
       return
     }
+    if (selectedUserId === FILTER_ALL && !businessIdForUsers) {
+      setWithdrawals([])
+      setIsLoading(false)
+      setError(null)
+      return
+    }
+    // Con "Todos", esperar a tener usuarios del negocio para filtrar y no mostrar datos de otro business
+    if (selectedUserId === FILTER_ALL && isLoadingUsers) {
+      setWithdrawals([])
+      setIsLoading(false)
+      return
+    }
     setIsLoading(true)
     setError(null)
     try {
-      const data =
+      let data: Withdrawal[] =
         selectedUserId === FILTER_ALL
-          ? await getAllWithdrawals()
+          ? await getAllWithdrawalsByBusinessId(businessIdForUsers)
           : await getWithdrawalsByUserId(selectedUserId)
-      setWithdrawals(Array.isArray(data) ? data : [])
+      data = Array.isArray(data) ? data : []
+      // Filtro de seguridad: solo retiros de usuarios del negocio actual (por si el backend no filtra por business_id)
+      if (selectedUserId === FILTER_ALL) {
+        const allowedUserIds = new Set(businessUsers.map((u) => u.id))
+        data = data.filter((w) => allowedUserIds.has(w.user_id))
+      }
+      setWithdrawals(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar retiros')
       setWithdrawals([])
     } finally {
       setIsLoading(false)
     }
-  }, [selectedUserId, getWithdrawalsByUserId, getAllWithdrawals])
+  }, [
+    selectedUserId,
+    businessIdForUsers,
+    businessUsers,
+    isLoadingUsers,
+    getWithdrawalsByUserId,
+    getAllWithdrawalsByBusinessId
+  ])
 
   useEffect(() => {
     loadWithdrawals()

@@ -13,6 +13,11 @@ export class WithdrawalService {
     return this.repository.getAll()
   }
 
+  async getAllByBusinessId(businessId: string): Promise<Withdrawal[]> {
+    if (!businessId) return []
+    return this.repository.getAllByBusinessId(businessId)
+  }
+
   async updateApproval(
     id: string,
     request: UpdateWithdrawalApprovalRequest
