@@ -38,8 +38,8 @@ const DEFAULT_FLOW: CashSessionFlow = {
   efectivo_en_caja: 0
 }
 
-const containerStyle = 'bg-[#0f171a]/40 border-white/5 backdrop-blur-md shadow-2xl'
-const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-muted-foreground/40 focus:ring-primary/50 focus:border-primary/50 h-11'
+const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
+const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50 h-11'
 const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
 
 function userDisplayName(u: User): string {
@@ -251,7 +251,7 @@ export default function CashSessionFlowPage() {
   return (
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="space-y-1">
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
           <TrendingUp className="w-8 h-8 text-primary" />
           Trazabilidad de Flujo
         </h1>
@@ -267,7 +267,7 @@ export default function CashSessionFlowPage() {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         <div className="xl:col-span-4 space-y-6">
           <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
-            <CardHeader className="border-b border-white/5 pb-4">
+            <CardHeader className="border-b border-border pb-4">
               <CardTitle className={labelStyle}>Filtrar Colaborador</CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
@@ -281,7 +281,7 @@ export default function CashSessionFlowPage() {
                   <SelectTrigger className={inputStyle}>
                     <SelectValue placeholder="Todos los usuarios" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0f171a] border-white/10 text-white">
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     <SelectItem value="all" className="focus:bg-primary/20">Todos los usuarios</SelectItem>
                     {businessUsers.map((u) => (
                       <SelectItem key={u.id} value={u.id} className="focus:bg-primary/20">
@@ -295,7 +295,7 @@ export default function CashSessionFlowPage() {
           </Card>
 
           <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
-            <CardHeader className="border-b border-white/5 pb-4 flex flex-row items-center justify-between">
+            <CardHeader className="border-b border-border pb-4 flex flex-row items-center justify-between">
               <div className="space-y-0.5">
                 <CardTitle className={labelStyle}>
                   Historial de Sesiones
@@ -306,7 +306,7 @@ export default function CashSessionFlowPage() {
                   )}
                 </CardTitle>
               </div>
-              <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums">{sessions.length}</span>
+              <span className="text-[10px] font-black text-muted-foreground tabular-nums">{sessions.length}</span>
             </CardHeader>
             <CardContent className="pt-6 px-2">
               {isLoadingSessions ? (
@@ -315,7 +315,7 @@ export default function CashSessionFlowPage() {
                 </div>
               ) : sessions.length === 0 ? (
                 <div className="text-center py-8 space-y-2">
-                  <p className="text-muted-foreground/40 text-[11px] font-bold uppercase tracking-widest">Sin sesiones de caja</p>
+                  <p className="text-muted-foreground text-[11px] font-bold uppercase tracking-widest">Sin sesiones de caja</p>
                   {filterUserId ? (
                     <p className="text-muted-foreground/30 text-[10px] max-w-[240px] mx-auto">
                       Este cobrador aún no tiene sesiones. Los totales (recaudado y ventas) se muestran a la derecha para este cobrador.
@@ -337,15 +337,15 @@ export default function CashSessionFlowPage() {
                           'w-full text-left p-4 rounded-xl border transition-all duration-300',
                           isSelected
                             ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5'
-                            : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10'
+                            : 'border-border bg-muted/30 hover:bg-muted/50 hover:border-border'
                         )}
                       >
                         <div className="flex justify-between items-start mb-1">
                           <span className={cn(
                             "text-xs font-black tracking-tight",
-                            isSelected ? 'text-white' : 'text-muted-foreground'
+                            isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
                           )}>{formatDate(s.session_date)}</span>
-                          <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-muted-foreground/40">ID:{s.id.slice(0,4)}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-muted/50 border border-border text-muted-foreground">ID:{s.id.slice(0,4)}</span>
                         </div>
                         <span className={cn(
                           "block text-sm font-black tabular-nums",
@@ -364,9 +364,9 @@ export default function CashSessionFlowPage() {
 
         <div className="xl:col-span-8">
           <Card className={cn('border transition-all duration-500 overflow-hidden group min-h-[600px]', containerStyle)}>
-            <CardHeader className="border-b border-white/5 flex flex-row items-center justify-between p-6">
+            <CardHeader className="border-b border-border flex flex-row items-center justify-between p-6">
               <div className="space-y-1">
-                <CardTitle className="text-sm font-bold text-white uppercase tracking-widest">
+                <CardTitle className="text-sm font-bold text-foreground uppercase tracking-widest">
                   Análisis Operativo
                 </CardTitle>
                 {effectiveUserId && (
@@ -375,12 +375,12 @@ export default function CashSessionFlowPage() {
                   </p>
                 )}
                 {selectedSession && !effectiveUserId && (
-                  <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
                     {formatDate(selectedSession.session_date)} · Sesión
                   </p>
                 )}
                 {selectedSession && effectiveUserId && (
-                  <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
                     {formatDate(selectedSession.session_date)} · Sesión del cobrador
                   </p>
                 )}
@@ -388,7 +388,7 @@ export default function CashSessionFlowPage() {
               {flow && (
                 <Button
                   onClick={handleExport}
-                  className="h-9 px-4 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[10px]"
+                  className="h-9 px-4 font-bold uppercase tracking-widest text-[10px]"
                 >
                   <Download className="w-3.5 h-3.5 mr-2" />
                   XLS
@@ -423,11 +423,11 @@ export default function CashSessionFlowPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                       <div className="space-y-1 group/val relative">
                         <p className={labelStyle}>Caja Inicial Recibida</p>
-                        <p className="text-2xl font-black tracking-tight text-white tabular-nums">
+                        <p className="text-2xl font-black tracking-tight text-foreground tabular-nums">
                           {formatCurrency(displayFlow.initial_balance)}
                         </p>
                         {displayFlow.initial_balance === 0 && effectiveUserId && (
-                          <p className="text-[9px] text-muted-foreground/40 italic">Si el cobrador recibe caja inicial, se mostrará aquí.</p>
+                          <p className="text-[9px] text-muted-foreground italic">Si el cobrador recibe caja inicial, se mostrará aquí.</p>
                         )}
                       </div>
                       <div className="space-y-1 group/val relative">
@@ -435,14 +435,14 @@ export default function CashSessionFlowPage() {
                         <p className="text-2xl font-black tracking-tight text-error/80 tabular-nums">
                           {showCobradorTotals ? `-${formatCurrency(displayTotalVentas ?? 0)}` : '—'}
                         </p>
-                        <p className="text-[9px] text-muted-foreground/40 italic">Salida de caja por préstamos.</p>
+                        <p className="text-[9px] text-muted-foreground italic">Salida de caja por préstamos.</p>
                       </div>
                       <div className="space-y-1 group/val relative">
                         <p className={cn(labelStyle, "text-success/60")}>Efectivo Restante de Caja</p>
                         <p className="text-2xl font-black tracking-tight text-success tabular-nums">
                           {formatCurrency(efectivoRestanteDeCaja)}
                         </p>
-                        <p className="text-[9px] text-muted-foreground/40 italic">
+                        <p className="text-[9px] text-muted-foreground italic">
                           {showCobradorTotals ? 'Inicial − ventas (negativo de lo prestado).' : 'Caja inicial − lo prestado.'}
                         </p>
                       </div>
@@ -454,8 +454,8 @@ export default function CashSessionFlowPage() {
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-info/60 border-b border-info/10 pb-2">Flujo de Movimientos (Operatividad)</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                       <div className="space-y-1">
-                        <p className={labelStyle}>Total Recaudado {showCobradorTotals && isLoadingUserTotals && <span className="text-muted-foreground/40 font-normal">(cargando…)</span>}</p>
-                        <p className="text-xl font-bold text-white tabular-nums">
+                        <p className={labelStyle}>Total Recaudado {showCobradorTotals && isLoadingUserTotals && <span className="text-muted-foreground font-normal">(cargando…)</span>}</p>
+                        <p className="text-xl font-bold text-foreground tabular-nums">
                           {showCobradorTotals ? `+${formatCurrency(displayTotalRecaudo ?? 0)}` : '—'}
                         </p>
                       </div>
@@ -482,7 +482,7 @@ export default function CashSessionFlowPage() {
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 border-b border-primary/10 pb-2">Resultado Final & Arqueo de Caja</p>
 
                     {/* Margen de sesión destacado */}
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 flex flex-row items-center justify-between">
+                    <div className="rounded-2xl border border-border bg-muted/30 p-5 flex flex-row items-center justify-between">
                       <div>
                         <p className={cn(labelStyle, displayFlow.total_recaudo_mostrado >= 0 ? "text-success/60" : "text-error/60")}>Margen de Sesión</p>
                         <p className={cn(
@@ -503,7 +503,7 @@ export default function CashSessionFlowPage() {
                         </div>
                         <div className="relative z-10 space-y-2">
                           <p className={cn(labelStyle, "text-primary/60 mb-0")}>Saldo Neto Liquidado</p>
-                          <p className="text-4xl font-black tracking-tighter text-white tabular-nums">
+                          <p className="text-4xl font-black tracking-tighter text-foreground tabular-nums">
                             {formatCurrency(displayFlow.saldo_disponible)}
                           </p>
                           <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest italic">Balance después de préstamos</p>
@@ -524,17 +524,17 @@ export default function CashSessionFlowPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 p-6 rounded-2xl bg-white/[0.01] border border-white/5 items-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 p-6 rounded-2xl bg-muted/20 border border-border items-center">
                       <div className="w-full space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Progreso Operativo (Ventas vs Recaudos)</span>
-                          <span className="text-[10px] font-black text-white tabular-nums">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Progreso Operativo (Ventas vs Recaudos)</span>
+                          <span className="text-[10px] font-black text-foreground tabular-nums">
                             {showCobradorTotals
                               ? `${Math.round(((displayTotalRecaudo ?? 0) / ((displayTotalVentas ?? 0) || 1)) * 100)}%`
                               : '—'}
                           </span>
                         </div>
-                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-muted/50 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-primary transition-all duration-1000 ease-out" 
                             style={{ width: showCobradorTotals ? `${Math.min(((displayTotalRecaudo ?? 0) / ((displayTotalVentas ?? 0) || 1)) * 100, 100)}%` : '0%' }}
@@ -544,11 +544,11 @@ export default function CashSessionFlowPage() {
                       <div className="flex justify-end gap-6 opacity-40">
                         <div className="text-right">
                           <p className={labelStyle}>Creación Registro</p>
-                          <p className="text-[10px] font-bold text-white">{displayFlow.session_created_at ? formatDateTime(displayFlow.session_created_at) : '-'}</p>
+                          <p className="text-[10px] font-bold text-foreground">{displayFlow.session_created_at ? formatDateTime(displayFlow.session_created_at) : '-'}</p>
                         </div>
                         <div className="text-right">
                           <p className={labelStyle}>Último Sync</p>
-                          <p className="text-[10px] font-bold text-white">{displayFlow.session_updated_at ? formatDateTime(displayFlow.session_updated_at) : '-'}</p>
+                          <p className="text-[10px] font-bold text-foreground">{displayFlow.session_updated_at ? formatDateTime(displayFlow.session_updated_at) : '-'}</p>
                         </div>
                       </div>
                     </div>

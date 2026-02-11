@@ -21,8 +21,8 @@ export default function CreditStatusChart({
   return (
     <div className="w-full h-full min-h-[300px]">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-base font-bold text-white/90 tracking-tight">Estado de Créditos</h3>
-        <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Cartera Actual</span>
+        <h3 className="text-base font-bold text-foreground tracking-tight">Estado de Créditos</h3>
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cartera Actual</span>
       </div>
       
       <div className="flex flex-col md:flex-row items-center gap-8">
@@ -45,41 +45,42 @@ export default function CreditStatusChart({
               </Pie>
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(15, 23, 26, 0.8)',
+                  backgroundColor: 'hsl(var(--popover))',
                   backdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  border: '1px solid hsl(var(--border))',
                   borderRadius: '12px',
+                  color: 'hsl(var(--popover-foreground))',
                 }}
-                itemStyle={{ color: '#fff' }}
+                itemStyle={{ color: 'hsl(var(--popover-foreground))' }}
               />
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-2xl font-black text-white tabular-nums">{activeCredits}</span>
-            <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">Total</span>
+            <span className="text-2xl font-black text-foreground tabular-nums">{activeCredits}</span>
+            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Total</span>
           </div>
         </div>
 
         <div className="w-full md:w-1/2 space-y-4">
           {data.map((item) => (
-            <div key={item.name} className="group p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] transition-all duration-300">
+            <div key={item.name} className="group p-3 rounded-xl bg-muted/30 border border-border hover:bg-muted/50 transition-all duration-300">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <div 
-                    className="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)]" 
+                    className="w-2 h-2 rounded-full shadow-sm" 
                     style={{ backgroundColor: item.color }} 
                   />
-                  <span className="text-xs font-bold text-muted-foreground group-hover:text-white/80 transition-colors uppercase tracking-wide">
+                  <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wide">
                     {item.name}
                   </span>
                 </div>
-                <span className="text-xs font-black text-white tabular-nums">
+                <span className="text-xs font-black text-foreground tabular-nums">
                   {item.value.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-extrabold text-white tabular-nums">{item.count}</span>
-                <span className="text-[10px] text-muted-foreground/50 font-medium italic">créditos</span>
+                <span className="text-lg font-extrabold text-foreground tabular-nums">{item.count}</span>
+                <span className="text-[10px] text-muted-foreground font-medium italic">créditos</span>
               </div>
             </div>
           ))}

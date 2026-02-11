@@ -247,7 +247,7 @@ export default function ClientsPage() {
   if (!currentBusinessId || !user?.id) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-gray-400">
+        <p className="text-muted-foreground">
           {!user?.id
             ? 'No hay sesión de usuario. Por favor, inicia sesión.'
             : 'No hay business_id disponible. Por favor, inicia sesión.'}
@@ -260,7 +260,7 @@ export default function ClientsPage() {
     <div className="flex flex-col h-full space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white min-w-0">Administración de Clientes</h1>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground min-w-0">Administración de Clientes</h1>
           <p className="text-sm text-muted-foreground/60">Gestiona y visualiza la salud financiera de tu cartera de clientes.</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -268,7 +268,7 @@ export default function ClientsPage() {
             variant="outline"
             onClick={handleExport}
             disabled={filteredClients.length === 0}
-            className="min-h-[44px] px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
+            className="min-h-[44px] px-6 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
             aria-label="Exportar clientes a Excel"
           >
             <Download className="w-4 h-4 mr-2" aria-hidden="true" />

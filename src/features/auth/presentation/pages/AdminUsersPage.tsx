@@ -133,7 +133,7 @@ export default function AdminUsersPage() {
       key: 'email',
       header: 'Email',
       className: 'font-bold',
-      render: (user) => <span className="text-white">{user.email || '-'}</span>
+      render: (user) => <span className="text-foreground">{user.email || '-'}</span>
     },
     {
       key: 'document_id',
@@ -144,7 +144,7 @@ export default function AdminUsersPage() {
     {
       key: 'name',
       header: 'Nombre',
-      render: (user) => <span className="text-white font-semibold">{user.name || '-'}</span>
+      render: (user) => <span className="text-foreground font-semibold">{user.name || '-'}</span>
     },
     {
       key: 'phone',
@@ -192,7 +192,7 @@ export default function AdminUsersPage() {
             {user.password && (
               <button
                 onClick={() => togglePasswordVisibility(user.id)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-white text-muted-foreground/40"
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-foreground text-muted-foreground"
               >
                 {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
@@ -252,7 +252,7 @@ export default function AdminUsersPage() {
         checked={selectedIds.has(user.id)}
         onChange={() => toggleSelect(user.id)}
         onClick={(e) => e.stopPropagation()}
-        className="h-4 w-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/50"
+        className="h-4 w-4 rounded border-border bg-muted text-primary focus:ring-primary/50"
       />
     )
   }
@@ -272,24 +272,24 @@ export default function AdminUsersPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">Equipo de Trabajo</h1>
-            <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] font-black text-muted-foreground/60 uppercase tabular-nums">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Equipo de Trabajo</h1>
+            <span className="px-2 py-0.5 rounded-full bg-muted border border-border text-[10px] font-black text-muted-foreground uppercase tabular-nums">
               {users.length}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground/60">Gestiona roles, permisos y porcentajes de comisión de tus colaboradores.</p>
+          <p className="text-sm text-muted-foreground">Gestiona roles, permisos y porcentajes de comisión de tus colaboradores.</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
           {deleteMode ? (
             <div className="flex items-center gap-2 p-1 rounded-xl bg-error/5 border border-error/10">
-              <Button onClick={cancelDeleteMode} variant="ghost" className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-white/5">
+              <Button onClick={cancelDeleteMode} variant="ghost" className="h-9 px-4 text-[10px] font-bold uppercase tracking-widest">
                 <X className="w-4 h-4 mr-2" />
                 Cancelar
               </Button>
               <Button
                 onClick={handleDeleteSelected}
                 disabled={selectedIds.size === 0 || isDeleting}
-                className="h-9 px-4 bg-error hover:bg-error/90 text-white font-bold text-[10px] uppercase tracking-widest"
+                className="h-9 px-4 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-[10px] uppercase tracking-widest"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Eliminar ({selectedIds.size})
@@ -299,7 +299,7 @@ export default function AdminUsersPage() {
             <>
               <Button
                 onClick={() => navigate('/admin/users/create')}
-                className="h-11 px-6 bg-primary hover:bg-primary/90 text-white border-0 shadow-lg shadow-primary/20 transition-all font-bold uppercase tracking-widest text-[10px]"
+                className="h-11 px-6 font-bold uppercase tracking-widest text-[10px]"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Alta Usuario
@@ -307,7 +307,7 @@ export default function AdminUsersPage() {
               <Button 
                 onClick={() => setDeleteMode(true)} 
                 variant="outline" 
-                className="h-11 px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[10px]"
+                className="h-11 px-6 font-bold uppercase tracking-widest text-[10px]"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Modo Borrado
@@ -316,7 +316,7 @@ export default function AdminUsersPage() {
                 onClick={handleExport}
                 disabled={users.length === 0}
                 variant="outline"
-                className="h-11 px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[10px]"
+                className="h-11 px-6 font-bold uppercase tracking-widest text-[10px]"
               >
                 <Download className="w-4 h-4 mr-2" />
                 XLS

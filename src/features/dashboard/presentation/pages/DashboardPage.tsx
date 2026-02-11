@@ -60,11 +60,11 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div
-        className="bg-red-900/30 border border-red-700/50 rounded-lg p-4"
+        className="bg-destructive/10 border border-destructive/30 rounded-lg p-4"
         role="alert"
         aria-live="assertive"
       >
-        <p className="text-red-200">Error al cargar estadísticas: {error.message}</p>
+        <p className="text-destructive">Error al cargar estadísticas: {error.message}</p>
       </div>
     )
   }
@@ -77,7 +77,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white shrink-0">Dashboard</h1>
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground shrink-0">Dashboard</h1>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success/10 border border-success/20 animate-pulse">
               <span className="w-2 h-2 rounded-full bg-success" />
               <span className="text-[10px] font-bold text-success uppercase tracking-wider">Vivo</span>
@@ -87,7 +87,7 @@ export default function DashboardPage() {
         </div>
         
         <div
-          className="flex flex-wrap items-center bg-background/50 p-1 rounded-xl border border-white/5 backdrop-blur-md"
+          className="flex flex-wrap items-center bg-muted/30 p-1 rounded-xl border border-border backdrop-blur-md"
           role="group"
           aria-label="Filtro de período"
         >
@@ -104,7 +104,7 @@ export default function DashboardPage() {
                 "px-4 py-2 rounded-lg transition-all duration-200 text-sm font-semibold",
                 selectedPeriod === p.id 
                   ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
-                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
               )}
               aria-pressed={selectedPeriod === p.id}
             >
@@ -117,8 +117,8 @@ export default function DashboardPage() {
       {/* Strategic KPIs Section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white/90">Resumen Estratégico</h2>
-          <span className="text-xs text-muted-foreground/60 italic">Datos actualizados cada 5 min</span>
+          <h2 className="text-lg font-bold text-foreground">Resumen Estratégico</h2>
+          <span className="text-xs text-muted-foreground italic">Datos actualizados cada 5 min</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatsCard
@@ -149,7 +149,7 @@ export default function DashboardPage() {
       {/* Operational & Liquidity Section */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         <section className="space-y-4">
-          <h2 className="text-lg font-bold text-white/90">Operaciones & Riesgo</h2>
+          <h2 className="text-lg font-bold text-foreground">Operaciones & Riesgo</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <StatsCard
               title="Créditos Activos"
@@ -169,7 +169,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-lg font-bold text-white/90">Liquidez por Método</h2>
+          <h2 className="text-lg font-bold text-foreground">Liquidez por Método</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <StatsCard
               title="Efectivo"
@@ -191,15 +191,15 @@ export default function DashboardPage() {
 
       {/* Charts Section */}
       <section className="space-y-4 pt-4">
-        <h2 className="text-lg font-bold text-white/90">Tendencias y Estado</h2>
+        <h2 className="text-lg font-bold text-foreground">Tendencias y Estado</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-[#0f171a]/40 border border-white/5 rounded-2xl p-6 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-6 backdrop-blur-sm">
             <CollectionChart
               data={stats.weeklyCollectionData}
               period={selectedPeriod === 0 ? 'day' : selectedPeriod === 1 ? 'week' : 'month'}
             />
           </div>
-          <div className="bg-[#0f171a]/40 border border-white/5 rounded-2xl p-6 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-6 backdrop-blur-sm">
             <CreditStatusChart
               upToDatePercentage={stats.upToDatePercentage}
               overduePercentage={stats.overduePercentage}

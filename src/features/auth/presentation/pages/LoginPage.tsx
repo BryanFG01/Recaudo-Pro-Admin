@@ -1,4 +1,6 @@
+import { ModeToggle } from '@/components/theme/ModeToggle'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Eye, EyeOff, HelpCircle, Loader2, Lock, Mail, Search, Wallet } from 'lucide-react'
@@ -9,8 +11,8 @@ import { useAuthStore } from '../store/authStore'
 
 type Step = 'business-code' | 'super-login'
 
-const inputDark =
-  'bg-[#2D3748] border-gray-600 text-white placeholder:text-gray-400 focus-visible:ring-blue-500 focus-visible:border-blue-500'
+const inputStyle =
+  'min-h-[44px] border border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 export default function LoginPage() {
   const [step, setStep] = useState<Step>('business-code')
@@ -122,192 +124,186 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:px-6 lg:px-8">
-      {/* Fondo: gradiente sutil en web, sólido en móvil */}
-      <div
-        className="fixed inset-0 bg-gradient-to-br from-[#1a2436] via-[#1a2436] to-[#0f172a] -z-10"
-        aria-hidden
-      />
+    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:px-6 lg:px-8 bg-gradient-to-br from-background via-background to-muted/30">
+      {/* Barra superior: Ayuda + cambio de tema */}
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <button
+          type="button"
+          className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Ayuda"
+        >
+          <HelpCircle className="h-5 w-5" />
+        </button>
+        <ModeToggle />
+      </div>
 
-      {/* Ayuda (esquina superior derecha) */}
-      <button
-        type="button"
-        className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a2436] transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-        aria-label="Ayuda"
-      >
-        <HelpCircle className="h-5 w-5" />
-      </button>
-
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-6">
         {/* Logo + marca */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center">
           <div
-            className="flex items-center justify-center w-14 h-14 rounded-xl bg-[#2563EB] text-white mb-4"
+            className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 mb-4"
             aria-hidden
           >
-            <Wallet className="h-8 w-8" />
+            <Wallet className="h-9 w-9" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">RecaudoPro</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Admin</p>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            RecaudoPro
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Admin</p>
         </div>
 
-        {/* Títulos según paso */}
-        <div className="text-center mb-6">
-          {step === 'business-code' ? (
-            <>
-              <p className="text-sm text-gray-300">Buscar negocio por código</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Ingresá el código de tu negocio para continuar
-              </p>
-            </>
-          ) : (
-            <>
-              <h2 className="text-xl font-semibold text-white">Bienvenido de nuevo</h2>
-              <p className="text-sm text-gray-400 mt-1">
-                Iniciá sesión para continuar con tu cuenta.
-              </p>
-              {verifiedBusinessCode && (
-                <p className="text-xs text-gray-500 mt-1">Negocio: {verifiedBusinessCode}</p>
-              )}
-            </>
-          )}
-        </div>
-
-        {error && (
-          <div
-            id="login-error"
-            className="mb-6 rounded-lg bg-red-900/50 border border-red-700/60 text-red-200 px-4 py-3 text-sm"
-            role="alert"
-            aria-live="polite"
-          >
-            <pre className="whitespace-pre-wrap">{error}</pre>
-          </div>
-        )}
-
-        {step === 'business-code' && (
-          <form className="space-y-6" onSubmit={handleBusinessCodeSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="businessCode" className="text-gray-200">
-                Código de negocio
-              </Label>
-              <div className="relative">
-                <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"
-                  aria-hidden
-                />
-                <Input
-                  id="businessCode"
-                  name="businessCode"
-                  type="text"
-                  required
-                  value={businessCode}
-                  onChange={(e) => setBusinessCode(e.target.value)}
-                  placeholder="Buscar o ingresar código"
-                  className={`pl-10 min-h-[44px] ${inputDark}`}
-                  aria-describedby={error ? 'login-error' : undefined}
-                  aria-invalid={!!error}
-                  autoComplete="organization"
-                />
-              </div>
-            </div>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full min-h-[44px] bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-medium rounded-lg transition-colors"
-              aria-busy={isLoading}
-            >
-              {showLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-              {isLoading ? 'Verificando...' : 'Entrar'}
-            </Button>
-          </form>
-        )}
-
-        {step === 'super-login' && (
-          <form className="space-y-5" onSubmit={handleSuperLoginSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-200">
-                Correo electrónico
-              </Label>
-              <div className="relative">
-                <Mail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"
-                  aria-hidden
-                />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  // placeholder="admin@admin.com"
-                  className={`pl-10 min-h-[44px] ${inputDark}`}
-                  autoComplete="email"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-gray-200">
-                  Contraseña
-                </Label>
-                <a
-                  href="#"
-                  className="text-sm text-[#2563EB] hover:text-[#3b82f6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a2436] rounded"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  ¿Olvidaste tu contraseña?
-                </a>
-              </div>
-              <div className="relative">
-                <Lock
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"
-                  aria-hidden
-                />
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Ingresá tu contraseña"
-                  className={`pl-10 pr-10 min-h-[44px] ${inputDark}`}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-300 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-1">
-              <Button
-                type="button"
-                onClick={handleVolver}
-                disabled={isLoading}
-                className="flex-1 min-h-[44px] border-gray-600 text-gray-300 bg-[#2D3748] hover:bg-white/10 hover:border-gray-500 hover:text-white rounded-lg"
+        <Card className="border-border/80 shadow-xl bg-card/95 backdrop-blur-sm">
+          <CardHeader className="space-y-1 text-center pb-4">
+            {step === 'business-code' ? (
+              <>
+                <CardTitle className="text-lg">Buscar negocio</CardTitle>
+                <CardDescription>Ingresá el código de tu negocio para continuar</CardDescription>
+              </>
+            ) : (
+              <>
+                <CardTitle className="text-xl">Bienvenido de nuevo</CardTitle>
+                <CardDescription>Iniciá sesión para continuar con tu cuenta.</CardDescription>
+                {verifiedBusinessCode && (
+                  <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                    Negocio: {verifiedBusinessCode}
+                  </span>
+                )}
+              </>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {error && (
+              <div
+                id="login-error"
+                className="rounded-lg bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 text-sm"
+                role="alert"
+                aria-live="polite"
               >
-                Volver
-              </Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 min-h-[44px] bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-medium rounded-lg transition-colors"
-                aria-busy={isLoading}
-              >
-                {showLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-                {isLoading ? 'Entrando...' : 'Iniciar sesión'}
-              </Button>
-            </div>
-          </form>
-        )}
+                <pre className="whitespace-pre-wrap font-sans">{error}</pre>
+              </div>
+            )}
+
+            {step === 'business-code' && (
+              <form className="space-y-6" onSubmit={handleBusinessCodeSubmit}>
+                <div className="space-y-2">
+                  <Label htmlFor="businessCode">Código de negocio</Label>
+                  <div className="relative">
+                    <Search
+                      className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
+                      aria-hidden
+                    />
+                    <Input
+                      id="businessCode"
+                      name="businessCode"
+                      type="text"
+                      required
+                      value={businessCode}
+                      onChange={(e) => setBusinessCode(e.target.value)}
+                      placeholder="Buscar o ingresar código"
+                      className={`pl-10 ${inputStyle}`}
+                      aria-describedby={error ? 'login-error' : undefined}
+                      aria-invalid={!!error}
+                      autoComplete="organization"
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full min-h-[44px] font-medium"
+                  aria-busy={isLoading}
+                >
+                  {showLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+                  {isLoading ? 'Verificando...' : 'Entrar'}
+                </Button>
+              </form>
+            )}
+
+            {step === 'super-login' && (
+              <form className="space-y-5" onSubmit={handleSuperLoginSubmit}>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Correo electrónico</Label>
+                  <div className="relative">
+                    <Mail
+                      className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
+                      aria-hidden
+                    />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="tu@correo.com"
+                      className={`pl-10 ${inputStyle}`}
+                      autoComplete="email"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Contraseña</Label>
+                    <a
+                      href="#"
+                      className="text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </a>
+                  </div>
+                  <div className="relative">
+                    <Lock
+                      className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
+                      aria-hidden
+                    />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Ingresá tu contraseña"
+                      className={`pl-10 pr-10 ${inputStyle}`}
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleVolver}
+                    disabled={isLoading}
+                    className="flex-1 min-h-[44px]"
+                  >
+                    Volver
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 min-h-[44px] font-medium"
+                    aria-busy={isLoading}
+                  >
+                    {showLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
+                    {isLoading ? 'Entrando...' : 'Iniciar sesión'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

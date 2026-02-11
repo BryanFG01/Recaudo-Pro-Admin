@@ -239,7 +239,7 @@ export default function CreditsPage() {
       header: 'Valor Final',
       isNumeric: true,
       render: (credit) => (
-        <span className="text-white font-extrabold">
+        <span className="text-foreground font-extrabold">
           {credit.total_interest != null
             ? formatCurrency(credit.total_interest)
             : '-'}
@@ -297,10 +297,10 @@ export default function CreditsPage() {
         const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0
         return (
           <div className="flex flex-col items-center gap-1">
-            <span className="text-[10px] font-black tabular-nums text-white">
+            <span className="text-[10px] font-black tabular-nums text-foreground">
               {paid} / {total}
             </span>
-            <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
+            <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary"
                 style={{ width: `${pct}%` }}
@@ -361,7 +361,7 @@ export default function CreditsPage() {
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white min-w-0">Gestión de Créditos</h1>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground min-w-0">Gestión de Créditos</h1>
           <p className="text-sm text-muted-foreground/60">Monitorea el estado de los préstamos, cuotas y niveles de recaudo.</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -369,7 +369,7 @@ export default function CreditsPage() {
             variant="outline"
             onClick={handleExport}
             disabled={displayedCredits.length === 0}
-            className="min-h-[44px] px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
+            className="min-h-[44px] px-6 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
           >
             <Download className="w-4 h-4 mr-2" />
             Exportar XLS

@@ -8,10 +8,10 @@ import { CreateUserRequest } from '../../domain/models'
 import { useAuth } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
 
-const containerStyle = 'bg-[#0f171a]/40 border-white/5 backdrop-blur-md shadow-2xl'
-const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-muted-foreground/40 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300'
-const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
-const sectionTitleStyle = 'text-[11px] font-black uppercase tracking-[0.2em] text-primary/80 mb-6 flex items-center gap-2'
+const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
+const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-primary/50 transition-all duration-300'
+const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block'
+const sectionTitleStyle = 'text-[11px] font-black uppercase tracking-[0.2em] text-primary mb-6 flex items-center gap-2'
 
 export default function CreateUserPage() {
   const navigate = useNavigate()
@@ -145,8 +145,8 @@ export default function CreateUserPage() {
   if (!businessId) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4 animate-in fade-in duration-500">
-        <p className="text-muted-foreground/60 italic font-medium">Autenticación requerida...</p>
-        <Button onClick={() => navigate('/login')} className="h-11 px-8 bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[10px]">
+        <p className="text-muted-foreground italic font-medium">Autenticación requerida...</p>
+        <Button onClick={() => navigate('/login')} className="h-11 px-8 font-bold uppercase tracking-widest text-[10px]">
           Ir al Login
         </Button>
       </div>
@@ -160,13 +160,13 @@ export default function CreateUserPage() {
           <Button
             variant="outline"
             onClick={() => navigate('/admin/users')}
-            className="h-11 w-11 p-0 rounded-xl border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl"
+            className="h-11 w-11 p-0 rounded-xl shadow-xl"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="space-y-1">
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">Alta de Colaborador</h1>
-            <p className="text-sm text-muted-foreground/60">Registra un nuevo integrante en tu equipo de trabajo.</p>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Alta de Colaborador</h1>
+            <p className="text-sm text-muted-foreground">Registra un nuevo integrante en tu equipo de trabajo.</p>
           </div>
         </div>
       </div>
@@ -213,22 +213,22 @@ export default function CreateUserPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="first_name" className={labelStyle}>Primer Nombre</label>
                   <input id="first_name" name="first_name" type="text" value={formData.first_name ?? ''} onChange={handleChange}
-                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none text-white font-bold", inputStyle)} />
+                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none font-bold", inputStyle)} />
                 </div>
                 <div className="space-y-1.5">
                   <label htmlFor="second_name" className={labelStyle}>Segundo Nombre</label>
                   <input id="second_name" name="second_name" type="text" value={formData.second_name ?? ''} onChange={handleChange}
-                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none opacity-80", inputStyle)} />
+                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none", inputStyle)} />
                 </div>
                 <div className="space-y-1.5">
                   <label htmlFor="first_last_name" className={labelStyle}>Primer Apellido</label>
                   <input id="first_last_name" name="first_last_name" type="text" value={formData.first_last_name ?? ''} onChange={handleChange}
-                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none text-white font-bold", inputStyle)} />
+                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none font-bold", inputStyle)} />
                 </div>
                 <div className="space-y-1.5">
                   <label htmlFor="second_last_name" className={labelStyle}>Segundo Apellido</label>
                   <input id="second_last_name" name="second_last_name" type="text" value={formData.second_last_name ?? ''} onChange={handleChange}
-                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none opacity-80", inputStyle)} />
+                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none", inputStyle)} />
                 </div>
                 <div className="space-y-1.5 lg:col-span-2">
                   <label htmlFor="name" className={labelStyle}>Identificador de Pantalla (Login)</label>
@@ -280,12 +280,12 @@ export default function CreateUserPage() {
                 <div className="space-y-1.5">
                   <label htmlFor="business_code" className={labelStyle}>Código de Negocio</label>
                   <input id="business_code" name="business_code" type="text" value={formData.business_code ?? ''} onChange={handleChange}
-                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none font-bold text-info", inputStyle)} placeholder="ARG01" />
+                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none font-bold", inputStyle)} placeholder="ARG01" />
                 </div>
                 <div className="space-y-1.5">
                   <label htmlFor="number" className={labelStyle}>Número de Usuario</label>
                   <input id="number" name="number" type="text" value={formData.number ?? ''} onChange={handleChange}
-                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none font-bold text-white", inputStyle)} placeholder="USR001" />
+                    className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none font-bold", inputStyle)} placeholder="USR001" />
                 </div>
               </div>
             </div>
@@ -297,8 +297,8 @@ export default function CreateUserPage() {
                     <label htmlFor="role" className={labelStyle}>Rol del Usuario</label>
                     <select id="role" name="role" required value={formData.role} onChange={handleChange}
                       className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none appearance-none cursor-pointer", inputStyle)}>
-                      <option value="cobrador" className="bg-[#0f171a]">Cobrador</option>
-                      <option value="supervisor" className="bg-[#0f171a]">Supervisor</option>
+                      <option value="cobrador" className="bg-background text-foreground">Cobrador</option>
+                      <option value="supervisor" className="bg-background text-foreground">Supervisor</option>
                     </select>
                  </div>
                  <div className="space-y-1.5">
@@ -310,10 +310,10 @@ export default function CreateUserPage() {
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-success/40 font-bold">%</span>
                     </div>
                  </div>
-                 <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                    <label htmlFor="is_active" className="text-[10px] font-black uppercase tracking-widest text-white">Estado Activo</label>
+                 <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
+                    <label htmlFor="is_active" className="text-[10px] font-black uppercase tracking-widest text-foreground">Estado Activo</label>
                     <input id="is_active" name="is_active" type="checkbox" checked={formData.is_active ?? true} onChange={handleChange}
-                      className="h-5 w-5 rounded-md border-white/10 bg-white/5 text-primary focus:ring-primary/50 cursor-pointer" />
+                      className="h-5 w-5 rounded-md border-border bg-background text-primary focus:ring-primary/50 cursor-pointer" />
                  </div>
                </div>
             </div>
@@ -325,13 +325,13 @@ export default function CreateUserPage() {
                   <label htmlFor="document_type" className={labelStyle}>Tipo ID</label>
                   <select id="document_type" name="document_type" value={formData.document_type ?? ''} onChange={handleChange}
                     className={cn("w-full px-4 py-3 rounded-xl border focus:outline-none appearance-none cursor-pointer", inputStyle)}>
-                    <option value="" className="bg-[#0f171a]">Elegir...</option>
-                    <option value="CC" className="bg-[#0f171a]">Cédula de ciudadanía</option>
-                    <option value="CE" className="bg-[#0f171a]">Cédula de extranjería</option>
-                    <option value="TI" className="bg-[#0f171a]">Tarjeta de identidad</option>
-                    <option value="NIT" className="bg-[#0f171a]">NIT</option>
-                    <option value="Pasaporte" className="bg-[#0f171a]">Pasaporte</option>
-                    <option value="Otro" className="bg-[#0f171a]">Otro</option>
+                    <option value="" className="bg-background text-foreground">Elegir...</option>
+                    <option value="CC" className="bg-background text-foreground">Cédula de ciudadanía</option>
+                    <option value="CE" className="bg-background text-foreground">Cédula de extranjería</option>
+                    <option value="TI" className="bg-background text-foreground">Tarjeta de identidad</option>
+                    <option value="NIT" className="bg-background text-foreground">NIT</option>
+                    <option value="Pasaporte" className="bg-background text-foreground">Pasaporte</option>
+                    <option value="Otro" className="bg-background text-foreground">Otro</option>
                   </select>
                 </div>
                 <div className="space-y-1.5">
@@ -358,7 +358,7 @@ export default function CreateUserPage() {
                     <label htmlFor="document_file_upload" onDrop={handleDocumentDrop} onDragOver={handleDocumentDragOver}
                       className={cn(
                         "flex flex-col items-center justify-center gap-3 w-full min-h-[140px] p-6 rounded-2xl border-2 border-dashed transition-all duration-300 text-center cursor-pointer",
-                        isUploadingImage ? "opacity-30 pointer-events-none" : "border-white/10 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/5 text-muted-foreground/40 hover:text-primary/60"
+                        isUploadingImage ? "opacity-30 pointer-events-none" : "border-border bg-muted/20 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary"
                       )}>
                       {isUploadingImage ? <Loader2 className="w-6 h-6 animate-spin text-primary" /> : <Upload className="w-6 h-6" />}
                       <div>
@@ -373,13 +373,13 @@ export default function CreateUserPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-4 p-8 rounded-2xl border border-white/5 bg-white/[0.03] backdrop-blur-sm">
+        <div className="flex items-center justify-end gap-4 p-8 rounded-2xl border border-border bg-muted/20 backdrop-blur-sm">
           <Button type="button" onClick={() => navigate('/admin/users')} disabled={isLoading} variant="ghost"
-            className="h-12 px-8 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/5 transition-all">
+            className="h-12 px-8 text-[10px] font-black uppercase tracking-[0.2em] transition-all">
             Cancelar
           </Button>
           <Button type="submit" disabled={isLoading} 
-            className="h-12 px-10 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl shadow-primary/20 transition-all active:scale-95 disabled:opacity-50">
+            className="h-12 px-10 font-black uppercase tracking-[0.2em] text-[10px] shadow-xl transition-all active:scale-95 disabled:opacity-50">
             {isLoading ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (

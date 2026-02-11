@@ -199,27 +199,27 @@ export default function ClientMapPage() {
             <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
               <Navigation className="w-3 h-3 text-primary" />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">Geolocalización</h1>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Geolocalización</h1>
           </div>
-          <p className="text-sm text-muted-foreground/60">Monitoreo de ubicación y rutas de clientes en tiempo real.</p>
+          <p className="text-sm text-muted-foreground">Monitoreo de ubicación y rutas de clientes en tiempo real.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-250px)]">
-        <div className="lg:col-span-1 bg-[#0f171a]/60 border border-white/5 rounded-3xl backdrop-blur-md overflow-hidden flex flex-col shadow-2xl">
-          <div className="p-4 border-b border-white/5 space-y-4">
+        <div className="lg:col-span-1 bg-card border border-border rounded-3xl backdrop-blur-md overflow-hidden flex flex-col shadow-xl">
+          <div className="p-4 border-b border-border space-y-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input 
                 type="text" 
                 placeholder="Buscar cliente..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0f171a]/90 border border-white/10 text-white pl-10 pr-4 py-2 rounded-xl text-sm focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-muted-foreground/30"
+                className="w-full bg-background border border-input text-foreground pl-10 pr-4 py-2 rounded-xl text-sm focus:ring-2 focus:ring-ring focus:outline-none placeholder:text-muted-foreground"
               />
             </div>
             <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                 {filteredClients.length} Ubicados
               </span>
             </div>
@@ -232,7 +232,7 @@ export default function ClientMapPage() {
                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Cargando...</p>
                </div>
             ) : filteredClients.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground/40 text-[10px] font-bold uppercase italic">
+              <div className="p-8 text-center text-muted-foreground text-[10px] font-bold uppercase italic">
                 No se encontraron clientes
               </div>
             ) : (
@@ -244,13 +244,13 @@ export default function ClientMapPage() {
                     "w-full text-left p-3 rounded-2xl transition-all group border border-transparent",
                     selectedClient?.id === client.id 
                       ? "bg-primary/10 border-primary/20" 
-                      : "hover:bg-white/5"
+                      : "hover:bg-accent/50"
                   )}
                 >
-                  <p className="font-bold text-white text-sm truncate">{client.name}</p>
+                  <p className="font-bold text-foreground text-sm truncate">{client.name}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <MapPin className="w-3 h-3 text-primary/40" />
-                    <p className="text-[9px] text-muted-foreground/60 font-medium truncate uppercase tracking-tighter">
+                    <MapPin className="w-3 h-3 text-primary" />
+                    <p className="text-[9px] text-muted-foreground font-medium truncate uppercase tracking-tighter">
                        {client.address || 'Sin dirección'}
                     </p>
                   </div>
@@ -268,7 +268,7 @@ export default function ClientMapPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-3 relative rounded-3xl overflow-hidden border border-white/5 shadow-2xl bg-[#0f171a]/60 backdrop-blur-sm">
+        <div className="lg:col-span-3 relative rounded-3xl overflow-hidden border border-border shadow-xl bg-muted/20 backdrop-blur-sm">
           {isLoaded && !isLoading ? (
             <GoogleMap
               mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -298,11 +298,11 @@ export default function ClientMapPage() {
                   <div className="flex flex-col items-center -translate-x-1/2 -translate-y-[110%] pointer-events-auto">
                     <button 
                       onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedClient.latitude},${selectedClient.longitude}`, '_blank')}
-                      className="w-10 h-10 bg-[#3b82f6] hover:bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-2xl shadow-blue-500/60 transition-all active:scale-95 border-0"
+                      className="w-10 h-10 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl flex items-center justify-center shadow-xl transition-all active:scale-95 border-0"
                     >
                       <MapPin className="w-5 h-5" />
                     </button>
-                    <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[#3b82f6] -mt-0.5" />
+                    <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-primary -mt-0.5" />
                   </div>
                 </OverlayView>
               )}

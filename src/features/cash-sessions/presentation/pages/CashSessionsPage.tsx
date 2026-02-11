@@ -22,8 +22,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { CashSession } from '../../domain/models'
 import { useCashSessions } from '../hooks/useCashSessions'
 
-const containerStyle = 'bg-[#0f171a]/40 border-white/5 backdrop-blur-md shadow-2xl'
-const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-muted-foreground/40 focus:ring-primary/50 focus:border-primary/50 h-11'
+const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
+const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50 h-11'
 const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
 
 function userLabel(u: User): string {
@@ -281,7 +281,7 @@ export default function CashSessionsPage() {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-white"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               onClick={() => startEdit(row)}
               disabled={!!deletingId}
             >
@@ -318,7 +318,7 @@ export default function CashSessionsPage() {
   return (
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="space-y-1">
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
           <Banknote className="w-8 h-8 text-primary" />
           Apertura de Caja
         </h1>
@@ -337,8 +337,8 @@ export default function CashSessionsPage() {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         <div className="xl:col-span-4 sticky top-0">
           <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
-            <CardHeader className="border-b border-white/5 pb-4">
-              <CardTitle className="text-sm font-bold text-white uppercase tracking-widest text-muted-foreground/40">
+            <CardHeader className="border-b border-border pb-4">
+              <CardTitle className="text-sm font-bold text-foreground uppercase tracking-widest text-muted-foreground">
                 Nueva Sesión
               </CardTitle>
             </CardHeader>
@@ -357,7 +357,7 @@ export default function CashSessionsPage() {
                       <SelectTrigger id="assign_user" className={inputStyle}>
                         <SelectValue placeholder="Seleccionar cobrador" />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#0f171a] border-white/10 text-white">
+                      <SelectContent className="bg-popover border-border text-popover-foreground">
                         {businessUsers.map((u) => (
                           <SelectItem key={u.id} value={u.id} className="focus:bg-primary/20">{userLabel(u)}</SelectItem>
                         ))}
@@ -394,7 +394,7 @@ export default function CashSessionsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.05]">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
                   <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase cursor-pointer mb-0" htmlFor="withdraw_check">
                     Permitir Retiros
                   </Label>
@@ -409,10 +409,10 @@ export default function CashSessionsPage() {
                 <div className="flex gap-2 pt-2">
                   {editingId ? (
                     <>
-                      <Button type="submit" disabled={isSubmitting} className="flex-1 h-11 bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-widest text-[10px]">
+                      <Button type="submit" disabled={isSubmitting} className="flex-1 h-11 font-bold uppercase tracking-widest text-[10px]">
                         Actualizar
                       </Button>
-                      <Button type="button" variant="outline" onClick={cancelEdit} className="h-11 px-4 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[10px]">
+                      <Button type="button" variant="outline" onClick={cancelEdit} className="h-11 px-4 font-bold uppercase tracking-widest text-[10px]">
                         X
                       </Button>
                     </>
@@ -420,7 +420,7 @@ export default function CashSessionsPage() {
                     <Button
                       type="submit"
                       disabled={isSubmitting || !selectedUserId}
-                      className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20"
+                      className="w-full h-11 font-black uppercase tracking-widest text-[10px]"
                     >
                       {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Abrir Caja'}
                     </Button>

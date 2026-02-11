@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import useSWR from 'swr'
 import { CreditService } from '../../domain/services/CreditService'
 import { CreditRepository } from '../../infrastructure/repositories/CreditRepository'
@@ -74,9 +74,10 @@ export const useCredits = () => {
     return result
   }
 
-  const getCreditSummary = async (id: string) => {
-    return getCreditSummaryUseCase(id)
-  }
+  const getCreditSummary = useCallback(
+    (id: string) => getCreditSummaryUseCase(id),
+    [getCreditSummaryUseCase]
+  )
 
   return {
     credits: data || [],

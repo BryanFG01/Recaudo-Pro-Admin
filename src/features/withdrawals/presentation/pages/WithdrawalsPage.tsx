@@ -19,8 +19,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Withdrawal } from '../../domain/models'
 import { useWithdrawals } from '../hooks/useWithdrawals'
 
-const containerStyle = 'bg-[#0f171a]/40 border-white/5 backdrop-blur-md shadow-2xl'
-const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-muted-foreground/40 focus:ring-primary/50 focus:border-primary/50 h-11'
+const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
+const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50 h-11'
 const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
 
 function userLabel(u: User): string {
@@ -214,7 +214,7 @@ export default function WithdrawalsPage() {
               size="sm"
               disabled={busy}
               onClick={() => handleApprove(row)}
-              className="h-8 bg-success hover:bg-success/90 text-white border-0 font-bold uppercase tracking-widest text-[9px] px-3 transition-transform active:scale-95"
+              className="h-8 bg-success hover:bg-success/90 text-primary-foreground border-0 font-bold uppercase tracking-widest text-[9px] px-3 transition-transform active:scale-95"
             >
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}
               {!busy && 'Autorizar'}
@@ -225,7 +225,7 @@ export default function WithdrawalsPage() {
               variant="outline"
               disabled={busy}
               onClick={() => handleReject(row)}
-              className="h-8 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] font-bold uppercase tracking-widest text-[9px] px-3"
+              className="h-8 font-bold uppercase tracking-widest text-[9px] px-3"
             >
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
               {!busy && 'Denegar'}
@@ -240,7 +240,7 @@ export default function WithdrawalsPage() {
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
             <Wallet className="w-8 h-8 text-primary" />
             Control de Egresos
           </h1>
@@ -264,7 +264,7 @@ export default function WithdrawalsPage() {
                   <SelectTrigger className={inputStyle}>
                     <SelectValue placeholder="Seleccionar usuario" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0f171a] border-white/10 text-white">
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     <SelectItem value={FILTER_ALL} className="focus:bg-primary/20 font-bold">
                       Todos
                     </SelectItem>
@@ -281,7 +281,7 @@ export default function WithdrawalsPage() {
             <div className="flex items-center gap-6 px-6 border-l border-white/5 h-16 self-end">
               <div>
                 <p className={labelStyle}>Solicitudes</p>
-                <p className="text-xl font-black tabular-nums text-white">{withdrawals.length}</p>
+                <p className="text-xl font-black tabular-nums text-foreground">{withdrawals.length}</p>
               </div>
               <div>
                 <p className={labelStyle}>Pendientes</p>

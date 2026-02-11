@@ -35,9 +35,9 @@ interface FiltersBarProps {
   isRecaudoPage?: boolean
 }
 
-const containerStyle = 'bg-[#0f171a]/40 border-white/5 backdrop-blur-md shadow-2xl'
-const inputStyle = 'bg-white/[0.03] border-white/5 text-white placeholder:text-muted-foreground/40 focus:ring-primary/50 focus:border-primary/50'
-const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
+const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
+const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50'
+const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block'
 
 export default function FiltersBar({
   onFilterChange,
@@ -98,7 +98,7 @@ export default function FiltersBar({
 
   return (
     <Card className={cn('mb-8 border transition-all duration-500 overflow-hidden group', containerStyle)}>
-      <CardHeader className="p-0 border-b border-white/5">
+      <CardHeader className="p-0 border-b border-border">
         <div className="flex items-center justify-between px-6 py-4">
           <button
             type="button"
@@ -109,15 +109,15 @@ export default function FiltersBar({
               <Filter className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <h3 className="text-sm font-bold text-white tracking-tight">Filtros Avanzados</h3>
-              <p className="text-[10px] text-muted-foreground/60 font-medium uppercase tracking-wider">
+              <h3 className="text-sm font-bold text-foreground tracking-tight">Filtros Avanzados</h3>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                 {hasActiveFilters ? 'Filtros aplicados' : 'Sin filtros activos'}
               </p>
             </div>
             {collapsed ? (
-              <ChevronDown className="w-4 h-4 text-muted-foreground/40" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
             ) : (
-              <ChevronUp className="w-4 h-4 text-muted-foreground/40" />
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
             )}
           </button>
           
@@ -150,7 +150,7 @@ export default function FiltersBar({
                   className="relative cursor-pointer group/input"
                   onClick={() => (document.getElementById('startDate') as HTMLInputElement)?.showPicker()}
                 >
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none group-hover/input:text-primary transition-colors" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none group-hover/input:text-primary transition-colors" />
                   <Input
                     id="startDate"
                     type="date"
@@ -166,7 +166,7 @@ export default function FiltersBar({
                   className="relative cursor-pointer group/input"
                   onClick={() => (document.getElementById('endDate') as HTMLInputElement)?.showPicker()}
                 >
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none group-hover/input:text-primary transition-colors" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none group-hover/input:text-primary transition-colors" />
                   <Input
                     id="endDate"
                     type="date"
@@ -189,10 +189,10 @@ export default function FiltersBar({
                 <SelectTrigger id="clientId" className={cn(inputStyle, "h-11")}>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0f171a] border-white/10 text-white shadow-2xl">
-                  <SelectItem value="__all__" className="focus:bg-primary/20 focus:text-white">Todos</SelectItem>
+                <SelectContent className="bg-popover border-border text-popover-foreground shadow-xl">
+                  <SelectItem value="__all__">Todos</SelectItem>
                   {availableClients.map((client) => (
-                    <SelectItem key={client.id} value={client.id} className="focus:bg-primary/20 focus:text-white">
+                    <SelectItem key={client.id} value={client.id}>
                       {client.name}
                     </SelectItem>
                   ))}
@@ -211,10 +211,10 @@ export default function FiltersBar({
                 <SelectTrigger id="payment_method" className={cn(inputStyle, "h-11")}>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0f171a] border-white/10 text-white shadow-2xl">
-                  <SelectItem value="__all__" className="focus:bg-primary/20 focus:text-white">Todos</SelectItem>
-                  <SelectItem value="cash" className="focus:bg-primary/20 focus:text-white">Efectivo</SelectItem>
-                  <SelectItem value="transfer" className="focus:bg-primary/20 focus:text-white">Transacción</SelectItem>
+                <SelectContent className="bg-popover border-border text-popover-foreground shadow-xl">
+                  <SelectItem value="__all__">Todos</SelectItem>
+                  <SelectItem value="cash">Efectivo</SelectItem>
+                  <SelectItem value="transfer">Transacción</SelectItem>
                 </SelectContent>
               </Select>
             </div>

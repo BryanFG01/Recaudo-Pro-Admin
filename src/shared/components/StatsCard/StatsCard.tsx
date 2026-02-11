@@ -83,7 +83,7 @@ export default function StatsCard({
               {title}
             </p>
             <div className="flex flex-col gap-1">
-              <h3 className="text-3xl font-extrabold tracking-tight text-white tabular-nums drop-shadow-sm">
+              <h3 className="text-3xl font-extrabold tracking-tight text-foreground tabular-nums drop-shadow-sm">
                 {formatValue(value)}
               </h3>
               {trend && (
@@ -104,7 +104,7 @@ export default function StatsCard({
           {icon && (
             <div 
               className={cn(
-                'flex-shrink-0 p-3 rounded-2xl bg-white/5 backdrop-blur-md border border-white/5 shadow-xl transition-transform duration-300 group-hover:scale-110',
+                'flex-shrink-0 p-3 rounded-2xl bg-muted/50 backdrop-blur-md border border-border shadow-xl transition-transform duration-300 group-hover:scale-110',
                 variant === 'default' ? 'text-primary' : 
                 variant === 'success' ? 'text-success' :
                 variant === 'warning' ? 'text-warning' :
@@ -118,8 +118,8 @@ export default function StatsCard({
         </div>
 
         {subtitle && (
-          <div className="mt-4 flex items-center gap-2 pt-4 border-t border-white/5">
-            <p className="text-xs font-semibold text-muted-foreground/50 flex items-center gap-1.2">
+          <div className="mt-4 flex items-center gap-2 pt-4 border-t border-border">
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.2">
               <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span> {subtitle}
             </p>
           </div>

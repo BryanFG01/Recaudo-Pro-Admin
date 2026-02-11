@@ -57,24 +57,24 @@ export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
 
       <aside
         className={cn(
-          'w-64 bg-[#0f171a] text-white flex flex-col border-r border-gray-700/50 rounded-r-3xl shadow-xl shadow-black/10',
+          'w-64 bg-card text-card-foreground flex flex-col border-r border-border rounded-r-3xl shadow-xl',
           'fixed md:static inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-out',
           'md:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
         aria-label="Navegación principal"
       >
-        <div className="p-4 md:p-6 border-b border-gray-700/50 flex items-center justify-between gap-2">
+        <div className="p-4 md:p-6 border-b border-border flex items-center justify-between gap-2">
           <div>
-            <h1 className="text-xl font-bold text-white">RecaudoPro</h1>
-            <p className="text-sm text-gray-400">Administrador</p>
+            <h1 className="text-xl font-bold text-foreground">RecaudoPro</h1>
+            <p className="text-sm text-muted-foreground">Administrador</p>
           </div>
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={closeSidebar}
-            className="md:hidden shrink-0 h-10 w-10 text-gray-400 hover:bg-[#2D3748] hover:text-white rounded-lg"
+            className="md:hidden shrink-0 h-10 w-10 rounded-lg"
             aria-label="Cerrar menú"
           >
             <X className="w-5 h-5" />
@@ -92,10 +92,10 @@ export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
                     to={item.path}
                     onClick={closeSidebar}
                     className={cn(
-                      'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-[#0f172a]',
+                      'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-card',
                       isActive
-                        ? 'bg-[#2563EB] text-white'
-                        : 'text-gray-300 hover:bg-[#2D3748] hover:text-white'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                     aria-current={isActive ? 'page' : undefined}
                   >
@@ -108,10 +108,10 @@ export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-gray-700/50">
+        <div className="p-4 border-t border-border">
           <button
             onClick={() => setOpenLogout(true)}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 hover:bg-[#2D3748] hover:text-white w-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2 focus:ring-offset-[#0f172a] min-h-[44px]"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-card min-h-[44px]"
             aria-label="Cerrar sesión"
           >
             <LogOut className="w-5 h-5" aria-hidden="true" />
@@ -122,18 +122,18 @@ export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
 
       <Dialog open={openLogout} onOpenChange={setOpenLogout}>
         <DialogContent
-          className="bg-[#0f171a]/95 border-white/5 text-gray-200 shadow-2xl backdrop-blur-xl sm:max-w-[400px] p-0 overflow-hidden rounded-3xl"
+          className="bg-card border-border shadow-2xl backdrop-blur-xl sm:max-w-[400px] p-0 overflow-hidden rounded-3xl"
           aria-describedby="logout-description"
         >
           <div className="p-8 space-y-6">
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-2">
-                <LogOut className="w-8 h-8 text-red-500" />
+              <div className="w-16 h-16 rounded-full bg-destructive/10 border border-destructive/20 flex items-center justify-center mb-2">
+                <LogOut className="w-8 h-8 text-destructive" />
               </div>
               
               <div className="space-y-1">
-                <DialogTitle className="text-2xl font-black text-white tracking-tight">Cerrar Sesión</DialogTitle>
-                <DialogDescription id="logout-description" className="text-sm text-muted-foreground/60 font-medium">
+                <DialogTitle className="text-2xl font-black text-foreground tracking-tight">Cerrar Sesión</DialogTitle>
+                <DialogDescription id="logout-description" className="text-sm text-muted-foreground font-medium">
                    ¿Estás seguro de que deseas finalizar tu sesión actual? Tendrás que volver a ingresar tus credenciales.
                 </DialogDescription>
               </div>
@@ -143,15 +143,15 @@ export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
               <Button
                 type="button"
                 onClick={handleLogout}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest text-[10px] h-12 rounded-xl shadow-lg shadow-red-600/20 border-0"
+                className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground font-black uppercase tracking-widest text-[10px] h-12 rounded-xl shadow-lg border-0"
               >
                 Confirmar Salida
               </Button>
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 onClick={() => setOpenLogout(false)}
-                className="w-full text-muted-foreground hover:text-white hover:bg-white/5 font-bold uppercase tracking-widest text-[10px] h-12 rounded-xl border border-transparent hover:border-white/5"
+                className="w-full font-bold uppercase tracking-widest text-[10px] h-12 rounded-xl"
               >
                 Mantener Sesión
               </Button>
