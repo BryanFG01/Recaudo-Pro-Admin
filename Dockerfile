@@ -36,9 +36,13 @@ FROM nginx:alpine
 # Configuracion personalizada de nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Entrypoint que inyecta VITE_BACK_URL en index.html en runtime (sin recompilar)
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 # Copiar archivos del build
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

@@ -1,23 +1,35 @@
-// VITE_BACK_URL es la URL base del backend (ej: https://recaudo-pro-back-production.up.railway.app)
-// Fallback a VITE_API_BASE_URL por compatibilidad
-const apiBaseUrl = (
-  import.meta.env.VITE_BACK_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  ''
-).replace(/\/$/, '')
+const PLACEHOLDER_API_URL = '__VITE_BACK_URL__'
 
-if (!apiBaseUrl) {
+/**
+ * URL base del backend. En producción (Docker) puede inyectarse en runtime
+ * vía data-api-url en #root (el entrypoint reemplaza __VITE_BACK_URL__ en index.html).
+ * Si no, usa las variables de build (VITE_BACK_URL / VITE_API_BASE_URL).
+ */
+function getApiBaseUrl(): string {
+  if (typeof document !== 'undefined') {
+    const url = document.getElementById('root')?.getAttribute('data-api-url')
+    if (url && url !== PLACEHOLDER_API_URL) return url.replace(/\/$/, '')
+  }
+  return (
+    import.meta.env.VITE_BACK_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    ''
+  ).replace(/\/$/, '')
+}
+
+const initialUrl = getApiBaseUrl()
+if (!initialUrl) {
   console.warn(
     'VITE_BACK_URL (o VITE_API_BASE_URL) no está configurado. Las llamadas al API pueden fallar.\n' +
-      'Agrega VITE_BACK_URL a tu archivo .env (ej: VITE_BACK_URL=https://tu-backend.com)'
+      'En producción: definí la variable al construir la imagen (build arg) o al ejecutar el contenedor (env) y usá el entrypoint que inyecta la URL en index.html.'
   )
 }
 
-export const apiBase = apiBaseUrl
+export const apiBase = initialUrl || ''
 
 function buildUrl(endpoint: string): string {
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-  return `${apiBase}${path}`
+  return `${getApiBaseUrl()}${path}`
 }
 
 /** Error con código HTTP para que los repositorios/páginas puedan distinguir 404, etc. */
@@ -50,8 +62,9 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
   const text = await response.text()
   const trimmed = text.trim()
   if (trimmed.toLowerCase().startsWith('<!')) {
-    const hint = !apiBaseUrl
-      ? 'Configurá VITE_BACK_URL en tu archivo .env con la URL del backend (ej: https://tu-backend.up.railway.app).'
+    const base = getApiBaseUrl()
+    const hint = !base || base === PLACEHOLDER_API_URL
+      ? 'En producción: configurá la URL del backend (variable VITE_BACK_URL al construir la imagen o al ejecutar el contenedor; ver README). En local: .env con VITE_BACK_URL.'
       : 'El backend puede no tener esta ruta o está devolviendo una página de error.'
     throw new ApiError(
       `El servidor respondió con HTML en lugar de JSON. ${hint}`,

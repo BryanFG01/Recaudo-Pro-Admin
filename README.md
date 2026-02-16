@@ -23,7 +23,7 @@ npm install
 2. Edita `.env` y asigna la URL de tu backend:
 
 ```env
-VITE_BACK_URL=https://tu-backend.up.railway.app
+VITE_BACK_URL=https://tu-backend.ejemplo.com
 ```
 
 **Nota:** La web no tiene contacto directo con Supabase; Dashboard, Recaudos, Créditos, Clientes y Auth usan la API del backend (`VITE_BACK_URL`). Tras cambiar `.env`, reinicia el servidor (`pnpm run dev`).
@@ -49,6 +49,19 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## 🐳 Producción (Docker)
+
+La imagen puede recibir la URL del backend **en tiempo de ejecución** (sin recompilar):
+
+```bash
+docker build -t recaudo-pro-admin .
+docker run -p 80:80 -e VITE_BACK_URL=https://tu-backend.ejemplo.com recaudo-pro-admin
+```
+
+En **Dokploy** (tu VPS): definí la variable de entorno `VITE_BACK_URL` en el **servicio/contenedor** (no solo en build). El entrypoint reemplaza el placeholder en `index.html` al arrancar.
+
+Si preferís fijar la URL en el build: pasá `--build-arg VITE_BACK_URL=https://...` al hacer `docker build`.
 
 ## 📋 Features
 
