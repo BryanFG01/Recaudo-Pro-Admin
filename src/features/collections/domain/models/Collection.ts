@@ -26,3 +26,12 @@ export interface CreateCollectionRequest {
   payment_method?: string | null
   transaction_reference?: string | null
 }
+
+export interface UpdateCollectionRequest {
+  id: string
+  amount?: number
+  payment_date?: string
+  notes?: string | null
+  payment_method?: string | null
+  transaction_reference?: string | null
+}

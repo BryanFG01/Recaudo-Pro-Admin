@@ -8,11 +8,12 @@ import { CollectionFilters } from '@/shared/types/filters'
 import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDateTime } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
-import { Download } from 'lucide-react'
+import { Download, Pencil } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { CollectionWithUserEmail } from '../../domain/port'
 import { CollectionService } from '../../domain/services/CollectionService'
 import { CollectionRepository } from '../../infrastructure/repositories/CollectionRepository'
+import { EditCollectionModal } from '../components/EditCollectionModal'
 
 export default function CollectionsPage() {
   const { businessId, businessCode, user } = useAuthStore()
@@ -21,6 +22,7 @@ export default function CollectionsPage() {
   const [isClientsLoading, setIsClientsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [clientsList, setClientsList] = useState<Client[]>([])
+  const [editingCollection, setEditingCollection] = useState<CollectionWithUserEmail | null>(null)
   const [filters, setFilters] = useState<FilterValues>({
     userId: undefined,
     startDate: undefined,
@@ -201,6 +203,24 @@ export default function CollectionsPage() {
       header: 'Referencia',
       className: 'font-mono text-[10px] text-muted-foreground/40',
       render: (collection) => collection.transaction_reference || '-'
+    },
+    {
+      key: 'id',
+      header: '',
+      className: 'w-10 text-center',
+      render: (collection) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            setEditingCollection(collection)
+          }}
+          className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+          title="Editar recaudo"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      )
     }
   ]
 
@@ -258,6 +278,14 @@ export default function CollectionsPage() {
           emptyMessage="No se han registrado recaudos en este período"
         />
       </div>
+
+      <EditCollectionModal
+        collection={editingCollection}
+        clientName={editingCollection?.client_id ? clientNameById[editingCollection.client_id] : undefined}
+        isOpen={!!editingCollection}
+        onClose={() => setEditingCollection(null)}
+        onSuccess={loadCollections}
+      />
     </div>
   )
 }

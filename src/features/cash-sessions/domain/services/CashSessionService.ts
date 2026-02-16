@@ -3,6 +3,7 @@ import {
   CashSession,
   CashSessionFlow,
   CreateCashSessionRequest,
+  DailySummaryResponse,
   UpdateCashSessionRequest
 } from '../models'
 
@@ -41,6 +42,11 @@ export class CashSessionService {
   async getFlow(id: string): Promise<CashSessionFlow | null> {
     if (!id) throw new Error('ID de sesión es requerido')
     return this.repository.getFlow(id)
+  }
+
+  async getDailySummaryByUser(userId: string): Promise<DailySummaryResponse | null> {
+    if (!userId) throw new Error('user_id es requerido')
+    return this.repository.getDailySummaryByUser(userId)
   }
 
   async delete(id: string): Promise<void> {

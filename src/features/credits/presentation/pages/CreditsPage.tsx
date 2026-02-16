@@ -10,7 +10,7 @@ import { CreditFilters } from '@/shared/types/filters'
 import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
-import { Download, Edit2 } from 'lucide-react'
+import { Download, Pencil } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Credit, CreditSummary } from '../../domain/models'
 import { CreditWithUserEmail } from '../../domain/port'
@@ -334,17 +334,20 @@ export default function CreditsPage() {
     },
     {
       key: 'id',
-      header: 'Acciones',
-      className: 'text-right',
+      header: '',
+      className: 'w-10 text-center',
       render: (credit) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => handleEditClick(credit as Credit)}
-          className="hover:bg-primary/20 hover:text-primary transition-colors h-8 w-8"
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleEditClick(credit as Credit)
+          }}
+          className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+          title="Editar crédito"
         >
-          <Edit2 className="w-4 h-4" />
-        </Button>
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
       )
     }
   ]

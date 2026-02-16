@@ -8,8 +8,9 @@ import {
   buildGetCollectionsByClientIdUseCase,
   buildGetCollectionsByCreditIdUseCase,
   buildCreateCollectionUseCase,
+  buildUpdateCollectionUseCase,
 } from '../../application/useCases'
-import { CreateCollectionRequest } from '../../domain/models'
+import { CreateCollectionRequest, UpdateCollectionRequest } from '../../domain/models'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 
 export const useCollections = () => {
@@ -45,6 +46,11 @@ export const useCollections = () => {
     [collectionService]
   )
 
+  const updateCollectionUseCase = useMemo(
+    () => buildUpdateCollectionUseCase(collectionService),
+    [collectionService]
+  )
+
   const { data, error, isLoading, mutate } = useSWR(
     user ? 'collections' : null,
     () => getCollectionsUseCase()
@@ -59,12 +65,19 @@ export const useCollections = () => {
     return result
   }
 
+  const updateCollection = async (request: UpdateCollectionRequest) => {
+    const result = await updateCollectionUseCase(request)
+    mutate()
+    return result
+  }
+
   return {
     collections: data || [],
     error,
     isLoading,
     refetch: mutate,
     createCollection,
+    updateCollection,
     getRecentCollections: getRecentCollectionsUseCase,
     getCollectionsByClientId: getCollectionsByClientIdUseCase,
     getCollectionsByCreditId: getCollectionsByCreditIdUseCase,

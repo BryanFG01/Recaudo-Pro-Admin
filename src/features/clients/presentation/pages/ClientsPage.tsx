@@ -10,11 +10,12 @@ import FiltersBar, { FilterValues } from '@/shared/components/Filters/FiltersBar
 import { ClientFilters } from '@/shared/types/filters'
 import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
-import { Download } from 'lucide-react'
+import { Download, Pencil } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { ClientWithCredits } from '../../domain/models'
 import { ClientService } from '../../domain/services/ClientService'
 import { ClientRepository } from '../../infrastructure/repositories/ClientRepository'
+import { EditClientModal } from '../components/EditClientModal'
 
 export default function ClientsPage() {
   const { businessId, businessCode, user } = useAuthStore()
@@ -25,6 +26,7 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null)
   const [availableEmails, setAvailableEmails] = useState<string[]>([])
   const [usersList, setUsersList] = useState<User[]>([])
+  const [editingClient, setEditingClient] = useState<ClientWithCredits | null>(null)
   const [filters, setFilters] = useState<FilterValues>({ userId: undefined })
 
   const currentBusinessId = user?.business_id || businessId
@@ -237,6 +239,24 @@ export default function ClientsPage() {
       header: 'Fecha Creación',
       className: 'text-muted-foreground/50',
       render: (client) => formatDate(client.created_at)
+    },
+    {
+      key: 'id',
+      header: '',
+      className: 'w-10 text-center',
+      render: (client) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            setEditingClient(client)
+          }}
+          className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
+          title="Editar cliente"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      )
     }
   ]
 
@@ -294,6 +314,15 @@ export default function ClientsPage() {
           emptyMessage="No hay clientes disponibles"
         />
       </div>
+
+      <EditClientModal
+        client={editingClient}
+        isOpen={!!editingClient}
+        onClose={() => setEditingClient(null)}
+        onSuccess={loadClients}
+        totalAmount={editingClient?.total_amount}
+        totalBalance={editingClient?.total_balance}
+      />
     </div>
   )
 }

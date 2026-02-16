@@ -3,6 +3,7 @@ import {
   CashSession,
   CashSessionFlow,
   CreateCashSessionRequest,
+  DailySummaryResponse,
   UpdateCashSessionRequest
 } from '../../domain/models'
 import { ICashSessionRepository } from '../../domain/port'
@@ -97,6 +98,44 @@ export class CashSessionRepository implements ICashSessionRepository {
         `/api/cash-sessions/flow/${encodeURIComponent(id)}`
       )
       return raw && typeof raw === 'object' ? normalizeFlow(raw) : null
+    } catch {
+      return null
+    }
+  }
+
+  /** GET /api/cash-sessions/daily-summary/user/{userId} — resumen diario por usuario */
+  async getDailySummaryByUser(userId: string): Promise<DailySummaryResponse | null> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw: any = await apiClient.get(
+        `/api/cash-sessions/daily-summary/user/${encodeURIComponent(userId)}`
+      )
+      if (!raw || typeof raw !== 'object') return null
+      const items = Array.isArray(raw.items) ? raw.items.map((item: any) => ({
+        user_id: String(item.user_id ?? ''),
+        business_id: String(item.business_id ?? ''),
+        session_date: String(item.session_date ?? ''),
+        initial_balance: toNum(item.initial_balance),
+        saldo_dia_anterior: toNum(item.saldo_dia_anterior),
+        total_ingresos: toNum(item.total_ingresos),
+        total_recaudo: toNum(item.total_recaudo),
+        total_ventas: toNum(item.total_ventas),
+        total_retiros: toNum(item.total_retiros),
+        total_gastos: toNum(item.total_gastos),
+        caja_actual: toNum(item.caja_actual)
+      })) : []
+      const t = raw.totals ?? {}
+      return {
+        items,
+        totals: {
+          total_ingresos: toNum(t.total_ingresos),
+          total_recaudo: toNum(t.total_recaudo),
+          total_ventas: toNum(t.total_ventas),
+          total_retiros: toNum(t.total_retiros),
+          total_gastos: toNum(t.total_gastos),
+          caja_actual: toNum(t.caja_actual)
+        }
+      }
     } catch {
       return null
     }

@@ -2,6 +2,7 @@ import {
   CashSession,
   CashSessionFlow,
   CreateCashSessionRequest,
+  DailySummaryResponse,
   UpdateCashSessionRequest
 } from '../models'
 
@@ -12,5 +13,6 @@ export interface ICashSessionRepository {
   getByBusinessId(businessId: string): Promise<CashSession[]>
   getByUserId(userId: string): Promise<CashSession[]>
   getFlow(id: string): Promise<CashSessionFlow | null>
+  getDailySummaryByUser(userId: string): Promise<DailySummaryResponse | null>
   delete(id: string): Promise<void>
 }

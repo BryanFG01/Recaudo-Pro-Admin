@@ -1,5 +1,5 @@
 import { CollectionService } from '../../domain/services/CollectionService'
-import { Collection, CreateCollectionRequest } from '../../domain/models'
+import { Collection, CreateCollectionRequest, UpdateCollectionRequest } from '../../domain/models'
 
 export const buildGetCollectionsUseCase = (service: CollectionService) => {
   return async (): Promise<Collection[]> => {
@@ -32,6 +32,12 @@ export const buildCreateCollectionUseCase = (service: CollectionService) => {
     userId: string
   ): Promise<Collection> => {
     return service.createCollection(request, businessId, userId)
+  }
+}
+
+export const buildUpdateCollectionUseCase = (service: CollectionService) => {
+  return async (request: UpdateCollectionRequest): Promise<Collection> => {
+    return service.updateCollection(request)
   }
 }
 

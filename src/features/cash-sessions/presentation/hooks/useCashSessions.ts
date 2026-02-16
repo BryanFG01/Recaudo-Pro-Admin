@@ -8,6 +8,7 @@ import {
   buildGetCashSessionsByBusinessIdUseCase,
   buildGetCashSessionsByUserIdUseCase,
   buildGetCashSessionFlowUseCase,
+  buildGetDailySummaryByUserUseCase,
   buildDeleteCashSessionUseCase
 } from '../../application/useCases'
 import {
@@ -45,6 +46,10 @@ export function useCashSessions() {
     () => buildGetCashSessionFlowUseCase(service),
     [service]
   )
+  const getDailySummaryByUserFn = useMemo(
+    () => buildGetDailySummaryByUserUseCase(service),
+    [service]
+  )
   const deleteCashSessionFn = useMemo(
     () => buildDeleteCashSessionUseCase(service),
     [service]
@@ -74,6 +79,10 @@ export function useCashSessions() {
     (id: string) => getCashSessionFlowFn(id),
     [getCashSessionFlowFn]
   )
+  const getDailySummaryByUser = useCallback(
+    (userId: string) => getDailySummaryByUserFn(userId),
+    [getDailySummaryByUserFn]
+  )
   const deleteCashSession = useCallback(
     (id: string) => deleteCashSessionFn(id),
     [deleteCashSessionFn]
@@ -86,6 +95,7 @@ export function useCashSessions() {
     getCashSessionsByBusinessId,
     getCashSessionsByUserId,
     getCashSessionFlow,
+    getDailySummaryByUser,
     deleteCashSession
   }
 }

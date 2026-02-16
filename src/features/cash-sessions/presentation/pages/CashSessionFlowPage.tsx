@@ -10,18 +10,24 @@ import {
 import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
-import { CollectionRepository } from '@/features/collections/infrastructure/repositories/CollectionRepository'
-import { CollectionService } from '@/features/collections/domain/services/CollectionService'
-import { CreditRepository } from '@/features/credits/infrastructure/repositories/CreditRepository'
-import { CreditService } from '@/features/credits/domain/services/CreditService'
 import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDate, formatDateTime } from '@/shared/utils/date'
-import { DollarSign, Download, Loader2, TrendingUp } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CashSession, CashSessionFlow } from '../../domain/models'
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Banknote,
+  Download,
+  Loader2,
+  Receipt,
+  ShoppingCart,
+  TrendingUp,
+  Wallet,
+  MinusCircle
+} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { CashSession, CashSessionFlow, DailySummaryTotals } from '../../domain/models'
 import { useCashSessions } from '../hooks/useCashSessions'
 
-/** Flujo por defecto para pintar siempre la Trazabilidad (haya o no saldo inicial / sesión). */
 const DEFAULT_FLOW: CashSessionFlow = {
   cash_session_id: '',
   business_id: '',
@@ -49,9 +55,9 @@ function userDisplayName(u: User): string {
 function downloadFlowCsv(flow: CashSessionFlow, sessionDate: string): void {
   const rows = [
     ['Concepto', 'Valor'],
-    ['Fecha sesión', sessionDate],
+    ['Fecha sesion', sessionDate],
     ['Saldo inicial', String(flow.initial_balance)],
-    ['Total créditos', String(flow.total_credits)],
+    ['Total creditos', String(flow.total_credits)],
     ['Total recaudado', String(flow.total_collected)],
     ['Total retiros aprobados', String(flow.total_withdrawals_approved)],
     ['Caja inicial restante', String(flow.caja_inicial_restante)],
@@ -73,11 +79,72 @@ function downloadFlowCsv(flow: CashSessionFlow, sessionDate: string): void {
   URL.revokeObjectURL(url)
 }
 
+interface MetricCardProps {
+  label: string
+  value: string
+  icon: React.ReactNode
+  accent?: 'default' | 'success' | 'error' | 'warning' | 'info'
+  subtitle?: string
+  large?: boolean
+}
+
+function MetricCard({ label, value, icon, accent = 'default', subtitle, large }: MetricCardProps) {
+  const accentStyles = {
+    default: 'border-border bg-muted/20',
+    success: 'border-success/20 bg-success/5',
+    error: 'border-error/20 bg-error/5',
+    warning: 'border-warning/20 bg-warning/5',
+    info: 'border-primary/20 bg-primary/5'
+  }
+  const valueColors = {
+    default: 'text-foreground',
+    success: 'text-success',
+    error: 'text-error',
+    warning: 'text-warning',
+    info: 'text-primary'
+  }
+  const iconColors = {
+    default: 'text-muted-foreground/40',
+    success: 'text-success/30',
+    error: 'text-error/30',
+    warning: 'text-warning/30',
+    info: 'text-primary/30'
+  }
+
+  return (
+    <div className={cn(
+      'relative rounded-2xl border p-5 transition-all duration-300 hover:shadow-md overflow-hidden group',
+      accentStyles[accent]
+    )}>
+      <div className={cn('absolute top-3 right-3 transition-opacity group-hover:opacity-40', iconColors[accent])}>
+        {icon}
+      </div>
+      <div className="relative z-10 space-y-1.5">
+        <p className={labelStyle}>{label}</p>
+        <p className={cn(
+          'font-black tabular-nums tracking-tight',
+          large ? 'text-3xl' : 'text-xl',
+          valueColors[accent]
+        )}>
+          {value}
+        </p>
+        {subtitle && (
+          <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wide">{subtitle}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function CashSessionFlowPage() {
   const { user, businessId } = useAuthStore()
   const { getUsersByBusinessId } = useAuth()
-  const { getCashSessionsByBusinessId, getCashSessionsByUserId, getCashSessionFlow } =
-    useCashSessions()
+  const {
+    getCashSessionsByBusinessId,
+    getCashSessionsByUserId,
+    getCashSessionFlow,
+    getDailySummaryByUser
+  } = useCashSessions()
 
   const currentBusinessId = (user?.business_id || businessId) ?? ''
   const prevBusinessIdRef = useRef<string | null>(null)
@@ -91,20 +158,8 @@ export default function CashSessionFlowPage() {
   const [flow, setFlow] = useState<CashSessionFlow | null>(null)
   const [isLoadingFlow, setIsLoadingFlow] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  /** Total Recaudado desde GET /api/collections?business_id=&user_id= (por usuario). */
-  const [userTotalRecaudo, setUserTotalRecaudo] = useState<number | null>(null)
-  /** Ventas (Capital Prestado) desde créditos por business_id + user_id. */
-  const [userTotalVentas, setUserTotalVentas] = useState<number | null>(null)
-  const [isLoadingUserTotals, setIsLoadingUserTotals] = useState(false)
-
-  const collectionService = useMemo(() => {
-    const repo = new CollectionRepository()
-    return new CollectionService(repo)
-  }, [])
-  const creditService = useMemo(() => {
-    const repo = new CreditRepository()
-    return new CreditService(repo)
-  }, [])
+  const [dailyTotals, setDailyTotals] = useState<DailySummaryTotals | null>(null)
+  const [isLoadingDailyTotals, setIsLoadingDailyTotals] = useState(false)
 
   useEffect(() => {
     if (!currentBusinessId) {
@@ -163,43 +218,27 @@ export default function CashSessionFlowPage() {
   }, [loadSessions])
 
   const selectedSession = sessions.find((s) => s.id === selectedSessionId)
-  /** Solo cobrador seleccionado: esta vista es cobrador por cobrador. No usa totales globales (esos están en el Dashboard). */
   const effectiveUserId = filterUserId || undefined
 
   useEffect(() => {
-    if (!currentBusinessId || !effectiveUserId) {
-      setUserTotalRecaudo(null)
-      setUserTotalVentas(null)
+    if (!effectiveUserId) {
+      setDailyTotals(null)
       return
     }
     let cancelled = false
-    setIsLoadingUserTotals(true)
-    const loadUserTotals = async () => {
-      try {
-        const [collections, summaries] = await Promise.all([
-          collectionService.getCollectionsWithFilters({
-            businessId: currentBusinessId,
-            userId: effectiveUserId
-          }),
-          creditService.getCreditSummariesByBusinessAndUser(currentBusinessId, effectiveUserId)
-        ])
-        if (cancelled) return
-        const totalRecaudo = (collections || []).reduce((s, c) => s + (Number(c.amount) || 0), 0)
-        const totalVentas = (summaries || []).reduce((s, c) => s + (Number(c.total_amount) || 0), 0)
-        setUserTotalRecaudo(totalRecaudo)
-        setUserTotalVentas(totalVentas)
-      } catch {
-        if (!cancelled) {
-          setUserTotalRecaudo(null)
-          setUserTotalVentas(null)
-        }
-      } finally {
-        if (!cancelled) setIsLoadingUserTotals(false)
-      }
-    }
-    loadUserTotals()
+    setIsLoadingDailyTotals(true)
+    getDailySummaryByUser(effectiveUserId)
+      .then((res) => {
+        if (!cancelled && res) setDailyTotals(res.totals)
+      })
+      .catch(() => {
+        if (!cancelled) setDailyTotals(null)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingDailyTotals(false)
+      })
     return () => { cancelled = true }
-  }, [currentBusinessId, effectiveUserId, collectionService, creditService])
+  }, [effectiveUserId, getDailySummaryByUser])
 
   useEffect(() => {
     if (!selectedSessionId) {
@@ -221,24 +260,23 @@ export default function CashSessionFlowPage() {
     }
   }, [selectedSessionId, getCashSessionFlow])
 
-  /** Siempre hay un flujo a pintar: el real o el por defecto (trazabilidad visible con o sin caja inicial). */
   const displayFlow: CashSessionFlow = flow ?? DEFAULT_FLOW
-  const hasRealFlow = flow != null
-  /** Solo se muestran cuando hay cobrador seleccionado; con "Todos" no se pintan totales (eso va en dashboard). */
-  const displayTotalRecaudo = effectiveUserId ? (userTotalRecaudo != null ? userTotalRecaudo : 0) : null
-  const displayTotalVentas = effectiveUserId ? (userTotalVentas != null ? userTotalVentas : 0) : null
   const showCobradorTotals = !!effectiveUserId
-  /** Mismo valor que mostramos en "Efectivo Restante de Caja": con cobrador = inicial − ventas (no el del API, que puede ser caja inicial). */
-  const efectivoRestanteDeCaja = showCobradorTotals
-    ? Math.max(0, displayFlow.initial_balance - (displayTotalVentas ?? 0))
-    : (displayFlow.caja_inicial_restante ?? 0)
-  /** Efectivo que queda en caja = Efectivo Restante de Caja + recaudo (nunca Caja Inicial + recaudo). */
-  const efectivoQueQuedaEnCaja = showCobradorTotals
-    ? (displayTotalRecaudo ?? 0) + efectivoRestanteDeCaja
-    : displayFlow.efectivo_en_caja
+  const totals = dailyTotals
+
+  const recaudoVsVentasPct = totals && totals.total_ventas > 0
+    ? Math.round((totals.total_recaudo / totals.total_ventas) * 100)
+    : 0
+
   const handleExport = () => {
     if (flow) downloadFlowCsv(flow, flow.session_date)
   }
+
+  const selectedUserName = effectiveUserId
+    ? (businessUsers.find((u) => u.id === effectiveUserId)
+      ? userDisplayName(businessUsers.find((u) => u.id === effectiveUserId)!)
+      : 'Seleccionado')
+    : null
 
   if (!currentBusinessId) {
     return (
@@ -253,9 +291,9 @@ export default function CashSessionFlowPage() {
       <div className="space-y-1">
         <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
           <TrendingUp className="w-8 h-8 text-primary" />
-          Trazabilidad de Flujo
+          Seguimiento de Caja
         </h1>
-        <p className="text-sm text-muted-foreground/60">Análisis detallado de movimientos, recaudos y retiros por sesión de caja.</p>
+        <p className="text-sm text-muted-foreground/60">Panel de control operativo por colaborador. Seguimiento de flujos, recaudos y movimientos.</p>
       </div>
 
       {error && (
@@ -265,6 +303,7 @@ export default function CashSessionFlowPage() {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        {/* ── SIDEBAR ── */}
         <div className="xl:col-span-4 space-y-6">
           <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
             <CardHeader className="border-b border-border pb-4">
@@ -285,7 +324,7 @@ export default function CashSessionFlowPage() {
                     <SelectItem value="all" className="focus:bg-primary/20">Todos los usuarios</SelectItem>
                     {businessUsers.map((u) => (
                       <SelectItem key={u.id} value={u.id} className="focus:bg-primary/20">
-                        {userDisplayName(u)} {u.id === user?.id && '(Tú)'}
+                        {userDisplayName(u)} {u.id === user?.id && '(Tu)'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -316,13 +355,11 @@ export default function CashSessionFlowPage() {
               ) : sessions.length === 0 ? (
                 <div className="text-center py-8 space-y-2">
                   <p className="text-muted-foreground text-[11px] font-bold uppercase tracking-widest">Sin sesiones de caja</p>
-                  {filterUserId ? (
-                    <p className="text-muted-foreground/30 text-[10px] max-w-[240px] mx-auto">
-                      Este cobrador aún no tiene sesiones. Los totales (recaudado y ventas) se muestran a la derecha para este cobrador.
-                    </p>
-                  ) : (
-                    <p className="text-muted-foreground/30 text-[10px]">Selecciona un cobrador arriba para ver sus sesiones.</p>
-                  )}
+                  <p className="text-muted-foreground/30 text-[10px] max-w-[240px] mx-auto">
+                    {filterUserId
+                      ? 'Este cobrador aun no tiene sesiones. Los totales se muestran en el panel derecho.'
+                      : 'Selecciona un cobrador arriba para ver sus sesiones.'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[500px] overflow-y-auto px-4 custom-scrollbar">
@@ -362,26 +399,124 @@ export default function CashSessionFlowPage() {
           </Card>
         </div>
 
-        <div className="xl:col-span-8">
-          <Card className={cn('border transition-all duration-500 overflow-hidden group min-h-[600px]', containerStyle)}>
-            <CardHeader className="border-b border-border flex flex-row items-center justify-between p-6">
-              <div className="space-y-1">
+        {/* ── PANEL PRINCIPAL ── */}
+        <div className="xl:col-span-8 space-y-6">
+
+          {/* ── TOTALES DEL COBRADOR (daily-summary) ── */}
+          {showCobradorTotals && (
+            <Card className={cn('border transition-all duration-500 overflow-hidden', containerStyle)}>
+              <CardHeader className="border-b border-border flex flex-row items-center justify-between p-5">
+                <div className="space-y-0.5">
+                  <CardTitle className="text-sm font-bold text-foreground uppercase tracking-widest">
+                    Resumen Acumulado
+                  </CardTitle>
+                  {selectedUserName && (
+                    <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">
+                      {selectedUserName}
+                    </p>
+                  )}
+                </div>
+                {isLoadingDailyTotals && <Loader2 className="w-4 h-4 animate-spin text-primary/40" />}
+              </CardHeader>
+              <CardContent className="p-5">
+                {isLoadingDailyTotals && !totals ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary/20" />
+                  </div>
+                ) : totals ? (
+                  <div className="space-y-5">
+                    {/* KPIs principales */}
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                      <MetricCard
+                        label="Total Recaudo"
+                        value={`+${formatCurrency(totals.total_recaudo)}`}
+                        icon={<Receipt className="w-7 h-7" />}
+                        accent="success"
+                        subtitle="Cobros realizados"
+                      />
+                      <MetricCard
+                        label="Total Ventas"
+                        value={formatCurrency(totals.total_ventas)}
+                        icon={<ShoppingCart className="w-7 h-7" />}
+                        accent="info"
+                        subtitle="Capital prestado"
+                      />
+                      <MetricCard
+                        label="Caja Actual"
+                        value={formatCurrency(totals.caja_actual)}
+                        icon={<Wallet className="w-7 h-7" />}
+                        accent="success"
+                        subtitle="Saldo en caja hoy"
+                        large
+                      />
+                    </div>
+
+                    {/* KPIs secundarios */}
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                      <MetricCard
+                        label="Total Ingresos"
+                        value={formatCurrency(totals.total_ingresos)}
+                        icon={<ArrowUpRight className="w-6 h-6" />}
+                        accent="default"
+                        subtitle="Entradas adicionales"
+                      />
+                      <MetricCard
+                        label="Total Retiros"
+                        value={totals.total_retiros > 0 ? `-${formatCurrency(totals.total_retiros)}` : formatCurrency(0)}
+                        icon={<ArrowDownRight className="w-6 h-6" />}
+                        accent={totals.total_retiros > 0 ? 'error' : 'default'}
+                        subtitle="Salidas autorizadas"
+                      />
+                      <MetricCard
+                        label="Total Gastos"
+                        value={totals.total_gastos > 0 ? `-${formatCurrency(totals.total_gastos)}` : formatCurrency(0)}
+                        icon={<MinusCircle className="w-6 h-6" />}
+                        accent={totals.total_gastos > 0 ? 'warning' : 'default'}
+                        subtitle="Gastos operativos"
+                      />
+                    </div>
+
+                    {/* Barra de progreso recaudo vs ventas */}
+                    {totals.total_ventas > 0 && (
+                      <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Recuperacion (Recaudo vs Ventas)</span>
+                          <span className="text-[10px] font-black text-foreground tabular-nums">
+                            {recaudoVsVentasPct}%
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-muted/50 rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              'h-full rounded-full transition-all duration-1000 ease-out',
+                              recaudoVsVentasPct >= 80 ? 'bg-success' : recaudoVsVentasPct >= 50 ? 'bg-primary' : 'bg-warning'
+                            )}
+                            style={{ width: `${Math.min(recaudoVsVentasPct, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground/40 text-[10px] font-bold uppercase tracking-widest">Sin datos de resumen disponibles</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── DETALLE DE SESION SELECCIONADA ── */}
+          <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle, !showCobradorTotals && 'min-h-[600px]')}>
+            <CardHeader className="border-b border-border flex flex-row items-center justify-between p-5">
+              <div className="space-y-0.5">
                 <CardTitle className="text-sm font-bold text-foreground uppercase tracking-widest">
-                  Análisis Operativo
+                  Detalle de Sesion
                 </CardTitle>
-                {effectiveUserId && (
-                  <p className="text-[10px] font-bold text-primary/70 uppercase tracking-tighter">
-                    Datos del cobrador: {businessUsers.find((u) => u.id === effectiveUserId) ? userDisplayName(businessUsers.find((u) => u.id === effectiveUserId)!) : 'Seleccionado'}
-                  </p>
-                )}
-                {selectedSession && !effectiveUserId && (
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
-                    {formatDate(selectedSession.session_date)} · Sesión
-                  </p>
-                )}
-                {selectedSession && effectiveUserId && (
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
-                    {formatDate(selectedSession.session_date)} · Sesión del cobrador
+                {selectedSession && (
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    {formatDate(selectedSession.session_date)}
+                    {selectedUserName && ` · ${selectedUserName}`}
                   </p>
                 )}
               </div>
@@ -391,170 +526,94 @@ export default function CashSessionFlowPage() {
                   className="h-9 px-4 font-bold uppercase tracking-widest text-[10px]"
                 >
                   <Download className="w-3.5 h-3.5 mr-2" />
-                  XLS
+                  CSV
                 </Button>
               )}
             </CardHeader>
-            <CardContent className="p-8">
-              {isLoadingFlow && selectedSessionId ? (
-                <div className="flex items-center justify-center h-[400px]">
-                  <Loader2 className="w-12 h-12 animate-spin text-primary/20" />
-                </div>
-              ) : (
-                <div className="space-y-10">
-                  {!showCobradorTotals && (
-                    <div className="rounded-xl border border-primary/20 bg-primary/5 py-4 px-4 text-center text-[10px] font-bold uppercase tracking-widest text-primary/80">
-                      Selecciona un cobrador arriba para ver su recaudo y ventas (cobrador por cobrador). Los totales generales están en el dashboard.
-                    </div>
-                  )}
-                  {showCobradorTotals && (!selectedSessionId || !hasRealFlow) && (
-                    <div className="rounded-xl border border-primary/20 bg-primary/5 py-3 px-4 text-center text-[10px] font-bold uppercase tracking-widest text-primary/70">
-                      Totales del cobrador seleccionado. Sin sesión de caja: si ingresa caja inicial, aparecerá abajo.
-                    </div>
-                  )}
-                  {/* Bloque 1: Caja Inicial → Ventas (lo que se presta) → Efectivo restante = inicial − ventas */}
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 border-b border-primary/10 pb-2">
-                      Gestión de Caja Inicial & Ventas
-                    </p>
-                    <p className="text-[9px] text-muted-foreground/50 normal-case">
-                      Caja inicial recibida; ventas = lo que se presta (sale de caja); efectivo restante = inicial − ventas (negativo de lo prestado).
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-                      <div className="space-y-1 group/val relative">
-                        <p className={labelStyle}>Caja Inicial Recibida</p>
-                        <p className="text-2xl font-black tracking-tight text-foreground tabular-nums">
-                          {formatCurrency(displayFlow.initial_balance)}
-                        </p>
-                        {displayFlow.initial_balance === 0 && effectiveUserId && (
-                          <p className="text-[9px] text-muted-foreground italic">Si el cobrador recibe caja inicial, se mostrará aquí.</p>
-                        )}
-                      </div>
-                      <div className="space-y-1 group/val relative">
-                        <p className={cn(labelStyle, "text-error/60")}>Ventas (Lo que se presta)</p>
-                        <p className="text-2xl font-black tracking-tight text-error/80 tabular-nums">
-                          {showCobradorTotals ? `-${formatCurrency(displayTotalVentas ?? 0)}` : '—'}
-                        </p>
-                        <p className="text-[9px] text-muted-foreground italic">Salida de caja por préstamos.</p>
-                      </div>
-                      <div className="space-y-1 group/val relative">
-                        <p className={cn(labelStyle, "text-success/60")}>Efectivo Restante de Caja</p>
-                        <p className="text-2xl font-black tracking-tight text-success tabular-nums">
-                          {formatCurrency(efectivoRestanteDeCaja)}
-                        </p>
-                        <p className="text-[9px] text-muted-foreground italic">
-                          {showCobradorTotals ? 'Inicial − ventas (negativo de lo prestado).' : 'Caja inicial − lo prestado.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bloque 2: Recaudo, Retiros, Margen */}
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-info/60 border-b border-info/10 pb-2">Flujo de Movimientos (Operatividad)</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-                      <div className="space-y-1">
-                        <p className={labelStyle}>Total Recaudado {showCobradorTotals && isLoadingUserTotals && <span className="text-muted-foreground font-normal">(cargando…)</span>}</p>
-                        <p className="text-xl font-bold text-foreground tabular-nums">
-                          {showCobradorTotals ? `+${formatCurrency(displayTotalRecaudo ?? 0)}` : '—'}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className={labelStyle}>Retiros Autorizados</p>
-                        <p className="text-xl font-bold text-error/60 tabular-nums">
-                          -{formatCurrency(displayFlow.total_withdrawals_approved)}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className={cn(labelStyle, displayFlow.total_recaudo_mostrado >= 0 ? "text-success/60" : "text-error/60")}>Margen de Sesión</p>
-                        <p className={cn(
-                          "text-xl font-bold tabular-nums",
-                          displayFlow.total_recaudo_mostrado >= 0 ? "text-success" : "text-error"
-                        )}>
-                          {displayFlow.total_recaudo_mostrado >= 0 ? '+' : ''}{formatCurrency(displayFlow.total_recaudo_mostrado)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bloque 3: Margen de sesión + Saldo neto + Efectivo en caja (organizado) */}
-                  <div className="space-y-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 border-b border-primary/10 pb-2">Resultado Final & Arqueo de Caja</p>
-
-                    {/* Margen de sesión destacado */}
-                    <div className="rounded-2xl border border-border bg-muted/30 p-5 flex flex-row items-center justify-between">
-                      <div>
-                        <p className={cn(labelStyle, displayFlow.total_recaudo_mostrado >= 0 ? "text-success/60" : "text-error/60")}>Margen de Sesión</p>
-                        <p className={cn(
-                          "text-2xl font-black tabular-nums",
-                          displayFlow.total_recaudo_mostrado >= 0 ? "text-success" : "text-error"
-                        )}>
-                          {displayFlow.total_recaudo_mostrado >= 0 ? '+' : ''}{formatCurrency(displayFlow.total_recaudo_mostrado)}
-                        </p>
-                      </div>
-                      <span className="text-[9px] text-muted-foreground/50 uppercase">Recaudo − retiros</span>
-                    </div>
-                    
-                    {/* Saldo neto y Efectivo en caja — ordenados */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="relative p-6 rounded-3xl bg-primary/5 border border-primary/10 overflow-hidden group/result">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/result:opacity-20 transition-opacity">
-                          <DollarSign className="w-12 h-12" />
-                        </div>
-                        <div className="relative z-10 space-y-2">
-                          <p className={cn(labelStyle, "text-primary/60 mb-0")}>Saldo Neto Liquidado</p>
-                          <p className="text-4xl font-black tracking-tighter text-foreground tabular-nums">
-                            {formatCurrency(displayFlow.saldo_disponible)}
-                          </p>
-                          <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest italic">Balance después de préstamos</p>
-                        </div>
-                      </div>
-
-                      <div className="relative p-6 rounded-3xl bg-success/5 border border-success/10 overflow-hidden group/cash">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover/cash:opacity-20 transition-opacity">
-                          <TrendingUp className="w-12 h-12" />
-                        </div>
-                        <div className="relative z-10 space-y-2">
-                          <p className={cn(labelStyle, "text-success/60 mb-0")}>Efectivo que queda en caja</p>
-                          <p className="text-4xl font-black tracking-tighter text-success tabular-nums">
-                            {formatCurrency(efectivoQueQuedaEnCaja)}
-                          </p>
-                          <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest italic">Efectivo Restante de Caja + recaudo</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 p-6 rounded-2xl bg-muted/20 border border-border items-center">
-                      <div className="w-full space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Progreso Operativo (Ventas vs Recaudos)</span>
-                          <span className="text-[10px] font-black text-foreground tabular-nums">
-                            {showCobradorTotals
-                              ? `${Math.round(((displayTotalRecaudo ?? 0) / ((displayTotalVentas ?? 0) || 1)) * 100)}%`
-                              : '—'}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-muted/50 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary transition-all duration-1000 ease-out" 
-                            style={{ width: showCobradorTotals ? `${Math.min(((displayTotalRecaudo ?? 0) / ((displayTotalVentas ?? 0) || 1)) * 100, 100)}%` : '0%' }}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-6 opacity-40">
-                        <div className="text-right">
-                          <p className={labelStyle}>Creación Registro</p>
-                          <p className="text-[10px] font-bold text-foreground">{displayFlow.session_created_at ? formatDateTime(displayFlow.session_created_at) : '-'}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className={labelStyle}>Último Sync</p>
-                          <p className="text-[10px] font-bold text-foreground">{displayFlow.session_updated_at ? formatDateTime(displayFlow.session_updated_at) : '-'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            <CardContent className="p-5">
+              {!showCobradorTotals && !selectedSessionId && (
+                <div className="flex flex-col items-center justify-center py-16 space-y-3">
+                  <Banknote className="w-12 h-12 text-muted-foreground/20" />
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                    Selecciona un cobrador para ver su seguimiento
+                  </p>
                 </div>
               )}
+
+              {isLoadingFlow && selectedSessionId ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="w-10 h-10 animate-spin text-primary/20" />
+                </div>
+              ) : selectedSessionId ? (
+                <div className="space-y-6">
+                  {/* Saldo inicial de la sesion */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <MetricCard
+                      label="Saldo Inicial"
+                      value={formatCurrency(displayFlow.initial_balance)}
+                      icon={<Banknote className="w-6 h-6" />}
+                      accent="info"
+                    />
+                    <MetricCard
+                      label="Total Recaudado"
+                      value={`+${formatCurrency(displayFlow.total_collected)}`}
+                      icon={<Receipt className="w-6 h-6" />}
+                      accent="success"
+                    />
+                    <MetricCard
+                      label="Retiros Aprobados"
+                      value={displayFlow.total_withdrawals_approved > 0 ? `-${formatCurrency(displayFlow.total_withdrawals_approved)}` : formatCurrency(0)}
+                      icon={<ArrowDownRight className="w-6 h-6" />}
+                      accent={displayFlow.total_withdrawals_approved > 0 ? 'error' : 'default'}
+                    />
+                    <MetricCard
+                      label="Margen de Sesion"
+                      value={`${displayFlow.total_recaudo_mostrado >= 0 ? '+' : ''}${formatCurrency(displayFlow.total_recaudo_mostrado)}`}
+                      icon={<TrendingUp className="w-6 h-6" />}
+                      accent={displayFlow.total_recaudo_mostrado >= 0 ? 'success' : 'error'}
+                    />
+                  </div>
+
+                  {/* Resultado final */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <MetricCard
+                      label="Saldo Disponible"
+                      value={formatCurrency(displayFlow.saldo_disponible)}
+                      icon={<Wallet className="w-8 h-8" />}
+                      accent="info"
+                      subtitle="Balance neto de la sesion"
+                      large
+                    />
+                    <MetricCard
+                      label="Efectivo en Caja"
+                      value={formatCurrency(displayFlow.efectivo_en_caja)}
+                      icon={<TrendingUp className="w-8 h-8" />}
+                      accent="success"
+                      subtitle="Disponible fisicamente"
+                      large
+                    />
+                  </div>
+
+                  {/* Timestamps */}
+                  <div className="flex items-center justify-end gap-6 pt-2 border-t border-border/50">
+                    <div className="text-right">
+                      <p className={labelStyle}>Creado</p>
+                      <p className="text-[10px] font-bold text-muted-foreground/60">{displayFlow.session_created_at ? formatDateTime(displayFlow.session_created_at) : '-'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={labelStyle}>Actualizado</p>
+                      <p className="text-[10px] font-bold text-muted-foreground/60">{displayFlow.session_updated_at ? formatDateTime(displayFlow.session_updated_at) : '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : showCobradorTotals ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <Banknote className="w-10 h-10 text-muted-foreground/20" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                    Selecciona una sesion del historial para ver su detalle
+                  </p>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>

@@ -1,6 +1,6 @@
 import { apiClient } from '@/shared/config/api'
 import { CollectionFilters } from '@/shared/types/filters'
-import { Collection, CreateCollectionRequest } from '../../domain/models'
+import { Collection, CreateCollectionRequest, UpdateCollectionRequest } from '../../domain/models'
 import { CollectionWithUserEmail, ICollectionRepository } from '../../domain/port'
 
 /**
@@ -45,6 +45,11 @@ export class CollectionRepository implements ICollectionRepository {
       business_id: businessId,
       user_id: userId,
     })
+  }
+
+  async updateCollection(request: UpdateCollectionRequest): Promise<Collection> {
+    const { id, ...updates } = request
+    return apiClient.patch<Collection>(`/api/collections/${encodeURIComponent(id)}`, updates)
   }
 
   async getCollectionsWithFilters(filters: CollectionFilters): Promise<CollectionWithUserEmail[]> {

@@ -1,5 +1,5 @@
 import { CollectionFilters } from '@/shared/types/filters'
-import { Collection, CreateCollectionRequest } from '../models'
+import { Collection, CreateCollectionRequest, UpdateCollectionRequest } from '../models'
 
 export interface CollectionWithUserEmail extends Collection {
   user_email?: string | null
@@ -12,6 +12,7 @@ export interface ICollectionRepository {
   getCollectionsByCreditId(creditId: string): Promise<Collection[]>
   getCollectionsWithFilters(filters: CollectionFilters): Promise<CollectionWithUserEmail[]>
   createCollection(request: CreateCollectionRequest, businessId: string, userId: string): Promise<Collection>
+  updateCollection(request: UpdateCollectionRequest): Promise<Collection>
 }
 
 

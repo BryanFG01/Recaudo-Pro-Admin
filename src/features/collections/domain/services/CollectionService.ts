@@ -1,5 +1,5 @@
 import { ICollectionRepository, CollectionWithUserEmail } from '../port'
-import { CreateCollectionRequest } from '../models'
+import { CreateCollectionRequest, UpdateCollectionRequest } from '../models'
 import { CollectionFilters } from '@/shared/types/filters'
 
 export class CollectionService {
@@ -60,6 +60,16 @@ export class CollectionService {
     }
 
     return this.repository.createCollection(request, businessId, userId)
+  }
+
+  async updateCollection(request: UpdateCollectionRequest) {
+    if (!request.id) {
+      throw new Error('ID de recaudo es requerido')
+    }
+    if (request.amount !== undefined && request.amount <= 0) {
+      throw new Error('El monto debe ser mayor a cero')
+    }
+    return this.repository.updateCollection(request)
   }
 
   async getCollectionsWithFilters(filters: CollectionFilters): Promise<CollectionWithUserEmail[]> {

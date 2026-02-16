@@ -25,6 +25,37 @@ export interface UpdateCashSessionRequest {
   allowed_to_withdraw?: boolean
 }
 
+/** Item individual del resumen diario por usuario */
+export interface DailySummaryItem {
+  user_id: string
+  business_id: string
+  session_date: string
+  initial_balance: number
+  saldo_dia_anterior: number
+  total_ingresos: number
+  total_recaudo: number
+  total_ventas: number
+  total_retiros: number
+  total_gastos: number
+  caja_actual: number
+}
+
+/** Totales acumulados del resumen diario */
+export interface DailySummaryTotals {
+  total_ingresos: number
+  total_recaudo: number
+  total_ventas: number
+  total_retiros: number
+  total_gastos: number
+  caja_actual: number
+}
+
+/** Respuesta de GET /api/cash-sessions/daily-summary/user/{userId} */
+export interface DailySummaryResponse {
+  items: DailySummaryItem[]
+  totals: DailySummaryTotals
+}
+
 /** Respuesta de GET /api/cash-sessions/flow/{id} — seguimiento de saldo de una sesión */
 export interface CashSessionFlow {
   cash_session_id: string
