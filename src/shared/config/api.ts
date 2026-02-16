@@ -29,10 +29,41 @@ export class ApiError extends Error {
 }
 
 async function getErrorMessage(response: Response): Promise<string> {
-  const err = await response.json().catch(() => ({}))
+  const text = await response.text()
+  const err = (() => {
+    try {
+      return JSON.parse(text) as Record<string, unknown>
+    } catch {
+      return null
+    }
+  })()
   if (!err || typeof err !== 'object') return `Error ${response.status}: ${response.statusText}`
   const msg = 'message' in err ? String(err.message) : 'error' in err ? String(err.error) : null
   return msg || `Error ${response.status}: ${response.statusText}`
+}
+
+/**
+ * Parsea el body de la respuesta como JSON. Si el servidor devuelve HTML
+ * (p. ej. 404 del frontend o SPA fallback), lanza un error claro en lugar de "Unexpected token '<'".
+ */
+async function parseJsonResponse<T>(response: Response): Promise<T> {
+  const text = await response.text()
+  const trimmed = text.trim()
+  if (trimmed.toLowerCase().startsWith('<!')) {
+    const hint = !apiBaseUrl
+      ? 'Configurá VITE_BACK_URL en tu archivo .env con la URL del backend (ej: https://tu-backend.up.railway.app).'
+      : 'El backend puede no tener esta ruta o está devolviendo una página de error.'
+    throw new ApiError(
+      `El servidor respondió con HTML en lugar de JSON. ${hint}`,
+      response.status
+    )
+  }
+  try {
+    return JSON.parse(text) as T
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    throw new ApiError(`Respuesta no válida (no es JSON): ${msg}`, response.status)
+  }
 }
 
 export const apiClient = {
@@ -46,7 +77,7 @@ export const apiClient = {
       const msg = await getErrorMessage(response)
       throw new ApiError(msg, response.status)
     }
-    return response.json()
+    return parseJsonResponse<T>(response)
   },
 
   async post<T>(
@@ -65,7 +96,7 @@ export const apiClient = {
       const msg = await getErrorMessage(response)
       throw new ApiError(msg, response.status)
     }
-    return response.json()
+    return parseJsonResponse<T>(response)
   },
 
   async put<T>(endpoint: string, data?: unknown): Promise<T> {
@@ -79,7 +110,7 @@ export const apiClient = {
       const msg = await getErrorMessage(response)
       throw new ApiError(msg, response.status)
     }
-    return response.json()
+    return parseJsonResponse<T>(response)
   },
 
   async patch<T>(endpoint: string, data?: unknown): Promise<T> {
@@ -93,7 +124,7 @@ export const apiClient = {
       const msg = await getErrorMessage(response)
       throw new Error(msg)
     }
-    return response.json()
+    return parseJsonResponse<T>(response)
   },
 
   async delete<T>(endpoint: string): Promise<T> {
@@ -107,7 +138,7 @@ export const apiClient = {
       throw new ApiError(msg, response.status)
     }
     if (response.status === 204) return undefined as unknown as T
-    return response.json()
+    return parseJsonResponse<T>(response)
   },
 
   /**
