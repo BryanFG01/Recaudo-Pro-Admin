@@ -11,7 +11,7 @@ import { AuthRepository } from '../../infrastructure/repositories/AuthRepository
 import { useAuthStore } from '../store/authStore'
 
 export const useAuth = () => {
-  const { user, setUser, signOut: signOutStore } = useAuthStore()
+  const { user, setUser, setToken, signOut: signOutStore } = useAuthStore()
 
   // Instanciar Repository y Service
   const authService = useMemo(() => {
@@ -51,6 +51,7 @@ export const useAuth = () => {
     try {
       const response = await signInUseCase(request)
       setUser(response.user)
+      setToken(response.token)
       // No sobrescribir businessId: debe mantenerse el del Código de negocio ingresado
       // en el paso 1. response.user.business_id puede ser de otro negocio (ej. NEG003).
       return { success: true, error: null }

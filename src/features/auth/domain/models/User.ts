@@ -17,7 +17,6 @@ export interface User {
   updated_at: string
   /** Número/código de usuario (ej. USR001). El backend puede incluirlo. */
   number?: string | null
-  password?: string | null
 }
 
 export interface SignInRequest {
@@ -31,6 +30,7 @@ export interface SignInRequest {
 
 export interface SignInResponse {
   user: User
+  token: string
   success: boolean
 }
 

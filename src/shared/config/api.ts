@@ -1,4 +1,11 @@
+import { useAuthStore } from '@/features/auth/presentation/store/authStore'
+
 const PLACEHOLDER_API_URL = '__VITE_BACK_URL__'
+
+function getAuthHeaders(): Record<string, string> {
+  const token = useAuthStore.getState().token
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 /**
  * URL base del backend. En producción (Docker) puede inyectarse en runtime
@@ -84,7 +91,7 @@ export const apiClient = {
     const url = buildUrl(endpoint)
     const response = await fetch(url, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
     })
     if (!response.ok) {
       const msg = await getErrorMessage(response)
@@ -101,7 +108,7 @@ export const apiClient = {
     const url = buildUrl(endpoint)
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: data ? JSON.stringify(data) : undefined,
       credentials: options?.credentials
     })
@@ -116,7 +123,7 @@ export const apiClient = {
     const url = buildUrl(endpoint)
     const response = await fetch(url, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: data ? JSON.stringify(data) : undefined
     })
     if (!response.ok) {
@@ -130,7 +137,7 @@ export const apiClient = {
     const url = buildUrl(endpoint)
     const response = await fetch(url, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: data ? JSON.stringify(data) : undefined
     })
     if (!response.ok) {
@@ -144,7 +151,7 @@ export const apiClient = {
     const url = buildUrl(endpoint)
     const response = await fetch(url, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
     })
     if (!response.ok) {
       const msg = await getErrorMessage(response)

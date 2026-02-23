@@ -47,8 +47,16 @@ export class AuthRepository implements IAuthRepository {
       }
 
       let res: unknown
+      let responseToken = ''
       try {
-        res = await apiClient.post<unknown>(path, body)
+        const raw = await apiClient.post<unknown>(path, body)
+        const rawObj = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
+        if (rawObj && typeof rawObj.token === 'string') {
+          responseToken = rawObj.token
+          res = rawObj.user ?? raw
+        } else {
+          res = raw
+        }
       } catch (postErr) {
         const msg = postErr instanceof Error ? postErr.message : String(postErr)
         if (/unauthorized|401|403|forbidden|credenciales|incorrecto/i.test(msg)) {
@@ -100,7 +108,6 @@ export class AuthRepository implements IAuthRepository {
         const user: User = {
           id: `super-${request.email.trim()}`,
           email: request.email.trim(),
-          password: request.password,
           name: null,
           avatar_url: null,
           business_id: businessIdFromRequest,
@@ -112,7 +119,7 @@ export class AuthRepository implements IAuthRepository {
           created_at: '',
           updated_at: ''
         }
-        return { user, success: true }
+        return { user, token: responseToken, success: true }
       }
 
       const chosen = list[0]
@@ -123,7 +130,6 @@ export class AuthRepository implements IAuthRepository {
       const user: User = {
         id: chosen.id,
         email: request.email.trim(),
-        password: request.password,
         name: chosen.name ?? null,
         avatar_url: null,
         business_id: chosenBusinessId,
@@ -135,7 +141,7 @@ export class AuthRepository implements IAuthRepository {
         created_at: chosen.created_at ?? '',
         updated_at: chosen.updated_at ?? ''
       }
-      return { user, success: true }
+      return { user, token: responseToken, success: true }
     } catch (error) {
       const msg = error instanceof Error ? error.message : ''
       if (/unauthorized|401|403|forbidden|credenciales|incorrecto/i.test(msg)) {
