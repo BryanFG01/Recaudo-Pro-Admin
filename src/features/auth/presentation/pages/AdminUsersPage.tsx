@@ -4,7 +4,7 @@ import { Column, DynamicTable } from '@/shared/components/DynamicTable'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
-import { Download, Eye, EyeOff, Plus, Trash2, X } from 'lucide-react'
+import { Download, Plus, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User } from '../../domain/models'
@@ -117,16 +117,6 @@ export default function AdminUsersPage() {
     [updateUserActive]
   )
 
-  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
-
-  const togglePasswordVisibility = (userId: string) => {
-    setVisiblePasswords((prev) => {
-      const next = new Set(prev)
-      if (next.has(userId)) next.delete(userId)
-      else next.add(userId)
-      return next
-    })
-  }
 
   const baseColumns: Column<User>[] = [
     {
@@ -179,27 +169,9 @@ export default function AdminUsersPage() {
     {
       key: 'password',
       header: 'Acceso',
-      render: (user) => {
-        const isVisible = visiblePasswords.has(user.id)
-        return (
-          <div className="flex items-center gap-2 group">
-            <span className={cn(
-              "font-mono text-[11px] transition-colors",
-              isVisible ? "text-primary font-bold" : "text-muted-foreground/30"
-            )}>
-              {user.password ? (isVisible ? user.password : '••••••••') : '-'}
-            </span>
-            {user.password && (
-              <button
-                onClick={() => togglePasswordVisibility(user.id)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-foreground text-muted-foreground"
-              >
-                {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
-            )}
-          </div>
-        )
-      }
+      render: () => (
+        <span className="font-mono text-[11px] text-muted-foreground/30">••••••••</span>
+      )
     },
     {
       key: 'commission_percentage',
