@@ -1,3 +1,4 @@
+import { LoadingScreen } from '@/shared/components/LoadingScreen/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -189,10 +190,10 @@ export default function WithdrawalsPage() {
       render: (row) => (
         <span
           className={cn(
-            'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border transition-all duration-300',
+            'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-300',
             row.is_approved
-              ? 'bg-success/10 text-success border-success/20'
-              : 'bg-error/10 text-error border-error/20'
+              ? 'bg-success/10 text-success border-success/20 shadow-[0_0_15px_-5px_theme(colors.success.DEFAULT)]'
+              : 'bg-error/10 text-error border-error/10 animate-pulse'
           )}
         >
           {row.is_approved ? 'Autorizado' : 'Pendiente'}
@@ -235,6 +236,10 @@ export default function WithdrawalsPage() {
       }
     }
   ]
+
+  if (!businessIdForUsers || isLoading) {
+    return <LoadingScreen message="Sincronizando Módulo de Egresos" />
+  }
 
   return (
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -306,6 +311,8 @@ export default function WithdrawalsPage() {
           isLoading={isLoading}
           error={error}
           emptyMessage="No se han registrado solicitudes de egreso"
+          variant="premium-dark"
+          className="rounded-3xl"
         />
       </div>
     </div>

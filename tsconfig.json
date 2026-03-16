@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -10,19 +14,42 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/features/*": ["./src/features/*"],
-      "@/shared/*": ["./src/shared/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ],
+      "@/features/*": [
+        "./src/features/*"
+      ],
+      "@/shared/*": [
+        "./src/shared/*"
+      ]
+    },
+    "allowJs": true,
+    "incremental": true,
+    "esModuleInterop": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": [
+    "src",
+    ".next/types/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
-

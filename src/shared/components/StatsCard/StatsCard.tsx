@@ -14,7 +14,7 @@ interface StatsCardProps {
   className?: string
   isCurrency?: boolean
   isWarning?: boolean
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info'
+  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'premium-dark'
   loading?: boolean
 }
 
@@ -47,6 +47,7 @@ export default function StatsCard({
     warning: 'border-warning/20 bg-warning/5',
     error: 'border-error/20 bg-error/5',
     info: 'border-blue-400/20 bg-blue-400/5',
+    'premium-dark': 'premium-dark-card border-white/10 shadow-2xl',
   }
 
   const pulseColors = {
@@ -55,6 +56,7 @@ export default function StatsCard({
     warning: 'bg-warning',
     error: 'bg-error',
     info: 'bg-blue-400',
+    'premium-dark': 'bg-primary',
   }
 
   return (
@@ -83,7 +85,10 @@ export default function StatsCard({
               {title}
             </p>
             <div className="flex flex-col gap-1">
-              <h3 className="text-3xl font-extrabold tracking-tight text-foreground tabular-nums drop-shadow-sm">
+              <h3 className={cn(
+                "text-3xl font-extrabold tracking-tight tabular-nums drop-shadow-sm",
+                variant === 'premium-dark' ? "text-white" : "text-foreground"
+              )}>
                 {formatValue(value)}
               </h3>
               {trend && (
@@ -104,11 +109,13 @@ export default function StatsCard({
           {icon && (
             <div 
               className={cn(
-                'flex-shrink-0 p-3 rounded-2xl bg-muted/50 backdrop-blur-md border border-border shadow-xl transition-transform duration-300 group-hover:scale-110',
-                variant === 'default' ? 'text-primary' : 
-                variant === 'success' ? 'text-success' :
-                variant === 'warning' ? 'text-warning' :
-                variant === 'error' ? 'text-error' : 'text-blue-400'
+                'flex-shrink-0 p-3 rounded-2xl border backdrop-blur-md shadow-xl transition-transform duration-300 group-hover:scale-110',
+                variant === 'premium-dark' ? 'bg-white/5 border-white/10 text-primary' : 'bg-muted/50 border-border',
+                variant === 'default' && 'text-primary',
+                variant === 'success' && 'text-success',
+                variant === 'warning' && 'text-warning',
+                variant === 'error' && 'text-error',
+                variant === 'info' && 'text-blue-400'
               )}
               aria-hidden="true"
             >

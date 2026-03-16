@@ -1,7 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ['class'],
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  content: [
+    './src/app/**/*.{js,ts,jsx,tsx}',
+    './src/components/**/*.{js,ts,jsx,tsx}',
+    './src/features/**/*.{js,ts,jsx,tsx}',
+    './src/shared/**/*.{js,ts,jsx,tsx}',
+    './index.html',
+  ],
   theme: {
     container: {
       center: true,
@@ -11,6 +17,10 @@ export default {
       }
     },
     extend: {
+      fontFamily: {
+        sans: ['Outfit', 'sans-serif'],
+        mono: ['Geist Mono', 'monospace'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -57,7 +67,17 @@ export default {
         },
         success: '#10b981',
         error: '#ef4444',
-        warning: '#f59e0b'
+        warning: '#f59e0b',
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar-background))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          primary: 'hsl(var(--sidebar-primary))',
+          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+          accent: 'hsl(var(--sidebar-accent))',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+          border: 'hsl(var(--sidebar-border))',
+          ring: 'hsl(var(--sidebar-ring))'
+        }
       },
       borderRadius: {
         lg: 'var(--radius)',

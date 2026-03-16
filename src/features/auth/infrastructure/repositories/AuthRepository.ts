@@ -1,4 +1,4 @@
-import { apiClient } from '@/shared/config/api'
+import { apiClient, ApiError } from '@/shared/config/api'
 import { CreateUserRequest, SignInRequest, SignInResponse, User } from '../../domain/models'
 import { IAuthRepository } from '../../domain/port'
 
@@ -40,7 +40,6 @@ export class AuthRepository implements IAuthRepository {
       const code = request.businessCode?.trim()
       if (!code) throw new Error('Código de negocio es requerido para iniciar sesión.')
 
-      const path = `/api/super-admins/${encodeURIComponent(code)}/users-by-credentials`
       const body = {
         email: request.email.trim(),
         password: request.password
@@ -49,7 +48,10 @@ export class AuthRepository implements IAuthRepository {
       let res: unknown
       let responseToken = ''
       try {
-        const raw = await apiClient.post<unknown>(path, body)
+        const raw = await apiClient.post<unknown>(
+          `/api/super-admins/${encodeURIComponent(code)}/users-by-credentials`,
+          body
+        )
         const rawObj = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : null
         if (rawObj && typeof rawObj.token === 'string') {
           responseToken = rawObj.token
@@ -58,11 +60,10 @@ export class AuthRepository implements IAuthRepository {
           res = raw
         }
       } catch (postErr) {
-        const msg = postErr instanceof Error ? postErr.message : String(postErr)
-        if (/unauthorized|401|403|forbidden|credenciales|incorrecto/i.test(msg)) {
+        if (postErr instanceof ApiError && postErr.status === 401) {
           throw new Error('Correo o contraseña incorrectos.')
         }
-        throw new Error('Error al iniciar sesión. Intentá de nuevo.')
+        throw postErr
       }
 
       const raw = (r: unknown): Record<string, unknown> | null =>
@@ -143,11 +144,10 @@ export class AuthRepository implements IAuthRepository {
       }
       return { user, token: responseToken, success: true }
     } catch (error) {
-      const msg = error instanceof Error ? error.message : ''
-      if (/unauthorized|401|403|forbidden|credenciales|incorrecto/i.test(msg)) {
+      if (error instanceof ApiError && error.status === 401) {
         throw new Error('Correo o contraseña incorrectos.')
       }
-      throw new Error('Error al iniciar sesión. Intentá de nuevo.')
+      throw error
     }
   }
 

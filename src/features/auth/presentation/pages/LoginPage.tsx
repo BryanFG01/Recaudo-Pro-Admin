@@ -1,309 +1,294 @@
 import { ModeToggle } from '@/components/theme/ModeToggle'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Eye, EyeOff, HelpCircle, Loader2, Lock, Mail, Search, Wallet } from 'lucide-react'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
 
-type Step = 'business-code' | 'super-login'
-
 const inputStyle =
-  'min-h-[44px] border border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+  'min-h-[44px] border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl transition-all'
 
 export default function LoginPage() {
-  const [step, setStep] = useState<Step>('business-code')
   const [businessCode, setBusinessCode] = useState('')
-  const [verifiedBusinessCode, setVerifiedBusinessCode] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [showLoading, setShowLoading] = useState(false)
 
-  const { getUsersByBusinessId, getBusinessByCode, signIn } = useAuth()
-  const { user, businessId, setBusinessId, setBusinessCode: setStoreBusinessCode } = useAuthStore()
-  const navigate = useNavigate()
+  const { getBusinessByCode, signIn } = useAuth()
+  const { user, setBusinessId, setBusinessCode: setStoreBusinessCode } = useAuthStore()
+  const router = useRouter()
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
-    if (user) navigate('/admin/users')
-  }, [user, navigate])
+    const checkHydration = () => {
+      if (useAuthStore.persist.hasHydrated()) setHydrated(true)
+    }
+    checkHydration()
+    const unsub = useAuthStore.persist.onFinishHydration(() => setHydrated(true))
+    return () => unsub()
+  }, [])
 
-  const handleBusinessCodeSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (hydrated && user) {
+      router.push('/admin/users')
+    }
+  }, [user, router, hydrated])
+
+  if (hydrated && user) return null
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
-    const loadingTimeout = setTimeout(() => setShowLoading(true), 150)
-    const startTime = Date.now()
-    const minVisibilityTime = 300
 
     try {
       const code = businessCode.trim()
-      if (!code) {
-        setError('Por favor ingresa un código de negocio válido')
-        clearTimeout(loadingTimeout)
+      const userEmail = email.trim()
+
+      if (!code || !userEmail || !password) {
+        setError('Por favor completa todos los campos para continuar')
         setIsLoading(false)
-        setShowLoading(false)
         return
       }
 
+      // 1. Verificar negocio
       const business = await getBusinessByCode(code)
       if (!business?.id) {
         setError(`No se encontró un negocio con el código: ${code}`)
-        clearTimeout(loadingTimeout)
         setIsLoading(false)
-        setShowLoading(false)
         return
       }
 
-      // No bloquear si no hay usuarios o falla la lista: el super admin se crea en BD y crea los usuarios
-      try {
-        await getUsersByBusinessId(business.id)
-      } catch {
-        // Ignorar: permitir continuar al login (super admin entra con email/password)
-      }
-
-      setVerifiedBusinessCode(business.code)
+      // 2. Guardar info de negocio en store
       setBusinessId(business.id)
       setStoreBusinessCode(business.code)
-      setStep('super-login')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al buscar negocio')
-      // No registrar el objeto de error para evitar filtración de datos sensibles
-      console.error('Error al buscar negocio.')
-    } finally {
-      clearTimeout(loadingTimeout)
-      const remaining = Math.max(0, minVisibilityTime - (Date.now() - startTime))
-      setTimeout(() => {
-        setIsLoading(false)
-        setShowLoading(false)
-      }, remaining)
-    }
-  }
 
-  const handleSuperLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    if (!businessId) {
-      setError('Sesión de negocio perdida. Volvé a ingresar el código.')
-      return
-    }
-    setIsLoading(true)
-    const loadingTimeout = setTimeout(() => setShowLoading(true), 150)
-
-    try {
+      // 3. Iniciar sesión
       const { success, error: signError } = await signIn({
-        email: email.trim(),
+        email: userEmail,
         password,
-        businessId: businessId ?? undefined,
-        businessCode: verifiedBusinessCode || undefined
+        businessId: business.id,
+        businessCode: business.code
       })
+
       if (!success) {
         setError(signError || 'Credenciales incorrectas')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
+      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado')
+      console.error('Error en el login unificado:', err)
     } finally {
-      clearTimeout(loadingTimeout)
       setIsLoading(false)
-      setShowLoading(false)
     }
   }
 
-  const handleVolver = () => {
-    setBusinessId(null)
-    setStoreBusinessCode(null)
-    setStep('business-code')
-    setError(null)
-    setEmail('')
-    setPassword('')
-  }
-
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:px-6 lg:px-8 bg-gradient-to-br from-background via-background to-muted/30">
-      {/* Barra superior: Ayuda + cambio de tema */}
-      <div className="absolute top-4 right-4 flex items-center gap-2">
-        <button
-          type="button"
-          className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-          aria-label="Ayuda"
-        >
-          <HelpCircle className="h-5 w-5" />
-        </button>
-        <ModeToggle />
+    <div className="h-screen w-full flex overflow-hidden bg-background">
+      {/* Lado Izquierdo: Branding & Experience */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-[#0a0a0b] overflow-hidden h-full border-r border-border/10">
+        {/* Capas de gradiente para profundidad y legibilidad */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-br from-primary/40 via-transparent to-black/80" />
+        <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.15),transparent_50%)]" />
+
+        <Image
+          src="/ImagenRecaudoPro"
+          alt="RecaudoPro Experience"
+          fill
+          className="object-cover object-center opacity-70 mix-blend-luminosity grayscale-[20%] brightness-[0.7] transform scale-110"
+          priority
+        />
+
+        {/* Contenido flotante sobre la imagen */}
+        <div className="relative z-20 flex flex-col justify-between h-full p-16">
+          {/* Logo superior */}
+          <div className="flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-1000">
+            <div className="p-3.5 bg-white/5 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl">
+              <Wallet className="h-7 w-7 text-primary" />
+            </div>
+            <span className="text-2xl font-black tracking-tighter text-white uppercase italic">RecaudoPro</span>
+          </div>
+
+          {/* Texto central con tipografía de impacto */}
+          <div className="space-y-6 max-w-lg mb-12 animate-in fade-in slide-in-from-left-8 duration-1000 delay-300">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-md mb-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Sistema de Control ERP</span>
+            </div>
+
+            <h2 className="text-6xl font-black leading-[1.1] text-white tracking-tight">
+              Gestiona tu negocio <br />
+              <span className="bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">con precisión real.</span>
+            </h2>
+
+            <p className="text-xl text-zinc-400 font-medium leading-relaxed">
+              La plataforma administrativa líder para el control de recaudos, créditos y flujos de caja en tiempo real.
+            </p>
+
+            <div className="flex items-center gap-8 pt-4">
+              <div className="space-y-1">
+                <p className="text-2xl font-black text-white">99.9%</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Uptime</p>
+              </div>
+              <div className="w-px h-8 bg-zinc-800" />
+              <div className="space-y-1">
+                <p className="text-2xl font-black text-white">+10k</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Operaciones/día</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer inferior */}
+          <div className="flex items-center justify-between text-[11px] font-bold text-zinc-600 uppercase tracking-[0.2em]">
+            <span>© 2026 RecaudoPro Cloud</span>
+            <div className="flex gap-4">
+              <span className="hover:text-primary cursor-pointer transition-colors">Términos</span>
+              <span className="hover:text-primary cursor-pointer transition-colors">Privacidad</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo + marca */}
-        <div className="flex flex-col items-center">
-          <div
-            className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 mb-4"
-            aria-hidden
+      {/* Lado Derecho: Formulario */}
+      <div className="w-full lg:w-1/2 flex flex-col relative h-full overflow-y-auto bg-background/50 backdrop-blur-sm">
+        {/* Controles superiores */}
+        <div className="absolute top-8 right-8 flex items-center gap-3 z-30">
+          <button
+            type="button"
+            className="p-3 rounded-2xl text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-transparent hover:border-border/40 transition-all duration-300"
+            aria-label="Soporte Técnico"
           >
-            <Wallet className="h-9 w-9" />
+            <HelpCircle className="h-5 w-5" />
+          </button>
+          <div className="p-1 px-1.5 rounded-2xl bg-muted/30 border border-border/40">
+            <ModeToggle />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
-            RecaudoPro
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">Admin</p>
         </div>
 
-        <Card className="border-border/80 shadow-xl bg-card/95 backdrop-blur-sm">
-          <CardHeader className="space-y-1 text-center pb-4">
-            {step === 'business-code' ? (
-              <>
-                <CardTitle className="text-lg">Buscar negocio</CardTitle>
-                <CardDescription>Ingresá el código de tu negocio para continuar</CardDescription>
-              </>
-            ) : (
-              <>
-                <CardTitle className="text-xl">Bienvenido de nuevo</CardTitle>
-                <CardDescription>Iniciá sesión para continuar con tu cuenta.</CardDescription>
-                {verifiedBusinessCode && (
-                  <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                    Negocio: {verifiedBusinessCode}
-                  </span>
-                )}
-              </>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {error && (
-              <div
-                id="login-error"
-                className="rounded-lg bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 text-sm"
-                role="alert"
-                aria-live="polite"
-              >
-                <pre className="whitespace-pre-wrap font-sans">{error}</pre>
+        <div className="min-h-full flex items-center justify-center p-6 sm:p-10 lg:p-16">
+          <div className="w-full max-w-[400px] animate-in fade-in slide-in-from-bottom-4 duration-1000 py-6">
+            {/* Branding Mobile */}
+            <div className="lg:hidden flex flex-col items-center mb-8">
+              <div className="size-16 rounded-[1.5rem] bg-primary flex items-center justify-center shadow-2xl shadow-primary/40 mb-4 rotate-3">
+                <Wallet className="h-8 w-8 text-white" />
               </div>
-            )}
+              <h1 className="text-3xl font-black tracking-tighter uppercase italic">RecaudoPro</h1>
+            </div>
 
-            {step === 'business-code' && (
-              <form className="space-y-6" onSubmit={handleBusinessCodeSubmit}>
+            <div className="space-y-2 mb-8">
+              <h3 className="text-3xl font-black tracking-tight text-foreground uppercase leading-none">Acceso Administrativo</h3>
+              <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-widest">
+                Credenciales empresarial
+              </p>
+            </div>
+
+            <form onSubmit={handleLoginSubmit} className="space-y-5">
+              {error && (
+                <div
+                  className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-destructive text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300"
+                  role="alert"
+                >
+                  <div className="size-1.5 rounded-full bg-destructive animate-pulse" />
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Código de Negocio */}
                 <div className="space-y-2">
-                  <Label htmlFor="businessCode">Código de negocio</Label>
-                  <div className="relative">
-                    <Search
-                      className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
-                      aria-hidden
-                    />
+                  <Label htmlFor="businessCode" className="text-[9px] uppercase font-black tracking-[0.2em] text-muted-foreground/50 px-1 ml-1 leading-none">ID Negocio</Label>
+                  <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-all duration-300" />
                     <Input
                       id="businessCode"
-                      name="businessCode"
                       type="text"
-                      required
+                      placeholder="NEG-XXXX"
+                      className={`pl-11 h-12 text-sm font-bold tracking-tight bg-muted/20 border-border/40 hover:border-primary/20 focus:border-primary focus:bg-background transition-all rounded-xl`}
                       value={businessCode}
                       onChange={(e) => setBusinessCode(e.target.value)}
-                      placeholder="Buscar o ingresar código"
-                      className={`pl-10 ${inputStyle}`}
-                      aria-describedby={error ? 'login-error' : undefined}
-                      aria-invalid={!!error}
-                      autoComplete="organization"
+                      required
                     />
                   </div>
                 </div>
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full min-h-[44px] font-medium"
-                  aria-busy={isLoading}
-                >
-                  {showLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-                  {isLoading ? 'Verificando...' : 'Entrar'}
-                </Button>
-              </form>
-            )}
 
-            {step === 'super-login' && (
-              <form className="space-y-5" onSubmit={handleSuperLoginSubmit}>
+                {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email">Correo electrónico</Label>
-                  <div className="relative">
-                    <Mail
-                      className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
-                      aria-hidden
-                    />
+                  <Label htmlFor="email" className="text-[9px] uppercase font-black tracking-[0.2em] text-muted-foreground/50 px-1 ml-1 leading-none">Email Corporativo</Label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-all duration-300" />
                     <Input
                       id="email"
-                      name="email"
                       type="email"
-                      required
+                      placeholder="nombre@empresa.com"
+                      className={`pl-11 h-12 text-sm font-bold tracking-tight bg-muted/20 border-border/40 hover:border-primary/20 focus:border-primary focus:bg-background transition-all rounded-xl`}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu@correo.com"
-                      className={`pl-10 ${inputStyle}`}
-                      autoComplete="email"
+                      required
                     />
                   </div>
                 </div>
 
+                {/* Contraseña */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Contraseña</Label>
-                    <a
-                      href="#"
-                      className="text-sm text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      ¿Olvidaste tu contraseña?
-                    </a>
+                  <div className="flex items-center justify-between px-1 ml-1">
+                    <Label htmlFor="password" className="text-[9px] uppercase font-black tracking-[0.2em] text-muted-foreground/50 leading-none">Clave</Label>
+                    {/* <button type="button" className="text-[9px] uppercase font-black tracking-widest text-primary hover:text-primary/70 transition-colors">Recuperar</button> */}
                   </div>
-                  <div className="relative">
-                    <Lock
-                      className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
-                      aria-hidden
-                    />
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-all duration-300" />
                     <Input
                       id="password"
-                      name="password"
                       type={showPassword ? 'text' : 'password'}
-                      required
+                      placeholder="••••••••"
+                      className={`pl-11 pr-12 h-12 text-sm font-bold tracking-tight bg-muted/20 border-border/40 hover:border-primary/20 focus:border-primary focus:bg-background transition-all rounded-xl`}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Ingresá tu contraseña"
-                      className={`pl-10 pr-10 ${inputStyle}`}
-                      autoComplete="current-password"
+                      required
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword((s) => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-all duration-300"
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex gap-3 pt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleVolver}
-                    disabled={isLoading}
-                    className="flex-1 min-h-[44px]"
-                  >
-                    Volver
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="flex-1 min-h-[44px] font-medium"
-                    aria-busy={isLoading}
-                  >
-                    {showLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
-                    {isLoading ? 'Entrando...' : 'Iniciar sesión'}
-                  </Button>
-                </div>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-[1rem] shadow-xl shadow-primary/25 transition-all hover:scale-[1.01] active:scale-[0.98] relative overflow-hidden group"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Verificando...</span>
+                    </div>
+                  ) : (
+                    'Entrar al Panel'
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex flex-col items-center gap-4 pt-6">
+                <p className="text-center text-[8px] font-black text-muted-foreground/30 uppercase tracking-[0.3em] max-w-[240px] leading-relaxed">
+                  Sistema protegido bajo protocolos de seguridad SSL TLS 1.3
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { LoadingScreen } from '@/shared/components/LoadingScreen/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { Client } from '@/features/clients/domain/models'
@@ -19,6 +20,7 @@ export default function CollectionsPage() {
   const { businessId, businessCode, user } = useAuthStore()
   const [filteredCollections, setFilteredCollections] = useState<CollectionWithUserEmail[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [isClientsLoading, setIsClientsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [clientsList, setClientsList] = useState<Client[]>([])
@@ -38,19 +40,6 @@ export default function CollectionsPage() {
     return new CollectionService(repository)
   }, [])
 
-  useEffect(() => {
-    if (currentBusinessId) {
-      loadClients()
-      loadCollections()
-    }
-  }, [currentBusinessId])
-
-  useEffect(() => {
-    if (currentBusinessId) {
-      loadCollections()
-    }
-  }, [filters, currentBusinessId])
-
   const loadClients = async () => {
     if (!currentBusinessId) return
     setIsClientsLoading(true)
@@ -69,15 +58,6 @@ export default function CollectionsPage() {
     }
   }
 
-  /** Mapa client_id -> nombre del cliente (para columna Cliente del crédito). */
-  const clientNameById = useMemo(() => {
-    const map: Record<string, string> = {}
-    clientsList.forEach((c) => {
-      if (c.id) map[c.id] = c.name?.trim() || 'Sin nombre'
-    })
-    return map
-  }, [clientsList])
-
   const loadCollections = async () => {
     if (!currentBusinessId) return
 
@@ -95,10 +75,8 @@ export default function CollectionsPage() {
 
       const data = await collectionService.getCollectionsWithFilters(collectionFilters)
 
-      // SECURITY & Business Filter
       let filtered = data.filter((c) => c.business_id === currentBusinessId)
 
-      // MANUAL FILTERING (Double verification for business logic)
       if (filters.clientId?.trim()) {
         filtered = filtered.filter((c) => (c.client_id || '').trim() === filters.clientId?.trim())
       }
@@ -120,14 +98,21 @@ export default function CollectionsPage() {
       setError(err instanceof Error ? err.message : 'Error al cargar recaudos')
     } finally {
       setIsLoading(false)
+      setIsFirstLoad(false)
     }
   }
+
+  useEffect(() => {
+    if (currentBusinessId) {
+      loadClients()
+      loadCollections()
+    }
+  }, [currentBusinessId, filters])
 
   const handleFilterChange = (newFilters: FilterValues) => {
     setFilters(newFilters)
   }
 
-  /** Normaliza método de pago para el API: cash->efectivo, transfer->transferencia. */
   function normalizePaymentMethodForApi(value: string | undefined): string | undefined {
     if (!value) return undefined
     const v = value.toLowerCase()
@@ -150,93 +135,32 @@ export default function CollectionsPage() {
     exportToExcel(dataToExport, { filename: 'recaudos_recaudopro', sheetName: 'Recaudos' })
   }
 
+  const clientNameById = useMemo(() => {
+    const map: Record<string, string> = {}
+    clientsList.forEach((c) => { if (c.id) map[c.id] = c.name?.trim() || 'Sin nombre' })
+    return map
+  }, [clientsList])
+
+  const availableClients = useMemo(() => clientsList.map((c) => ({ id: c.id, name: c.name?.trim() || 'Sin nombre' })), [clientsList])
+
   const columns: Column<CollectionWithUserEmail>[] = [
-    {
-      key: 'client_id',
-      header: 'Cliente',
-      className: 'font-bold',
-      render: (collection: any) => {
+    { key: 'client_id', header: 'Cliente', className: 'font-bold', render: (collection: any) => {
         const clientName = collection.clients?.name || collection.client_name || clientNameById[collection.client_id]
-        return (
-          <span className="text-sm text-info font-bold">
-            {clientName || collection.name || collection.client_id || '-'}
-          </span>
-        )
-      }
-    },
-    {
-      key: 'amount',
-      header: 'Monto',
-      isNumeric: true,
-      render: (collection) => formatCurrency(collection.amount)
-    },
-    {
-      key: 'payment_date',
-      header: 'Fecha Pago',
-      className: 'text-muted-foreground/60',
-      render: (collection) => formatDateTime(collection.payment_date)
-    },
-    {
-      key: 'payment_method',
-      header: 'Método',
-      className: 'text-center',
-      render: (collection) => {
+        return <span className="text-sm text-info font-bold">{clientName || collection.name || collection.client_id || '-'}</span>
+    }},
+    { key: 'amount', header: 'Monto', isNumeric: true, render: (collection) => formatCurrency(collection.amount) },
+    { key: 'payment_date', header: 'Fecha Pago', className: 'text-muted-foreground/60', render: (collection) => formatDateTime(collection.payment_date) },
+    { key: 'payment_method', header: 'Método', className: 'text-center', render: (collection) => {
         const method = collection.payment_method?.toLowerCase()
         if (!method) return '-'
-        return (
-          <span
-            className={cn(
-              'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5',
-              method === 'efectivo'
-                ? 'bg-success/10 text-success border border-success/20'
-                : 'bg-primary/10 text-primary border border-primary/20'
-            )}
-          >
-            <span className={cn('w-1.5 h-1.5 rounded-full', method === 'efectivo' ? 'bg-success' : 'bg-primary')} />
-            {method}
-          </span>
-        )
-      }
-    },
-    {
-      key: 'transaction_reference',
-      header: 'Referencia',
-      className: 'font-mono text-[10px] text-muted-foreground/40',
-      render: (collection) => collection.transaction_reference || '-'
-    },
-    {
-      key: 'id',
-      header: '',
-      className: 'w-10 text-center',
-      render: (collection) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            setEditingCollection(collection)
-          }}
-          className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
-          title="Editar recaudo"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
-      )
-    }
+        return <span className={cn('px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-2 transition-all duration-300', method === 'efectivo' ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success.DEFAULT)]' : 'bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_-5px_theme(colors.primary.DEFAULT)]')}><span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', method === 'efectivo' ? 'bg-success' : 'bg-primary')} />{method}</span>
+    }},
+    { key: 'transaction_reference', header: 'Referencia', className: 'font-mono text-[10px] text-muted-foreground/40', render: (collection) => collection.transaction_reference || '-' },
+    { key: 'id', header: '', className: 'w-10 text-center', render: (collection) => <button type="button" onClick={(e) => { e.stopPropagation(); setEditingCollection(collection); }} className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors" title="Editar recaudo"><Pencil className="w-3.5 h-3.5" /></button> }
   ]
 
-  const availableClients = useMemo(
-    () => clientsList.map((c) => ({ id: c.id, name: c.name?.trim() || 'Sin nombre' })),
-    [clientsList]
-  )
-
-  if (!currentBusinessId) {
-    return (
-      <div className="flex justify-center items-center h-64">
-         <p className="text-muted-foreground/60 italic font-medium text-center">
-          Inicia sesión para visualizar <br/> el registro de recaudos.
-        </p>
-      </div>
-    )
+  if (!currentBusinessId || (isLoading && isFirstLoad)) {
+    return <LoadingScreen message="Sincronizando Registro de Recaudos" />
   }
 
   return (
@@ -247,45 +171,16 @@ export default function CollectionsPage() {
           <p className="text-sm text-muted-foreground/60">Flujo histórico de entradas y abonos a capital por cliente.</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            disabled={filteredCollections.length === 0}
-            className="min-h-[44px] px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
-          >
-            <Download className="w-4 h-4 mr-2" aria-hidden="true" />
-            Exportar XLS
-          </Button>
+          <Button onClick={handleExport} variant="outline" disabled={filteredCollections.length === 0} className="min-h-[44px] px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"><Download className="w-4 h-4 mr-2" aria-hidden="true" />Exportar XLS</Button>
         </div>
       </div>
-
       <div className="flex-shrink-0">
-        <FiltersBar
-          onFilterChange={handleFilterChange}
-          availableClients={availableClients}
-          showUserFilter={false}
-          showPaymentMethodFilter={true}
-          isRecaudoPage={true}
-        />
+        <FiltersBar onFilterChange={handleFilterChange} availableClients={availableClients} showUserFilter={false} showPaymentMethodFilter={true} isRecaudoPage={true} />
       </div>
-
       <div className="flex-1 min-h-0">
-        <DynamicTable
-          data={isClientsLoading ? [] : filteredCollections}
-          columns={columns}
-          isLoading={isLoading || isClientsLoading}
-          error={error}
-          emptyMessage="No se han registrado recaudos en este período"
-        />
+        <DynamicTable data={isClientsLoading ? [] : filteredCollections} columns={columns} isLoading={isLoading || isClientsLoading} error={error} emptyMessage="No se han registrado recaudos en este período" variant="premium-dark" className="rounded-3xl" />
       </div>
-
-      <EditCollectionModal
-        collection={editingCollection}
-        clientName={editingCollection?.client_id ? clientNameById[editingCollection.client_id] : undefined}
-        isOpen={!!editingCollection}
-        onClose={() => setEditingCollection(null)}
-        onSuccess={loadCollections}
-      />
+      <EditCollectionModal collection={editingCollection} clientName={editingCollection?.client_id ? clientNameById[editingCollection.client_id] : undefined} isOpen={!!editingCollection} onClose={() => setEditingCollection(null)} onSuccess={loadCollections} />
     </div>
   )
 }

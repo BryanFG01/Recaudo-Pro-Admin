@@ -1,3 +1,4 @@
+import { LoadingScreen } from '@/shared/components/LoadingScreen/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
@@ -11,7 +12,7 @@ import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDate } from '@/shared/utils/date'
 import { exportToExcel } from '@/shared/utils/excel'
 import { Download, Pencil } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Credit, CreditSummary } from '../../domain/models'
 import { CreditWithUserEmail } from '../../domain/port'
 import { CreditService } from '../../domain/services/CreditService'
@@ -23,6 +24,7 @@ export default function CreditsPage() {
   const { getUsersByBusinessId } = useAuth()
   const [filteredCredits, setFilteredCredits] = useState<CreditWithUserEmail[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [, setUsersList] = useState<User[]>([])
   const [clientsList, setClientsList] = useState<Client[]>([])
@@ -32,8 +34,9 @@ export default function CreditsPage() {
   const [selectedCredit, setSelectedCredit] = useState<Credit | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
-  /** Saldos desde GET /api/credits/summary/:id para pintar Saldo Pendiente correcto (la lista a veces trae 0). */
+  /** Saldos desde GET /api/credits/summary/:id */
   const [summaryByCreditId, setSummaryByCreditId] = useState<Record<string, CreditSummary>>({})
+  const enrichmentAbortControllerRef = useRef<AbortController | null>(null)
 
   const currentBusinessId = user?.business_id || businessId
 
@@ -41,24 +44,6 @@ export default function CreditsPage() {
     const repository = new CreditRepository()
     return new CreditService(repository)
   }, [])
-
-  useEffect(() => {
-    if (currentBusinessId) {
-      console.log('✅ Business ID disponible:', currentBusinessId)
-      loadUsers()
-      loadClients()
-      loadCredits()
-    } else {
-      console.warn('⚠️ No hay business_id disponible')
-    }
-  }, [currentBusinessId])
-
-  useEffect(() => {
-    if (currentBusinessId) {
-      console.log('🔄 Filtros cambiaron, recargando créditos')
-      loadCredits()
-    }
-  }, [filters, currentBusinessId])
 
   const loadUsers = async () => {
     if (!currentBusinessId) return
@@ -86,36 +71,17 @@ export default function CreditsPage() {
     }
   }
 
-  /** Mapa client_id -> nombre del cliente (para pintar en columna Cliente). */
-  const clientNameById = useMemo(() => {
-    const map: Record<string, string> = {}
-    clientsList.forEach((c) => {
-      if (c.id) map[c.id] = c.name?.trim() || 'Sin nombre'
-    })
-    return map
-  }, [clientsList])
-
-  /** Opciones para filtro por nombre del cliente (id + name para el dropdown). */
-  const availableClients = useMemo(
-    () => clientsList.map((c) => ({ id: c.id, name: c.name?.trim() || 'Sin nombre' })),
-    [clientsList]
-  )
-
-  /** Créditos a mostrar: filtro por responsable (userId) cuando aplica. */
-  const displayedCredits = useMemo(() => {
-    if (!filters.userId) return filteredCredits
-    return filteredCredits.filter((c) => c.user_id === filters.userId)
-  }, [filteredCredits, filters.userId])
-
   const loadCredits = async () => {
-    if (!currentBusinessId) {
-      console.warn('⚠️ No hay business_id disponible')
-      return
-    }
+    if (!currentBusinessId) return
 
-    console.log('🔄 Cargando créditos para business_id:', currentBusinessId)
     setIsLoading(true)
     setError(null)
+
+    if (enrichmentAbortControllerRef.current) {
+        enrichmentAbortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    enrichmentAbortControllerRef.current = controller
 
     try {
       const creditFilters: CreditFilters = {
@@ -125,26 +91,16 @@ export default function CreditsPage() {
         clientId: filters.clientId || undefined
       }
 
-      console.log('📤 Enviando filtros:', creditFilters)
       const data = await creditService.getCreditsWithFilters(creditFilters)
-      console.log('✅ Créditos cargados:', data.length)
-
-      if (data.length === 0) {
-        console.warn('⚠️ No se encontraron créditos. Verifica:')
-        console.warn(
-          '  1. Que existan créditos en la tabla credits con business_id:',
-          currentBusinessId
-        )
-        console.warn('  2. Que las políticas RLS permitan la lectura')
-      }
-
       setFilteredCredits(data)
+      setIsLoading(false)
+      setIsFirstLoad(false)
 
-      // Enriquecer con GET /api/credits/summary/:id para que Saldo Pendiente no salga en cero
       const CONCURRENCY = 6
       const ids = data.map((c) => c.id).filter(Boolean)
-      const next: Record<string, CreditSummary> = {}
+      
       for (let i = 0; i < ids.length; i += CONCURRENCY) {
+        if (controller.signal.aborted) break
         const chunk = ids.slice(i, i + CONCURRENCY)
         const results = await Promise.all(
           chunk.map(async (id) => {
@@ -156,18 +112,49 @@ export default function CreditsPage() {
             }
           })
         )
-        results.forEach(({ id, summary }) => {
-          if (summary) next[id] = summary
-        })
+        if (!controller.signal.aborted) {
+            setSummaryByCreditId(prev => {
+                const next = { ...prev }
+                results.forEach(({ id, summary }) => {
+                    if (summary) next[id] = summary
+                })
+                return next
+            })
+        }
       }
-      setSummaryByCreditId(next)
     } catch (err) {
       console.error('❌ Error al cargar créditos:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar créditos')
-    } finally {
       setIsLoading(false)
+      setIsFirstLoad(false)
     }
   }
+
+  useEffect(() => {
+    if (currentBusinessId) {
+      loadUsers()
+      loadClients()
+      loadCredits()
+    }
+  }, [currentBusinessId, filters])
+
+  const clientNameById = useMemo(() => {
+    const map: Record<string, string> = {}
+    clientsList.forEach((c) => {
+      if (c.id) map[c.id] = c.name?.trim() || 'Sin nombre'
+    })
+    return map
+  }, [clientsList])
+
+  const availableClients = useMemo(
+    () => clientsList.map((c) => ({ id: c.id, name: c.name?.trim() || 'Sin nombre' })),
+    [clientsList]
+  )
+
+  const displayedCredits = useMemo(() => {
+    if (!filters.userId) return filteredCredits
+    return filteredCredits.filter((c) => c.user_id === filters.userId)
+  }, [filteredCredits, filters.userId])
 
   const handleFilterChange = (newFilters: FilterValues) => {
     setFilters(newFilters)
@@ -228,9 +215,7 @@ export default function CreditsPage() {
       isNumeric: true,
       render: (credit) => (
         <span className="text-muted-foreground/60 font-bold">
-          {credit.interest_rate != null
-            ? `${Number(credit.interest_rate)}%`
-            : '-'}
+          {credit.interest_rate != null ? `${Number(credit.interest_rate)}%` : '-'}
         </span>
       )
     },
@@ -240,9 +225,7 @@ export default function CreditsPage() {
       isNumeric: true,
       render: (credit) => (
         <span className="text-foreground font-extrabold">
-          {credit.total_interest != null
-            ? formatCurrency(credit.total_interest)
-            : '-'}
+          {credit.total_interest != null ? formatCurrency(credit.total_interest) : '-'}
         </span>
       )
     },
@@ -253,11 +236,7 @@ export default function CreditsPage() {
       render: (credit) => {
         const raw = summaryByCreditId[credit.id]?.total_paid
         const value = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
-        return (
-          <span className="font-mono font-semibold text-success">
-            {formatCurrency(value)}
-          </span>
-        )
+        return <span className="font-mono font-semibold text-success">{formatCurrency(value)}</span>
       }
     },
     {
@@ -265,16 +244,15 @@ export default function CreditsPage() {
       header: 'Saldo Pendiente',
       isNumeric: true,
       render: (credit) => {
-        // Preferir total_balance de GET /api/credits/summary/:id (va bajando con cada abono)
         const raw = summaryByCreditId[credit.id]?.total_balance ?? credit.total_balance
         const balance = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
         return (
-          <span
-            className={cn(
-              'px-2 py-0.5 rounded-md font-black',
-              balance === 0 ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
-            )}
-          >
+          <span className={cn(
+              'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300',
+              balance === 0 
+                ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success.DEFAULT)]' 
+                : 'bg-error/10 text-error border border-error/20 shadow-[0_0_15px_-5px_theme(colors.error.DEFAULT)]'
+            )}>
             {formatCurrency(balance)}
           </span>
         )
@@ -296,15 +274,12 @@ export default function CreditsPage() {
         const total = s?.total_installments ?? credit.total_installments
         const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0
         return (
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-[10px] font-black tabular-nums text-foreground">
+          <div className="flex flex-col items-center gap-2 min-w-[80px]">
+            <span className="text-[10px] font-black tabular-nums text-foreground/80 tracking-widest">
               {paid} / {total}
             </span>
-            <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary"
-                style={{ width: `${pct}%` }}
-              />
+            <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden border border-white/5">
+              <div className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)] transition-all duration-500" style={{ width: `${pct}%` }} />
             </div>
           </div>
         )
@@ -316,14 +291,7 @@ export default function CreditsPage() {
       isNumeric: true,
       render: (credit) => {
         const overdue = summaryByCreditId[credit.id]?.overdue_installments ?? credit.overdue_installments
-        return (
-          <span className={cn(
-            "tabular-nums font-black",
-            (overdue ?? 0) > 0 ? 'text-error' : 'text-muted-foreground/20'
-          )}>
-            {overdue ?? 0}
-          </span>
-        )
+        return <span className={cn("tabular-nums font-black", (overdue ?? 0) > 0 ? 'text-error' : 'text-muted-foreground/20')}>{overdue ?? 0}</span>
       }
     },
     {
@@ -337,27 +305,15 @@ export default function CreditsPage() {
       header: '',
       className: 'w-10 text-center',
       render: (credit) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleEditClick(credit as Credit)
-          }}
-          className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors"
-          title="Editar crédito"
-        >
+        <button type="button" onClick={(e) => { e.stopPropagation(); handleEditClick(credit as Credit); }} className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors" title="Editar crédito">
           <Pencil className="w-3.5 h-3.5" />
         </button>
       )
     }
   ]
 
-  if (!currentBusinessId) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-muted-foreground/60 italic font-medium">Esperando identificador de negocio...</p>
-      </div>
-    )
+  if (!currentBusinessId || (isLoading && isFirstLoad)) {
+    return <LoadingScreen message="Sincronizando Cartera de Créditos" />
   }
 
   return (
@@ -368,46 +324,22 @@ export default function CreditsPage() {
           <p className="text-sm text-muted-foreground/60">Monitorea el estado de los préstamos, cuotas y niveles de recaudo.</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            disabled={displayedCredits.length === 0}
-            className="min-h-[44px] px-6 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"
-          >
+          <Button variant="outline" onClick={handleExport} disabled={displayedCredits.length === 0} className="min-h-[44px] px-6 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]">
             <Download className="w-4 h-4 mr-2" />
             Exportar XLS
           </Button>
-          {/* <Button className="min-h-[44px] px-6 bg-primary hover:bg-primary/90 text-white border-0 shadow-lg shadow-primary/20 transition-all font-bold uppercase tracking-widest text-[10px]">
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Crédito
-          </Button> */}
         </div>
       </div>
 
       <div className="flex-shrink-0">
-        <FiltersBar
-          onFilterChange={handleFilterChange}
-          availableClients={availableClients}
-          showClientFilter={true}
-        />
+        <FiltersBar onFilterChange={handleFilterChange} availableClients={availableClients} showClientFilter={true} />
       </div>
 
       <div className="flex-1 min-h-0">
-        <DynamicTable
-          data={displayedCredits}
-          columns={columns}
-          isLoading={isLoading}
-          error={error}
-          emptyMessage="No hay créditos encontrados para este período"
-        />
+        <DynamicTable data={displayedCredits} columns={columns} isLoading={isLoading} error={error} emptyMessage="No hay créditos encontrados para este período" variant="premium-dark" className="rounded-3xl" />
       </div>
 
-      <EditCreditModal
-        isOpen={isEditModalOpen}
-        credit={selectedCredit}
-        onClose={() => setIsEditModalOpen(false)}
-        onSuccess={loadCredits}
-      />
+      <EditCreditModal isOpen={isEditModalOpen} credit={selectedCredit} onClose={() => setIsEditModalOpen(false)} onSuccess={loadCredits} />
     </div>
   )
 }

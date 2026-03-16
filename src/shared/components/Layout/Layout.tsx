@@ -1,27 +1,25 @@
-import { ReactNode, useState } from 'react'
-import Header from './Header'
-import Sidebar from './Sidebar'
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import Header from "./Header"
+import { AppSidebar } from "./AppSidebar"
 
 interface LayoutProps {
-  children: ReactNode
+  children: React.ReactNode
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
   return (
-    <div className="flex h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="flex flex-col min-w-0 bg-background transition-colors duration-300">
+        <Header />
         <main
-          className="flex-1 overflow-y-auto p-6 text-foreground"
+          className="flex-1 p-4 md:p-6 lg:p-8 animate-in fade-in duration-500"
           role="main"
-          aria-label="Contenido principal"
+          id="main-content"
         >
           {children}
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

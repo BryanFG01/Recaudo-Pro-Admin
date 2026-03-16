@@ -3,15 +3,15 @@ import { Card, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { Calendar, ChevronDown, ChevronUp, Filter, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export interface FilterValues {
   userId: string | undefined
@@ -35,9 +35,9 @@ interface FiltersBarProps {
   isRecaudoPage?: boolean
 }
 
-const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
-const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50'
-const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block'
+const containerStyle = 'glass-card rounded-3xl hover:border-primary/20 transition-all duration-500'
+const inputStyle = 'glass border border-border/40 text-foreground placeholder:text-muted-foreground/40 focus:bg-background/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/50 rounded-2xl h-11 transition-all'
+const labelStyle = 'text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 mb-2.5 block px-1'
 
 export default function FiltersBar({
   onFilterChange,
@@ -58,15 +58,6 @@ export default function FiltersBar({
     payment_method: undefined
   })
 
-  useEffect(() => {
-    onFilterChange({
-      startDate: undefined,
-      endDate: undefined,
-      userId: undefined,
-      clientId: undefined,
-      payment_method: undefined
-    })
-  }, [])
 
   const handleFilterChange = (key: keyof FilterValues, value: string) => {
     const normalizedValue = value === '__all__' ? undefined : value
@@ -109,18 +100,18 @@ export default function FiltersBar({
               <Filter className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <h3 className="text-sm font-bold text-foreground tracking-tight">Filtros Avanzados</h3>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+              <h3 className="text-sm font-black text-foreground tracking-tight uppercase">Filtros Avanzados</h3>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
                 {hasActiveFilters ? 'Filtros aplicados' : 'Sin filtros activos'}
               </p>
             </div>
             {collapsed ? (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground/50" />
             ) : (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              <ChevronUp className="w-4 h-4 text-muted-foreground/50" />
             )}
           </button>
-          
+
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -146,7 +137,7 @@ export default function FiltersBar({
             <>
               <div className="space-y-1">
                 <Label htmlFor="startDate" className={labelStyle}>Desde</Label>
-                <div 
+                <div
                   className="relative cursor-pointer group/input"
                   onClick={() => (document.getElementById('startDate') as HTMLInputElement)?.showPicker()}
                 >
@@ -162,7 +153,7 @@ export default function FiltersBar({
               </div>
               <div className="space-y-1">
                 <Label htmlFor="endDate" className={labelStyle}>Hasta</Label>
-                <div 
+                <div
                   className="relative cursor-pointer group/input"
                   onClick={() => (document.getElementById('endDate') as HTMLInputElement)?.showPicker()}
                 >
@@ -189,10 +180,10 @@ export default function FiltersBar({
                 <SelectTrigger id="clientId" className={cn(inputStyle, "h-11")}>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-popover-foreground shadow-xl">
-                  <SelectItem value="__all__">Todos</SelectItem>
+                <SelectContent className="bg-card/95 border-border shadow-2xl rounded-2xl backdrop-blur-xl">
+                  <SelectItem value="__all__" className="text-foreground/80 focus:bg-accent focus:text-foreground">Todos</SelectItem>
                   {availableClients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
+                    <SelectItem key={client.id} value={client.id} className="text-foreground/80 focus:bg-accent focus:text-foreground">
                       {client.name}
                     </SelectItem>
                   ))}

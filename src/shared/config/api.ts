@@ -17,11 +17,8 @@ function getApiBaseUrl(): string {
     const url = document.getElementById('root')?.getAttribute('data-api-url')
     if (url && url !== PLACEHOLDER_API_URL) return url.replace(/\/$/, '')
   }
-  return (
-    import.meta.env.VITE_BACK_URL ||
-    import.meta.env.VITE_API_BASE_URL ||
-    ''
-  ).replace(/\/$/, '')
+  // Use relative path for Next.js proxy route or direct if not
+  return '/api';
 }
 
 const initialUrl = getApiBaseUrl()
@@ -36,7 +33,7 @@ export const apiBase = initialUrl || ''
 
 function buildUrl(endpoint: string): string {
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-  return `${getApiBaseUrl()}${path}`
+  return `${getApiBaseUrl()}${path.startsWith('/api') ? path.replace('/api', '') : path}`
 }
 
 /** Error con código HTTP para que los repositorios/páginas puedan distinguir 404, etc. */

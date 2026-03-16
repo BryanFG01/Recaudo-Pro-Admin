@@ -1,3 +1,4 @@
+import { LoadingScreen } from '@/shared/components/LoadingScreen/LoadingScreen'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -307,12 +308,8 @@ export default function CashSessionsPage() {
     }
   ]
 
-  if (!currentBusinessId) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-muted-foreground/60 italic font-medium">Esperando identificador de negocio...</p>
-      </div>
-    )
+  if (!currentBusinessId || isLoadingList) {
+    return <LoadingScreen message="Sincronizando Módulo de Apertura" />
   }
 
   return (
@@ -438,6 +435,8 @@ export default function CashSessionsPage() {
             isLoading={isLoadingList}
             error={error}
             emptyMessage="No se registran sesiones de caja activas"
+            variant="premium-dark"
+            className="rounded-3xl"
           />
         </div>
       </div>

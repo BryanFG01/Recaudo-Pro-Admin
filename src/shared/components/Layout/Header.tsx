@@ -1,65 +1,65 @@
-import { Button } from '@/components/ui/button'
-import { ModeToggle } from '@/components/theme/ModeToggle'
-import { useAuthStore } from '@/features/auth/presentation/store/authStore'
-import { Menu } from 'lucide-react'
+import { SidebarTrigger } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import { usePathname } from "next/navigation"
+import { ChevronRight, Home } from "lucide-react"
+import { cn } from "@/shared/utils/cn"
+import Link from "next/link"
+import { ModeToggle } from "@/components/theme/ModeToggle"
 
-interface HeaderProps {
-  onMenuClick?: () => void
-}
+export default function Header() {
+  const pathname = usePathname()
+  const pathnames = pathname ? pathname.split("/").filter((x) => x) : []
 
-export default function Header({ onMenuClick }: HeaderProps) {
-  const { user } = useAuthStore()
+  const routeMap: Record<string, string> = {
+    admin: "Administración",
+    users: "Equipo",
+    clients: "Clientes",
+    map: "Mapa",
+    credits: "Préstamos",
+    collections: "Recaudos",
+    "cash-sessions": "Caja",
+    flow: "Flujo",
+  }
 
   return (
-    <header
-      className="bg-background/95 border-b border-border px-3 py-3 sm:px-4 md:px-6 md:py-4 shadow-sm sticky top-0 z-30"
-      role="banner"
-    >
-      <div className="flex items-center justify-between gap-2 sm:gap-4 min-h-[44px]">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={onMenuClick}
-            className="md:hidden shrink-0 h-11 w-11 min-h-[44px] min-w-[44px] rounded-lg -ml-1"
-            aria-label="Abrir menú de navegación"
-          >
-            <Menu className="w-6 h-6 shrink-0" />
-          </Button>
-          <h2 className="text-base sm:text-lg md:text-2xl font-semibold text-foreground truncate">
-            Panel de Administración
-          </h2>
+    <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border/40 px-6 bg-background/60 backdrop-blur-md sticky top-0 z-20 transition-all duration-300">
+      <div className="flex items-center gap-4 w-full justify-between">
+        <div className="flex items-center gap-4">
+          <SidebarTrigger className="h-9 w-9 text-foreground/80 hover:text-foreground transition-all flex items-center justify-center rounded-lg hover:bg-accent/50 border border-border/20" />
+          <Separator orientation="vertical" className="h-4 opacity-20" />
+          <nav className="flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60">
+            <Link href="/admin" className="flex items-center hover:text-primary transition-colors">
+              <Home className="h-3.5 w-3.5" />
+            </Link>
+            <ChevronRight className="h-3 w-3 opacity-20" />
+            {pathnames.length === 0 ? (
+              <span className="text-foreground font-black tracking-widest">Dashboard</span>
+            ) : (
+              pathnames.map((name, index) => {
+                const isLast = index === pathnames.length - 1
+                const displayName = routeMap[name.toLowerCase()] || name.charAt(0).toUpperCase() + name.slice(1)
+                return (
+                  <div key={name} className="flex items-center">
+                    {index > 0 && (
+                      <ChevronRight className="h-3 w-3 opacity-20 mx-1" />
+                    )}
+                    <span
+                      className={cn(
+                        "transition-colors",
+                        isLast ? "text-foreground font-black tracking-widest" : "hover:text-primary cursor-pointer"
+                      )}
+                    >
+                      {displayName}
+                    </span>
+                  </div>
+                )
+              })
+            )}
+          </nav>
         </div>
-        <div
-          className="flex items-center gap-2 sm:gap-4 shrink-0 min-w-0"
-          aria-label="Información del usuario"
-        >
+        
+        <div className="flex items-center gap-2">
           <ModeToggle />
-          <div className="hidden sm:block text-right min-w-0 max-w-[140px] md:max-w-[200px]">
-            <p
-              className="text-sm font-medium text-foreground truncate"
-              title={user?.name ?? undefined}
-              aria-label={`Usuario: ${user?.name ?? '-'}`}
-            >
-              {user?.name ?? '-'}
-            </p>
-            <p
-              className="text-xs text-muted-foreground truncate"
-              title={user?.email ?? undefined}
-              aria-label={`Email: ${user?.email ?? '-'}`}
-            >
-              {user?.email ?? '-'}
-            </p>
-          </div>
-          <div
-            className="w-10 h-10 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold min-w-[40px] min-h-[40px] shrink-0 text-sm"
-            aria-label={`Avatar: ${user?.name ?? user?.email ?? 'Usuario'}`}
-            role="img"
-            title={user?.name ?? user?.email ?? undefined}
-          >
-            {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-          </div>
         </div>
       </div>
     </header>

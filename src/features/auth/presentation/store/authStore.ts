@@ -43,12 +43,20 @@ export const useAuthStore = create<AuthState>()(
         businessCode: s.businessCode,
         lastActivityAt: s.lastActivityAt,
       }),
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('❌ Error during auth rehydration:', error)
+          return
+        }
         if (!state) return
+        
+        console.log('✅ Auth rehydration finished')
+
         if (
           state.lastActivityAt != null &&
           Date.now() - state.lastActivityAt > INACTIVITY_MS
         ) {
+          console.log('⌛ Session expired due to inactivity')
           useAuthStore.getState().signOut()
         } else if (state.user != null) {
           useAuthStore.setState({ lastActivityAt: Date.now() })

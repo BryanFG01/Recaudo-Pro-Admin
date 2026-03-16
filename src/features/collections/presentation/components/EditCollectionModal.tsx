@@ -2,13 +2,22 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { cn } from '@/shared/utils/cn'
-import { formatCurrency, formatDateTime } from '@/shared/utils/date'
-import { Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { formatDateTime } from '@/shared/utils/date'
+import {
+  Calendar,
+  Hash,
+  Info,
+  Loader2,
+  Save,
+  StickyNote,
+  TrendingDown,
+  Wallet,
+  X
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Collection, UpdateCollectionRequest } from '../../domain/models'
 import { useCollections } from '../hooks/useCollections'
@@ -20,9 +29,6 @@ interface EditCollectionModalProps {
   onClose: () => void
   onSuccess: () => void
 }
-
-const inputStyle = 'bg-background border border-border text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-primary/40 focus:border-primary/40 transition-colors duration-200'
-const labelStyle = 'text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-1.5 block'
 
 const PAYMENT_METHODS = [
   { value: 'efectivo', label: 'Efectivo' },
@@ -46,14 +52,6 @@ export const EditCollectionModal = ({
     transaction_reference: '',
     notes: '',
   })
-
-  const formatFinancial = (val: number | null | undefined) => {
-    if (val === undefined || val === null) return '0,00'
-    return new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(val)
-  }
 
   useEffect(() => {
     if (!collection) return
@@ -118,153 +116,174 @@ export const EditCollectionModal = ({
   if (!collection) return null
 
   const displayClient = clientName || collection.name || collection.client_id
+  const formatFinancial = (val: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(val)
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] sm:max-w-[550px] bg-card border-border text-card-foreground shadow-2xl overflow-hidden rounded-xl p-0 animate-in fade-in zoom-in-95 duration-300 max-h-[92vh] flex flex-col focus:outline-none">
+      <DialogContent className="max-w-3xl h-[90vh] p-0 overflow-hidden border-border bg-card !rounded-[20px] shadow-2xl backdrop-blur-xl transition-all duration-300">
+        <div className="relative flex flex-col">
+          {/* Header Section */}
+          <div className="px-10 pt-10 pb-6 !border-sm !border-border/50">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-5">
+                <div className="p-4 rounded-[4px] bg-primary/10 text-primary shadow-inner">
+                  <TrendingDown className="w-7 h-7" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-bold text-foreground tracking-tight uppercase">Editar Recaudo</DialogTitle>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mt-1">Gestión de ingresos</p>
+                </div>
+              </div>
 
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <DialogTitle className="text-lg font-bold text-foreground tracking-tight">
-                Editar Recaudo
-              </DialogTitle>
-              <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-                Modificar datos del pago registrado
-              </p>
-            </div>
-            <span className="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md bg-muted/50 border border-border text-muted-foreground">
-              {collection.id.slice(0, 8)}
-            </span>
-          </div>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-
-          {/* Info de contexto (solo lectura) */}
-          <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-3">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Datos del recaudo</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className={labelStyle}>Cliente</span>
-                <span className="text-sm font-bold text-foreground block truncate">{displayClient}</span>
-              </div>
-              <div>
-                <span className={labelStyle}>Monto original</span>
-                <span className="text-sm font-bold text-success font-mono block">{formatCurrency(collection.amount)}</span>
-              </div>
-              <div>
-                <span className={labelStyle}>Fecha registro</span>
-                <span className="text-[11px] text-muted-foreground font-mono block">{formatDateTime(collection.created_at)}</span>
-              </div>
-              <div>
-                <span className={labelStyle}>Credito</span>
-                <span className="text-[11px] text-muted-foreground font-mono block truncate">{collection.credit_id.slice(0, 12)}</span>
-              </div>
             </div>
           </div>
 
-          {error && (
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center">
-              <span className="text-xs text-destructive font-medium">{error}</span>
-            </div>
-          )}
+          {/* Form Content */}
+          <div className="px-10 py-10 space-y-10 bg-card/30 max-h-[70vh] overflow-y-auto custom-scrollbar">
 
-          <form onSubmit={handleSubmit} id="edit-collection-form" className="space-y-5">
-
-            {/* Monto */}
-            <div className="space-y-1.5">
-              <label className={labelStyle}>Monto del pago</label>
-              <input
-                name="amount"
-                type="text"
-                inputMode="numeric"
-                value={formatFinancial(formData.amount)}
-                onChange={handlePriceChange}
-                className={cn("w-full px-4 py-3 rounded-lg focus:outline-none font-mono font-bold text-lg", inputStyle)}
-              />
+            {/* Info Summary Card */}
+            <div className="p-6 rounded-[4px] bg-muted/40 border border-border grid grid-cols-2 gap-8 shadow-inner group">
+                <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60">Cliente</p>
+                    <p className="text-xs font-bold text-foreground uppercase tracking-tight truncate">{displayClient}</p>
+                </div>
+                <div className="space-y-2 text-right">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60">Registrado</p>
+                    <p className="text-[10px] font-bold text-primary/80 font-mono font-medium uppercase">
+                        {formatDateTime(collection.created_at)}
+                    </p>
+                </div>
             </div>
 
-            {/* Fecha y metodo */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className={labelStyle}>Fecha de pago</label>
-                <input
-                  name="payment_date"
-                  type="date"
-                  value={formData.payment_date}
-                  onChange={handleChange}
-                  onClick={(e) => e.currentTarget.showPicker()}
-                  className={cn("w-full px-3 py-3 rounded-lg focus:outline-none font-bold text-[11px] text-center cursor-pointer", inputStyle)}
-                />
+            {error && (
+              <div className="p-5 rounded-[4px] bg-destructive/10 border border-destructive/20 flex items-center gap-4 animate-in shake-2 duration-400">
+                 <div className="p-2 rounded-[4px] bg-destructive/20">
+                    <X className="size-4 text-destructive" />
+                 </div>
+                 <p className="text-[10px] font-black uppercase text-destructive tracking-widest flex-1">{error}</p>
               </div>
-              <div className="space-y-1.5">
-                <label className={labelStyle}>Metodo de pago</label>
-                <select
-                  name="payment_method"
-                  value={formData.payment_method}
-                  onChange={handleChange}
-                  className={cn("w-full px-3 py-3 rounded-lg focus:outline-none font-bold text-[11px] cursor-pointer appearance-none", inputStyle)}
-                >
-                  <option value="">Sin especificar</option>
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            )}
 
-            {/* Referencia */}
-            <div className="space-y-1.5">
-              <label className={labelStyle}>Referencia de transaccion</label>
-              <input
-                name="transaction_reference"
-                type="text"
-                value={formData.transaction_reference}
-                onChange={handleChange}
-                placeholder="Numero de referencia o comprobante"
-                className={cn("w-full px-4 py-3 rounded-lg focus:outline-none text-sm", inputStyle)}
-              />
-            </div>
+            <form onSubmit={handleSubmit} id="edit-collection-form" className="space-y-10">
+                <div className="space-y-4">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Monto del Pago</Label>
+                    <div className="relative group/field">
+                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground/30 group-focus-within/field:text-primary transition-colors">$</span>
+                        <Input
+                            name="amount"
+                            type="text"
+                            inputMode="numeric"
+                            value={formatFinancial(formData.amount)}
+                            onChange={handlePriceChange}
+                            className="h-20 pl-14 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20 focus-visible:bg-card font-mono font-medium text-3xl text-foreground transition-all"
+                        />
+                    </div>
+                </div>
 
-            {/* Notas */}
-            <div className="space-y-1.5">
-              <label className={labelStyle}>Notas</label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows={2}
-                placeholder="Observaciones adicionales"
-                className={cn("w-full px-4 py-3 rounded-lg focus:outline-none text-sm resize-none", inputStyle)}
-              />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Fecha de pago</Label>
+                        <div className="relative group/field">
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/30 group-focus-within/field:text-primary transition-colors" />
+                            <Input
+                                name="payment_date"
+                                type="date"
+                                value={formData.payment_date}
+                                onChange={handleChange}
+                                onClick={(e) => e.currentTarget.showPicker()}
+                                className="h-12 pl-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20 font-bold text-xs uppercase"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-3">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Método de Pago</Label>
+                        <div className="relative group/field">
+                            <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/30 group-focus-within/field:text-primary transition-colors z-10" />
+                            <select
+                                name="payment_method"
+                                value={formData.payment_method}
+                                onChange={handleChange}
+                                className="w-full h-12 pl-12 pr-4 bg-muted/40 border border-border/50 rounded-[4px] focus:ring-2 focus:ring-primary/20 outline-none text-[10px] font-bold uppercase tracking-widest appearance-none cursor-pointer transition-all"
+                            >
+                                <option value="" className="bg-card">Sin especificar</option>
+                                {PAYMENT_METHODS.map((m) => (
+                                    <option key={m.value} value={m.value} className="bg-card">{m.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Referencia / Comprobante</Label>
+                    <div className="relative group/field">
+                        <Hash className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/30 group-focus-within/field:text-primary transition-colors" />
+                        <Input
+                            name="transaction_reference"
+                            value={formData.transaction_reference}
+                            onChange={handleChange}
+                            className="h-12 pl-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20 font-bold text-xs"
+                            placeholder="Número de referencia"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Notas Adicionales</Label>
+                    <div className="relative group/field">
+                        <StickyNote className="absolute left-4 top-4 size-4 text-muted-foreground/30 group-focus-within/field:text-primary transition-colors" />
+                        <textarea
+                            name="notes"
+                            value={formData.notes}
+                            onChange={handleChange}
+                            rows={3}
+                            placeholder="Observaciones de la transacción..."
+                            className="w-full pl-12 pr-4 pt-3 bg-muted/40 border border-border/50 rounded-[4px] focus:ring-2 focus:ring-primary/20 outline-none text-xs font-bold resize-none transition-all"
+                        />
+                    </div>
+                </div>
+            </form>
+
+            <div className="p-6 rounded-[4px] bg-primary/5 border border-primary/10 flex gap-5 shadow-inner backdrop-blur-sm">
+                <Info className="size-5 text-primary shrink-0 mt-0.5" />
+                <p className="text-[10px] leading-relaxed text-muted-foreground font-bold uppercase tracking-tight opacity-70">
+                    Aviso: La actualización del monto impactará el saldo real del crédito. Asegúrese de que la referencia coincida con el registro bancario.
+                </p>
             </div>
-          </form>
+          </div>
+
+          <div className="h-px bg-border/50 mx-10" />
+
+          {/* Footer Section */}
+          <div className="px-10 py-8 flex items-center justify-between bg-muted/20">
+             <Button
+                variant="ghost"
+                onClick={onClose}
+                className="h-11 px-8 text-muted-foreground hover:text-foreground hover:bg-muted font-bold rounded-[4px] text-[10px] uppercase tracking-widest transition-all"
+             >
+                Descartar
+             </Button>
+
+             <Button
+                type="submit"
+                form="edit-collection-form"
+                disabled={loading}
+                className="h-11 px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-[4px] font-bold transition-all flex items-center gap-3 text-[10px] uppercase tracking-[0.15em]"
+             >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                    <>
+                        <span>Actualizar Pago</span>
+                        <Save className="w-4 h-4" />
+                    </>
+                )}
+             </Button>
+          </div>
         </div>
-
-        <DialogFooter className="px-6 py-4 border-t border-border flex flex-col sm:flex-row gap-3 items-center justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={onClose}
-            className="w-full sm:w-auto px-6 h-10 text-xs font-bold uppercase tracking-wider rounded-lg"
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            form="edit-collection-form"
-            disabled={loading}
-            className="w-full sm:w-auto h-10 px-8 font-bold uppercase tracking-wider text-xs rounded-lg"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                Guardando...
-              </>
-            ) : 'Guardar Cambios'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

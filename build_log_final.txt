@@ -1,0 +1,8 @@
+npm warn Unknown project config "node-linker". This will stop working in the next major version of npm.
+
+> recaudo-pro-admin@1.0.0 build
+> node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build
+
+src/components/ui/sidebar.tsx(25,7): error TS6133: 'SIDEBAR_WIDTH_MOBILE' is declared but its value is never read.
+src/features/cash-sessions/presentation/pages/CashSessionFlowPage.tsx(19,32): error TS2307: Cannot find module '../../collections/presentation/hooks/useCollections' or its corresponding type declarations.
+src/features/cash-sessions/presentation/pages/CashSessionFlowPage.tsx(42,28): error TS2307: Cannot find module '../../collections/domain/models/Collection' or its corresponding type declarations.

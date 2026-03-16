@@ -9,7 +9,8 @@ import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { cn } from '@/shared/utils/cn'
 import { Banknote, CreditCard, DollarSign, LayoutDashboard, LogOut, Navigation, TrendingUp, UserCog, Users, Wallet, X } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 const menuItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -29,7 +30,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
-  const location = useLocation()
+  const pathname = usePathname()
   const { signOut } = useAuthStore()
   const [openLogout, setOpenLogout] = useState(false)
 
@@ -85,11 +86,11 @@ export default function Sidebar({ open = false, onOpenChange }: SidebarProps) {
           <ul className="space-y-2" role="list">
             {menuItems.map((item) => {
               const Icon = item.icon
-              const isActive = location.pathname === item.path
+              const isActive = pathname === item.path
               return (
                 <li key={item.path} role="none">
                   <Link
-                    to={item.path}
+                    href={item.path}
                     onClick={closeSidebar}
                     className={cn(
                       'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-card',

@@ -1,48 +1,62 @@
 # ---- Stage 1: Build ----
-FROM node:20-alpine AS build
+FROM node:20-alpine AS base
 
+# Install pnpm
+RUN npm install -g pnpm
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
 
-# Instalar dependencias primero (cache de capas)
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
-
-# Instalar pnpm si se usa lockfile de pnpm, sino npm
-RUN if [ -f pnpm-lock.yaml ]; then \
-      npm install -g pnpm && pnpm install --frozen-lockfile; \
-    else \
-      npm ci; \
-    fi
-
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Variables de entorno para el build (Dokploy las inyecta como build args)
+# Environment variables for build time
 ARG VITE_BACK_URL
 ARG VITE_API_BASE_URL
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
-ARG VITE_UPLOAD_IMAGE_ENDPOINT
 
 ENV VITE_BACK_URL=$VITE_BACK_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
-ENV VITE_UPLOAD_IMAGE_ENDPOINT=$VITE_UPLOAD_IMAGE_ENDPOINT
+ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN npm run build
+RUN pnpm run build
 
 # ---- Stage 2: Serve ----
-FROM nginx:alpine
+FROM base AS runner
+WORKDIR /app
 
-# Configuracion personalizada de nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Entrypoint que inyecta VITE_BACK_URL en index.html en runtime (sin recompilar)
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Copiar archivos del build
-COPY --from=build /app/dist /usr/share/nginx/html
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
 
-EXPOSE 80
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+# set hostname to localhost
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]
