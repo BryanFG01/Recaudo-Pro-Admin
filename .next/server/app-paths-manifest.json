@@ -1,1 +1,18 @@
-{}
+{
+  "/api/businesses/[[...path]]/route": "app/api/businesses/[[...path]]/route.js",
+  "/login/page": "app/login/page.js",
+  "/api/users/[[...path]]/route": "app/api/users/[[...path]]/route.js",
+  "/api/super-admins/[[...path]]/route": "app/api/super-admins/[[...path]]/route.js",
+  "/api/credits/[[...path]]/route": "app/api/credits/[[...path]]/route.js",
+  "/api/clients/[[...path]]/route": "app/api/clients/[[...path]]/route.js",
+  "/api/collections/[[...path]]/route": "app/api/collections/[[...path]]/route.js",
+  "/api/cash-sessions/[[...path]]/route": "app/api/cash-sessions/[[...path]]/route.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/users/page": "app/admin/users/page.js",
+  "/admin/cash-sessions/page": "app/admin/cash-sessions/page.js",
+  "/admin/clients/page": "app/admin/clients/page.js",
+  "/admin/credits/page": "app/admin/credits/page.js",
+  "/admin/flow/page": "app/admin/flow/page.js",
+  "/admin/collections/page": "app/admin/collections/page.js",
+  "/admin/map/page": "app/admin/map/page.js"
+}
