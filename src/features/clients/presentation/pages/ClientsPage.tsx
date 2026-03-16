@@ -193,7 +193,7 @@ export default function ClientsPage() {
     { key: 'total_paid', header: 'Total pagado', isNumeric: true, render: (client) => <span className="font-semibold text-success">{formatCurrency(client.total_paid)}</span> },
     { key: 'total_balance', header: 'Saldo Pendiente', isNumeric: true, render: (client) => {
         const balance = client.total_balance || 0
-        return <span className={cn('px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300', balance === 0 ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success.DEFAULT)]' : 'bg-error/10 text-error border border-error/20 shadow-[0_0_15px_-5px_theme(colors.error.DEFAULT)]')}>{formatCurrency(balance)}</span>
+        return <span className={cn('px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300', balance === 0 ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]' : 'bg-error/10 text-error border border-error/20 shadow-[0_0_15px_-5px_theme(colors.error)]')}>{formatCurrency(balance)}</span>
     }},
     { key: 'created_at', header: 'Fecha Creación', className: 'text-muted-foreground/50', render: (client) => formatDate(client.created_at) },
     { key: 'id', header: '', className: 'w-10 text-center', render: (client) => <button type="button" onClick={(e) => { e.stopPropagation(); setEditingClient(client); }} className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors" title="Editar cliente"><Pencil className="w-3.5 h-3.5" /></button> }

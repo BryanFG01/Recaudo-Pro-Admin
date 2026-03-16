@@ -1,0 +1,1 @@
+{"version":1,"functions":{"/api/auth/[[...path]]":{},"/api/cash-sessions/[[...path]]":{},"/api/businesses/[[...path]]":{},"/api/clients/[[...path]]":{},"/api/collections/[[...path]]":{},"/api/credits/[[...path]]":{},"/api/super-admins/[[...path]]":{},"/api/upload/image/[[...path]]":{},"/api/users/[[...path]]":{},"/api/withdrawals/[[...path]]":{}}}

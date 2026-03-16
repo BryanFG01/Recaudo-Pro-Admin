@@ -72,7 +72,7 @@ export default function DashboardPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-foreground shrink-0">Panel de Control</h1>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success.DEFAULT)]">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-[10px] font-black text-success uppercase tracking-[0.2em]">En Línea</span>
             </div>

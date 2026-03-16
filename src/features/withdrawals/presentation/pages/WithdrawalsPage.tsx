@@ -192,7 +192,7 @@ export default function WithdrawalsPage() {
           className={cn(
             'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-300',
             row.is_approved
-              ? 'bg-success/10 text-success border-success/20 shadow-[0_0_15px_-5px_theme(colors.success.DEFAULT)]'
+              ? 'bg-success/10 text-success border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]'
               : 'bg-error/10 text-error border-error/10 animate-pulse'
           )}
         >

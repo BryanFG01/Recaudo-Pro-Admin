@@ -9,8 +9,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
 
-const inputStyle =
-  'min-h-[44px] border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl transition-all'
+
 
 export default function LoginPage() {
   const [businessCode, setBusinessCode] = useState('')

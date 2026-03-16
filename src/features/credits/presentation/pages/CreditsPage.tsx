@@ -250,8 +250,8 @@ export default function CreditsPage() {
           <span className={cn(
               'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300',
               balance === 0 
-                ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success.DEFAULT)]' 
-                : 'bg-error/10 text-error border border-error/20 shadow-[0_0_15px_-5px_theme(colors.error.DEFAULT)]'
+                ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]' 
+                : 'bg-error/10 text-error border border-error/20 shadow-[0_0_15px_-5px_theme(colors.error)]'
             )}>
             {formatCurrency(balance)}
           </span>
