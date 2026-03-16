@@ -96,7 +96,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.15),transparent_50%)]" />
 
         <Image
-          src="/ImagenRecaudoPro"
+          src="/ImagenRecaudoPro.jpg"
           alt="RecaudoPro Experience"
           fill
           className="object-cover object-center opacity-70 mix-blend-luminosity grayscale-[20%] brightness-[0.7] transform scale-110"

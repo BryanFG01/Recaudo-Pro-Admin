@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Recaudo Pro Admin",
   description: "Administrative Dashboard",
+  icons: {
+    icon: "/logo.nuevo.png",
+  },
 };
 
 export default function RootLayout({

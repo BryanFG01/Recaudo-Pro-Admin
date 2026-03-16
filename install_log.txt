@@ -1,0 +1,8 @@
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 0, reused 1, downloaded 0, added 0
+Packages: +16 -89
+++++++++++++--------------------------------------------------------------------
+Progress: resolved 0, reused 105, downloaded 0, added 12
+Progress: resolved 0, reused 105, downloaded 0, added 13
+Progress: resolved 0, reused 105, downloaded 0, added 14
+ ERR_PNPM_EPERM  EPERM, Permission denied: \\?\C:\Users\pcc\Desktop\Bryan\Recaudo-Pro-Admin\node_modules\@next\swc-win32-x64-msvc '\\?\C:\Users\pcc\Desktop\Bryan\Recaudo-Pro-Admin\node_modules\@next\swc-win32-x64-msvc'
