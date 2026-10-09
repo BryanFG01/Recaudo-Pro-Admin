@@ -1,42 +1,12 @@
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 
-const PLACEHOLDER_API_URL = '__VITE_BACK_URL__'
-
-function getAuthHeaders(): Record<string, string> {
-  const token = useAuthStore.getState().token
-  return token ? { Authorization: `Bearer ${token}` } : {}
-}
-
 /**
- * URL base del backend. En producción (Docker) puede inyectarse en runtime
- * vía data-api-url en #root (el entrypoint reemplaza __VITE_BACK_URL__ en index.html).
- * Si no, usa las variables de build (VITE_BACK_URL / VITE_API_BASE_URL).
+ * Cliente HTTP del panel. Todas las llamadas van a /api/... del propio Next: el proxy
+ * (src/shared/utils/apiProxy.ts) adjunta el token de la cookie httpOnly y renueva la sesión.
+ * El navegador nunca maneja tokens.
  */
-function getApiBaseUrl(): string {
-  if (typeof document !== 'undefined') {
-    const url = document.getElementById('root')?.getAttribute('data-api-url')
-    if (url && url !== PLACEHOLDER_API_URL) return url.replace(/\/$/, '')
-  }
-  // Use relative path for Next.js proxy route or direct if not
-  return '/api';
-}
 
-const initialUrl = getApiBaseUrl()
-if (!initialUrl) {
-  console.warn(
-    'VITE_BACK_URL (o VITE_API_BASE_URL) no está configurado. Las llamadas al API pueden fallar.\n' +
-      'En producción: definí la variable al construir la imagen (build arg) o al ejecutar el contenedor (env) y usá el entrypoint que inyecta la URL en index.html.'
-  )
-}
-
-export const apiBase = initialUrl || ''
-
-function buildUrl(endpoint: string): string {
-  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-  return `${getApiBaseUrl()}${path.startsWith('/api') ? path.replace('/api', '') : path}`
-}
-
-/** Error con código HTTP para que los repositorios/páginas puedan distinguir 404, etc. */
+/** Error con código HTTP para que repositorios y páginas distingan 404, 403, etc. */
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number) {
     super(message)
@@ -44,161 +14,65 @@ export class ApiError extends Error {
   }
 }
 
-async function getErrorMessage(response: Response): Promise<string> {
-  const text = await response.text()
-  const err = (() => {
-    try {
-      return JSON.parse(text) as Record<string, unknown>
-    } catch {
-      return null
-    }
-  })()
-  if (!err || typeof err !== 'object') return `Error ${response.status}: ${response.statusText}`
-  const msg = 'message' in err ? String(err.message) : 'error' in err ? String(err.error) : null
-  return msg || `Error ${response.status}: ${response.statusText}`
+export const SESSION_EXPIRED_PARAM = 'sesion'
+
+/** 401 después de que el proxy intentó renovar: la sesión terminó (vencida, revocada o cerrada). */
+function handleSessionEnded(): void {
+  useAuthStore.getState().signOut()
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+    window.location.assign(`/login?${SESSION_EXPIRED_PARAM}=expirada`)
+  }
 }
 
-/**
- * Parsea el body de la respuesta como JSON. Si el servidor devuelve HTML
- * (p. ej. 404 del frontend o SPA fallback), lanza un error claro en lugar de "Unexpected token '<'".
- */
-async function parseJsonResponse<T>(response: Response): Promise<T> {
+async function errorMessage(response: Response): Promise<string> {
+  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null
+  const message = body?.message ?? body?.error
+  if (Array.isArray(message)) return message.join('. ')
+  return typeof message === 'string' && message ? message : `Error ${response.status}: ${response.statusText}`
+}
+
+async function request<T>(method: string, endpoint: string, body?: BodyInit, json = true): Promise<T> {
+  const response = await fetch(endpoint, {
+    method,
+    headers: json ? { 'Content-Type': 'application/json' } : undefined,
+    body
+  })
+  if (response.status === 401) handleSessionEnded()
+  if (!response.ok) throw new ApiError(await errorMessage(response), response.status)
+  if (response.status === 204) return undefined as T
+
   const text = await response.text()
-  const trimmed = text.trim()
-  if (trimmed.toLowerCase().startsWith('<!')) {
-    const base = getApiBaseUrl()
-    const hint = !base || base === PLACEHOLDER_API_URL
-      ? 'En producción: configurá la URL del backend (variable VITE_BACK_URL al construir la imagen o al ejecutar el contenedor; ver README). En local: .env con VITE_BACK_URL.'
-      : 'El backend puede no tener esta ruta o está devolviendo una página de error.'
-    throw new ApiError(
-      `El servidor respondió con HTML en lugar de JSON. ${hint}`,
-      response.status
-    )
-  }
+  if (!text) return undefined as T
   try {
     return JSON.parse(text) as T
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    throw new ApiError(`Respuesta no válida (no es JSON): ${msg}`, response.status)
+  } catch {
+    throw new ApiError('La respuesta del servidor no es válida.', response.status)
   }
 }
 
+const toJson = (data: unknown) => (data === undefined ? undefined : JSON.stringify(data))
+
 export const apiClient = {
-  async get<T>(endpoint: string): Promise<T> {
-    const url = buildUrl(endpoint)
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
-    })
-    if (!response.ok) {
-      const msg = await getErrorMessage(response)
-      throw new ApiError(msg, response.status)
-    }
-    return parseJsonResponse<T>(response)
-  },
-
-  async post<T>(
-    endpoint: string,
-    data?: unknown,
-    options?: { credentials?: RequestCredentials }
-  ): Promise<T> {
-    const url = buildUrl(endpoint)
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: data ? JSON.stringify(data) : undefined,
-      credentials: options?.credentials
-    })
-    if (!response.ok) {
-      const msg = await getErrorMessage(response)
-      throw new ApiError(msg, response.status)
-    }
-    return parseJsonResponse<T>(response)
-  },
-
-  async put<T>(endpoint: string, data?: unknown): Promise<T> {
-    const url = buildUrl(endpoint)
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: data ? JSON.stringify(data) : undefined
-    })
-    if (!response.ok) {
-      const msg = await getErrorMessage(response)
-      throw new ApiError(msg, response.status)
-    }
-    return parseJsonResponse<T>(response)
-  },
-
-  async patch<T>(endpoint: string, data?: unknown): Promise<T> {
-    const url = buildUrl(endpoint)
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: data ? JSON.stringify(data) : undefined
-    })
-    if (!response.ok) {
-      const msg = await getErrorMessage(response)
-      throw new Error(msg)
-    }
-    return parseJsonResponse<T>(response)
-  },
-
-  async delete<T>(endpoint: string): Promise<T> {
-    const url = buildUrl(endpoint)
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
-    })
-    if (!response.ok) {
-      const msg = await getErrorMessage(response)
-      throw new ApiError(msg, response.status)
-    }
-    if (response.status === 204) return undefined as unknown as T
-    return parseJsonResponse<T>(response)
-  },
+  get: <T>(endpoint: string) => request<T>('GET', endpoint),
+  post: <T>(endpoint: string, data?: unknown) => request<T>('POST', endpoint, toJson(data)),
+  put: <T>(endpoint: string, data?: unknown) => request<T>('PUT', endpoint, toJson(data)),
+  patch: <T>(endpoint: string, data?: unknown) => request<T>('PATCH', endpoint, toJson(data)),
+  delete: <T>(endpoint: string) => request<T>('DELETE', endpoint),
 
   /**
-   * Sube una imagen a POST /api/upload/image.
-   * - Formatos: solo PNG o JPG.
-   * - Tamaño: máximo 5 MB.
-   * - Envía FormData con el campo "file". La API devuelve la URL pública
-   *   (ej. https://...supabase.co/storage/v1/object/public/uploads/images/xxx.jpg).
-   * - Respuesta: { url: string }, { path: string } o string con la URL.
+   * Sube una imagen (PNG o JPG, máximo 5 MB) a POST /api/upload/image y devuelve su URL pública.
+   * El navegador arma el multipart/form-data con su boundary (no se fija Content-Type).
    */
   async uploadImage(file: File): Promise<string> {
-    const allowed = ['image/jpeg', 'image/jpg', 'image/png']
-    if (!allowed.includes(file.type)) {
+    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
       throw new Error('Solo se permiten imágenes PNG o JPG.')
     }
-    const maxBytes = 5 * 1024 * 1024 // 5 MB
-    if (file.size > maxBytes) {
-      throw new Error('La imagen no debe superar 5 MB.')
-    }
-    const formData = new FormData()
-    formData.append('file', file)
-    const url = buildUrl('/api/upload/image')
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData
-      // No Content-Type: el navegador establece multipart/form-data con boundary
-    })
-    if (!response.ok) {
-      const msg = await getErrorMessage(response)
-      throw new ApiError(msg, response.status)
-    }
-    const text = await response.text()
-    try {
-      const data = JSON.parse(text) as unknown
-      if (typeof data === 'string') return data
-      if (data && typeof (data as { url?: string }).url === 'string')
-        return (data as { url: string }).url
-      if (data && typeof (data as { path?: string }).path === 'string')
-        return (data as { path: string }).path
-    } catch {
-      /* no es JSON */
-    }
-    if (typeof text === 'string' && text.trim().startsWith('http')) return text.trim()
-    throw new Error('La respuesta del servidor no incluyó la URL de la imagen.')
+    if (file.size > 5 * 1024 * 1024) throw new Error('La imagen no debe superar 5 MB.')
+
+    const form = new FormData()
+    form.append('file', file)
+    const data = await request<{ url?: string }>('POST', '/api/upload/image', form, false)
+    if (!data?.url) throw new Error('La respuesta del servidor no incluyó la URL de la imagen.')
+    return data.url
   }
 }

@@ -1,9 +1,10 @@
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import StatsCard from '@/shared/components/StatsCard/StatsCard'
-import { AlertTriangle, CreditCard, DollarSign, Users } from 'lucide-react'
+import { AlertTriangle, ArrowLeftRight, Banknote, CreditCard, DollarSign, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CollectionChart, CreditStatusChart } from '../components'
 import { useDashboard } from '../hooks/useDashboard'
+import { startOfWeek } from '../../domain/services/period'
 import { cn } from '@/shared/utils/cn'
 import { LoadingScreen } from '@/shared/components/LoadingScreen/LoadingScreen'
 
@@ -24,9 +25,8 @@ export default function DashboardPage() {
         startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
         endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000)
         break
-      case 1: // Semana
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        startDate.setDate(startDate.getDate() - startDate.getDay() + 1)
+      case 1: // Semana: de lunes a hoy
+        startDate = startOfWeek(now)
         endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
         endDate.setDate(endDate.getDate() + 1)
         break
@@ -71,17 +71,17 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-foreground shrink-0">Panel de Control</h1>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]">
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              <span className="text-[10px] font-black text-success uppercase tracking-[0.2em]">En Línea</span>
+            <h1 className="text-5xl sm:text-6xl text-foreground shrink-0">Panel de control</h1>
+            <div className="flex items-center gap-1.5 rounded-full bg-mint px-3 py-1">
+              <span className="size-2 rounded-full bg-emerald-600 animate-pulse" />
+              <span className="text-xs font-medium text-black">En línea</span>
             </div>
           </div>
-          <p className="text-base text-muted-foreground/60 font-medium">Visualización en tiempo real del rendimiento de tu negocio.</p>
+          <p className="text-base text-muted-foreground">Así va tu negocio en tiempo real.</p>
         </div>
         
         <div
-          className="flex items-center glass-card p-1.5 rounded-2xl transition-all"
+          className="flex items-center rounded-xl bg-card p-1"
           role="group"
           aria-label="Filtro de período"
         >
@@ -95,10 +95,10 @@ export default function DashboardPage() {
               type="button"
               onClick={() => setSelectedPeriod(p.id as any)}
               className={cn(
-                "px-8 py-2.5 rounded-xl transition-all duration-500 text-[10px] font-black uppercase tracking-[0.25em]",
-                selectedPeriod === p.id 
-                  ? "bg-primary text-primary-foreground shadow-[0_10px_25px_-8px_rgba(var(--primary),0.6)] scale-105 border border-white/10" 
-                  : "text-muted-foreground/60 hover:text-foreground hover:bg-accent/40"
+                "rounded-lg px-5 py-2 text-sm font-medium transition-colors",
+                selectedPeriod === p.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
               aria-pressed={selectedPeriod === p.id}
             >
@@ -111,34 +111,28 @@ export default function DashboardPage() {
       {/* Strategic KPIs Section */}
       <section className="space-y-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em] whitespace-nowrap">Resumen Estratégico</h2>
-          <div className="h-px bg-border/40 w-full" />
+          <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">Resumen</h2>
+          <div className="h-px w-full bg-border" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatsCard
-            title="Recaudo Total"
+            title="Recaudo total"
             value={stats.totalCollected}
             isCurrency
             variant="success"
-            icon={<DollarSign className="w-5 h-5" />}
-            trend={{ value: 12, isPositive: true }}
-            className="hover:scale-[1.02] transition-transform duration-500"
+            icon={<DollarSign />}
           />
           <StatsCard
-            title="Total Créditos"
+            title="Créditos otorgados"
             value={stats.totalCredits}
             variant="info"
-            icon={<CreditCard className="w-5 h-5" />}
-            trend={{ value: 5, isPositive: true }}
-            className="hover:scale-[1.02] transition-transform duration-500"
+            icon={<CreditCard />}
           />
           <StatsCard
-            title="Total Clientes"
+            title="Clientes"
             value={stats.totalClients}
             variant="default"
-            icon={<Users className="w-5 h-5" />}
-            trend={{ value: 8, isPositive: true }}
-            className="hover:scale-[1.02] transition-transform duration-500"
+            icon={<Users />}
           />
         </div>
       </section>
@@ -147,33 +141,31 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-            <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em] whitespace-nowrap">Operaciones & Riesgo</h2>
-            <div className="h-px bg-border/40 w-full" />
+            <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">Operación y riesgo</h2>
+            <div className="h-px w-full bg-border" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <StatsCard
-              title="Créditos Activos"
+              title="Créditos activos"
               value={stats.activeCredits}
               variant="info"
-              icon={<CreditCard className="w-5 h-5" />}
+              icon={<CreditCard />}
               subtitle="Operaciones vigentes"
-              className="bg-card/20"
             />
             <StatsCard
-              title="Clientes en Mora"
+              title="Clientes en mora"
               value={stats.clientsInArrears}
               variant="error"
-              icon={<AlertTriangle className="w-5 h-5" />}
-              subtitle="Requiere atención inmediata"
-              className="bg-card/20 shadow-error/5"
+              icon={<AlertTriangle />}
+              subtitle="Requieren seguimiento"
             />
           </div>
         </section>
 
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-            <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em] whitespace-nowrap">Liquidez por Método</h2>
-            <div className="h-px bg-border/40 w-full" />
+            <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">Recaudo por método de pago</h2>
+            <div className="h-px w-full bg-border" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <StatsCard
@@ -181,16 +173,16 @@ export default function DashboardPage() {
               value={stats.cashCollection}
               isCurrency
               variant="default"
+              icon={<Banknote />}
               subtitle={`${stats.cashCount} transacciones`}
-              className="bg-card/20"
             />
             <StatsCard
-              title="Transacción"
+              title="Transferencias"
               value={stats.transactionCollection}
               isCurrency
               variant="default"
+              icon={<ArrowLeftRight />}
               subtitle={`${stats.transactionCount} transacciones`}
-              className="bg-card/20"
             />
           </div>
         </section>
@@ -199,17 +191,17 @@ export default function DashboardPage() {
       {/* Charts Section */}
       <section className="space-y-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em] whitespace-nowrap">Tendencias de Rendimiento</h2>
-          <div className="h-px bg-border/40 w-full" />
+          <h2 className="text-lg font-semibold text-foreground whitespace-nowrap">Tendencias</h2>
+          <div className="h-px w-full bg-border" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div className="glass-card p-10 group hover:bg-card/60 transition-all duration-700 rounded-[32px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="rounded-card bg-card p-8">
             <CollectionChart
               data={stats.weeklyCollectionData}
               period={selectedPeriod === 0 ? 'day' : selectedPeriod === 1 ? 'week' : 'month'}
             />
           </div>
-          <div className="glass-card p-10 group hover:bg-card/60 transition-all duration-700 rounded-[32px]">
+          <div className="rounded-card bg-card p-8">
             <CreditStatusChart
               upToDatePercentage={stats.upToDatePercentage}
               overduePercentage={stats.overduePercentage}

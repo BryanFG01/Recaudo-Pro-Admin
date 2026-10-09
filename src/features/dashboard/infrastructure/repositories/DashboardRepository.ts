@@ -1,15 +1,16 @@
 import { apiClient } from '@/shared/config/api';
 import { DailyCollectionData, DashboardStats, DashboardStatsRequest } from '../../domain/models';
 import { IDashboardRepository } from '../../domain/port';
+import { isInPeriod } from '../../domain/services/period';
 
 type CollectionRow = { amount: number; payment_date: string; payment_method?: string | null }
 type CreditRow = { client_id: string; total_balance: number; overdue_installments: number }
 
 /**
  * Calcula las estadísticas del dashboard a partir de:
- * - GET /api/collections?businessId=&startDate=&endDate=
- * - GET /api/credits?businessId=
- * - GET /api/clients?business_code= o business_id= (solo business; Total de Clientes)
+ * - GET /api/collections (el negocio sale de la sesión; el período se filtra aquí)
+ * - GET /api/credits/summary (saldo y cuotas vencidas por crédito)
+ * - GET /api/clients?business_code= (total de clientes)
  */
 export class DashboardRepository implements IDashboardRepository {
   async getDashboardStats(request: DashboardStatsRequest): Promise<DashboardStats> {
@@ -22,23 +23,19 @@ export class DashboardRepository implements IDashboardRepository {
     const endDate = request.endDate
     const now = new Date()
 
-    // 1. Recaudos del período
+    // 1. Recaudos del período (la API devuelve todos los del negocio; se filtran por fecha de pago)
     let collections: CollectionRow[] = []
     try {
-      const params = new URLSearchParams()
-      params.set('business_id', businessId)
-      if (startDate) params.set('startDate', startDate.toISOString())
-      if (endDate) params.set('endDate', endDate.toISOString())
-      const data = await apiClient.get<CollectionRow[]>(`/api/collections?${params.toString()}`)
-      collections = Array.isArray(data) ? data : []
+      const data = await apiClient.get<CollectionRow[]>('/api/collections')
+      collections = (Array.isArray(data) ? data : []).filter((c) => isInPeriod(c.payment_date, startDate, endDate))
     } catch {
       collections = []
     }
 
-    // 2. Créditos del negocio
+    // 2. Créditos con su resumen (total_balance y overdue_installments solo vienen en /summary)
     let credits: CreditRow[] = []
     try {
-      const data = await apiClient.get<CreditRow[]>(`/api/credits?business_id=${encodeURIComponent(businessId)}`)
+      const data = await apiClient.get<CreditRow[]>('/api/credits/summary')
       credits = Array.isArray(data) ? data : []
     } catch {
       credits = []

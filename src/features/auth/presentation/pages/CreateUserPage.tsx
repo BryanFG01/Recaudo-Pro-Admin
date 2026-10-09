@@ -15,7 +15,7 @@ export default function CreateUserPage() {
     <div className="h-full flex flex-col bg-background relative overflow-hidden">
       {/* Decorative Orbs */}
       <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
+      
       
       <CreateUserModal 
         isOpen={isOpen} 

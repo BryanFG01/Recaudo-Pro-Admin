@@ -191,7 +191,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                 </div>
                 <div>
                   <DialogTitle className="text-2xl font-bold text-foreground tracking-tight uppercase">Alta de Colaborador</DialogTitle>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.15em] mt-1 opacity-70">Configuración de credenciales y perfil inicial</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-1 opacity-70">Configuración de credenciales y perfil inicial</p>
                 </div>
               </div>
 
@@ -199,13 +199,13 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
 
             {/* Progress Bar Container */}
             <div className="mt-6 space-y-2">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em]">
+              <div className="flex items-center justify-between text-xs font-bold">
                 <span className="text-muted-foreground/60">Paso {currentStep} de 4</span>
-                <span className="text-primary font-mono">{Math.round(progressPercentage)}% COMPLETADO</span>
+                <span className="text-primary tabular-nums">{Math.round(progressPercentage)}% COMPLETADO</span>
               </div>
               <div className="h-1.5 w-full bg-muted/30 rounded-[4px] overflow-hidden border border-border/20">
                 <div
-                  className="h-full bg-primary shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-all duration-700 ease-in-out rounded-[4px]"
+                  className="h-full bg-primary transition-all duration-700 ease-in-out rounded-[4px]"
                   style={{ width: `${progressPercentage}%` }}
                 />
               </div>
@@ -219,12 +219,12 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-600 ease-out">
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-foreground uppercase tracking-tight">Acceso Corporativo</h3>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest opacity-60">Seguridad y permisos de entrada</p>
+                    <p className="text-xs font-semibold text-muted-foreground opacity-60">Seguridad y permisos de entrada</p>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                         <Mail className="size-3 text-primary" /> Correo Electrónico Laboral
                       </Label>
                       <Input
@@ -238,7 +238,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                         <Lock className="size-3 text-primary" /> Contraseña Temporal
                       </Label>
                       <Input
@@ -252,7 +252,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                         <Briefcase className="size-3 text-primary" /> Rol del Usuario
                       </Label>
                       <Select value={formData.role} onValueChange={(v) => handleSelectChange('role', v)}>
@@ -274,24 +274,24 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-600 ease-out">
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-foreground uppercase tracking-tight">Datos de Identidad</h3>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest opacity-60">Información legal del colaborador</p>
+                    <p className="text-xs font-medium text-muted-foreground opacity-60">Información legal del colaborador</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Primer Nombre</Label>
+                      <Label className="text-xs font-bold text-muted-foreground">Primer Nombre</Label>
                       <Input name="first_name" value={formData.first_name} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Segundo Nombre</Label>
+                      <Label className="text-xs font-bold text-muted-foreground">Segundo Nombre</Label>
                       <Input name="second_name" value={formData.second_name} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Primer Apellido</Label>
+                      <Label className="text-xs font-bold text-muted-foreground">Primer Apellido</Label>
                       <Input name="first_last_name" value={formData.first_last_name} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Segundo Apellido</Label>
+                      <Label className="text-xs font-bold text-muted-foreground">Segundo Apellido</Label>
                       <Input name="second_last_name" value={formData.second_last_name} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
                     </div>
                   </div>
@@ -302,11 +302,11 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                         <User className="size-5" />
                        </div>
                        <div>
-                         <p className="text-[9px] font-bold uppercase text-muted-foreground tracking-widest mb-0.5">ID interno autogenerado</p>
-                         <p className="text-sm font-bold text-foreground tracking-[0.1em] font-mono font-medium">{formData.name}</p>
+                         <p className="text-xs font-bold text-muted-foreground mb-0.5">ID interno autogenerado</p>
+                         <p className="text-sm font-semibold text-foreground tabular-nums">{formData.name}</p>
                        </div>
                     </div>
-                    <div className="px-3 py-1 rounded-[4px] bg-primary/20 text-primary text-[8px] font-bold uppercase shadow-sm">
+                    <div className="px-3 py-1 rounded-[4px] bg-primary/20 text-primary text-xs font-bold shadow-sm">
                       SISTEMA
                     </div>
                   </div>
@@ -317,29 +317,29 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-600 ease-out">
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-foreground uppercase tracking-tight">Contacto y Residencia</h3>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest opacity-60">Datos de localización y comunicación</p>
+                    <p className="text-xs font-medium text-muted-foreground opacity-60">Datos de localización y comunicación</p>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                          <Smartphone className="size-3 text-primary" /> Teléfono Móvil
                       </Label>
                       <Input name="phone" placeholder="300 000 0000" value={formData.phone} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                          <MapPinned className="size-3 text-primary" /> Dirección de Residencia
                       </Label>
                       <Input name="address" value={formData.address} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ciudad</Label>
+                        <Label className="text-xs font-bold text-muted-foreground">Ciudad</Label>
                         <Input name="residence_city" value={formData.residence_city} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                        <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                            <Globe className="size-3 text-primary" /> País
                         </Label>
                         <Input name="residence_country" value={formData.residence_country} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
@@ -353,18 +353,18 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-600 ease-out">
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-foreground uppercase tracking-tight">Configuración ERP</h3>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest opacity-60">Parámetros corporativos finales</p>
+                    <p className="text-xs font-medium text-muted-foreground opacity-60">Parámetros corporativos finales</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                          <Building2 className="size-3 text-primary" /> Código Negocio
                       </Label>
                       <Input name="business_code" placeholder="ERP01" value={formData.business_code} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                          <Percent className="size-3 text-primary" /> % Comisión
                       </Label>
                       <Input name="commission_percentage" type="number" step="0.01" value={formData.commission_percentage} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
@@ -373,7 +373,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
 
                   <div className="grid grid-cols-5 gap-4">
                     <div className="col-span-2 space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tipo ID</Label>
+                      <Label className="text-xs font-bold text-muted-foreground">Tipo ID</Label>
                       <Select value={formData.document_type} onValueChange={(v) => handleSelectChange('document_type', v)}>
                         <SelectTrigger className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus:ring-primary/20">
                           <SelectValue placeholder="TIPO" />
@@ -386,7 +386,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                       </Select>
                     </div>
                     <div className="col-span-3 space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <Label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
                          <CreditCard className="size-3 text-primary" /> Número Identificación
                       </Label>
                       <Input name="document_number" value={formData.document_number} onChange={handleChange} className="h-12 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20" />
@@ -409,15 +409,15 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                         }} />
                         {isUploadingImage ? <Loader2 className="size-8 animate-spin text-primary" /> : <Upload className="size-8 text-muted-foreground group-hover:text-primary transition-colors" />}
                         <div className="flex flex-col items-center space-y-1">
-                            <p className="text-[10px] font-bold uppercase text-muted-foreground group-hover:text-primary transition-colors tracking-widest">Adjuntar Documento ID</p>
-                            <p className="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-tighter">Formatos sugeridos: JPG, PNG, PDF</p>
+                            <p className="text-xs font-bold text-muted-foreground group-hover:text-primary transition-colors">Adjuntar Documento ID</p>
+                            <p className="text-xs font-bold text-muted-foreground/40">Formatos sugeridos: JPG, PNG, PDF</p>
                         </div>
                         {formData.document_file_url && (
                             <div className="absolute inset-2 bg-card/95 backdrop-blur-md rounded-[4px] flex items-center justify-center gap-3 border border-primary/20 shadow-2xl animate-in zoom-in-95">
                                  <div className="size-10 rounded-[4px] bg-primary/10 flex items-center justify-center">
                                     <CheckCircle2 className="size-6 text-primary" />
                                  </div>
-                                 <span className="text-[10px] font-bold uppercase text-primary tracking-widest">Documento Verificado</span>
+                                 <span className="text-xs font-bold text-primary">Documento Verificado</span>
                                  <button onClick={(e) => { e.stopPropagation(); setFormData(p => ({ ...p, document_file_url: '' })) }} className="ml-4 p-2 hover:bg-destructive/10 text-destructive rounded-[4px] transition-all">
                                     <X className="size-4" />
                                  </button>
@@ -432,7 +432,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                   <div className="p-2 rounded-[4px] bg-destructive/20">
                     <X className="size-4 text-destructive" />
                   </div>
-                  <p className="text-[10px] font-bold uppercase text-destructive tracking-widest flex-1">{error}</p>
+                  <p className="text-xs font-bold text-destructive flex-1">{error}</p>
                 </div>
               )}
 
@@ -442,8 +442,8 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                     <CheckCircle2 className="size-5 text-primary" />
                   </div>
                   <div className="flex flex-col">
-                    <p className="text-[10px] font-bold uppercase text-primary tracking-widest">Registro Exitoso</p>
-                    <p className="text-[9px] font-medium text-primary/70 uppercase">Colaborador activado en el sistema</p>
+                    <p className="text-xs font-bold text-primary">Registro Exitoso</p>
+                    <p className="text-xs font-medium text-primary/70">Colaborador activado en el sistema</p>
                   </div>
                 </div>
               )}
@@ -455,7 +455,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
             <Button
                 variant="ghost"
                 onClick={currentStep === 1 ? onClose : handleBack}
-                className="h-11 px-8 text-muted-foreground hover:text-foreground hover:bg-muted font-bold rounded-[4px] text-[10px] uppercase tracking-widest transition-all"
+                className="h-11 px-8 text-muted-foreground hover:text-foreground hover:bg-muted font-bold rounded-[4px] text-xs transition-all"
             >
               {currentStep === 1 ? 'Cancelar' : 'Paso Anterior'}
             </Button>
@@ -464,7 +464,7 @@ export function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUserModalP
                 <Button
                     onClick={handleSubmit}
                     disabled={isLoading || success}
-                    className="h-11 px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-[4px] font-bold transition-all flex items-center gap-3 text-[10px] uppercase tracking-[0.15em]"
+                    className="h-11 px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-[4px] font-bold transition-all flex items-center gap-3 text-xs"
                 >
                     {isLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

@@ -56,3 +56,6 @@ Thumbs.db
 
 # Supabase
 .supabase
+
+# Next.js (caché y build: se generan solos)
+.next/

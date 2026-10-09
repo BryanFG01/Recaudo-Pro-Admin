@@ -9,6 +9,16 @@ export default {
     './index.html',
   ],
   theme: {
+    // DESIGN.MD: sistema plano, sin sombras. Se neutraliza toda la escala shadow-*
+    // (se usa '0 0 #0000' y no 'none' para no romper los ring-*).
+    boxShadow: {
+      sm: '0 0 #0000', DEFAULT: '0 0 #0000', md: '0 0 #0000', lg: '0 0 #0000',
+      xl: '0 0 #0000', '2xl': '0 0 #0000', inner: '0 0 #0000', none: '0 0 #0000',
+    },
+    dropShadow: {
+      sm: '0 0 #0000', DEFAULT: '0 0 #0000', md: '0 0 #0000', lg: '0 0 #0000',
+      xl: '0 0 #0000', '2xl': '0 0 #0000', none: '0 0 #0000',
+    },
     container: {
       center: true,
       padding: '2rem',
@@ -18,8 +28,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Outfit', 'sans-serif'],
-        mono: ['Geist Mono', 'monospace'],
+        sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Anton', 'ui-sans-serif', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -29,18 +40,11 @@ export default {
         foreground: 'hsl(var(--foreground))',
         primary: {
           DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e'
+          foreground: 'hsl(var(--primary-foreground))'
         },
+        // Acentos de DESIGN.MD (solo para elementos pequeños)
+        mint: '#d1ffca',
+        voltage: '#fff100',
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))'
@@ -82,7 +86,9 @@ export default {
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        sm: 'calc(var(--radius) - 4px)',
+        card: '24px',
+        tag: '64px'
       },
       keyframes: {
         'accordion-down': {

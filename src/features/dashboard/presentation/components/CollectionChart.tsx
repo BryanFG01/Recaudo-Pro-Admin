@@ -14,10 +14,10 @@ export default function CollectionChart({ data, period }: CollectionChartProps) 
           {period === 'day'
             ? 'Recaudo de Hoy'
             : period === 'week'
-            ? 'Recaudo Semanal'
+            ? 'Recaudo de la semana'
             : 'Recaudo del Mes'}
         </h3>
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Movimiento Caja</span>
+        <span className="text-sm text-muted-foreground">Movimiento de caja</span>
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -46,7 +46,7 @@ export default function CollectionChart({ data, period }: CollectionChartProps) 
               color: 'hsl(var(--popover-foreground))'
             }}
             itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: '12px', fontWeight: '700' }}
-            labelStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase' }}
+            labelStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px', marginBottom: '4px' }}
             formatter={(value: number) =>
               new Intl.NumberFormat('es-CO', {
                 style: 'currency',

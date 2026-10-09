@@ -24,24 +24,8 @@ export class AuthService {
     return this.repository.signInWithEmail(request)
   }
 
-  async getCurrentUser(): Promise<User | null> {
-    return this.repository.getCurrentUser()
-  }
-
   async signOut(): Promise<void> {
     return this.repository.signOut()
-  }
-
-  async resetPassword(email: string): Promise<void> {
-    if (!email) {
-      throw new Error('Email es requerido')
-    }
-
-    if (!this.isValidEmail(email)) {
-      throw new Error('Email inválido')
-    }
-
-    return this.repository.resetPassword(email)
   }
 
   async createUser(request: CreateUserRequest, businessId: string): Promise<User> {

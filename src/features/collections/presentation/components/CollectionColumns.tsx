@@ -32,8 +32,8 @@ export const createCollectionColumns = (): Column<CollectionWithClient>[] => [
         <span
           className={`px-2 py-1 rounded text-xs font-medium ${
             method.toLowerCase() === 'efectivo'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-blue-100 text-blue-800'
+              ? 'bg-mint text-black'
+              : 'bg-secondary text-foreground'
           }`}
         >
           {method}

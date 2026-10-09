@@ -1,74 +1,85 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import {
+  backendUrl,
+  clearSessionCookies,
+  clientForwardedFor,
+  readSession,
+  refreshSession,
+  setSessionCookies,
+  type SessionTokens
+} from '@/shared/server/session'
 
-export async function handleProxy(req: NextRequest) {
-  // Capture the URL path (WITHOUT stripping /api, as the backend expects it)
-  const path = req.nextUrl.pathname;
-  
-  // Define default backend URL
-  const backendUrl = process.env.VITE_BACK_URL || 'https://api.recaudopro.cloud/';
-  
-  const targetUrl = `${backendUrl.replace(/\/$/, '')}${path}${req.nextUrl.search}`;
+const TIMEOUT_MS = 15_000
 
+/** Cabeceras del navegador que sí se reenvían al backend (el resto, incluidas las cookies, no). */
+const FORWARDED_HEADERS = ['accept', 'accept-language', 'content-type']
+
+const hasBody = (method: string) => !['GET', 'HEAD', 'DELETE', 'OPTIONS'].includes(method)
+
+function forward(req: NextRequest, body: ArrayBuffer | undefined, accessToken: string | undefined) {
+  const headers = new Headers()
+  FORWARDED_HEADERS.forEach((name) => {
+    const value = req.headers.get(name)
+    if (value) headers.set(name, value)
+  })
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+  const forwardedFor = clientForwardedFor(req)
+  if (forwardedFor) headers.set('X-Forwarded-For', forwardedFor)
+
+  return fetch(backendUrl(`${req.nextUrl.pathname}${req.nextUrl.search}`), {
+    method: req.method,
+    headers,
+    body,
+    cache: 'no-store',
+    signal: AbortSignal.timeout(TIMEOUT_MS)
+  })
+}
+
+function toNextResponse(response: Response): NextResponse {
+  const headers = new Headers(response.headers)
+  headers.delete('content-encoding')
+  headers.delete('content-length')
+  const body = response.status === 204 || response.status === 304 ? null : response.body
+  return new NextResponse(body, { status: response.status, statusText: response.statusText, headers })
+}
+
+/**
+ * Proxy del navegador al backend: adjunta el access token de la cookie httpOnly y, si venció
+ * (o el backend responde 401), renueva la sesión con el refresh token y reintenta una vez.
+ * El cuerpo se reenvía como bytes, así funciona igual con JSON y con multipart (imágenes).
+ */
+export async function handleProxy(req: NextRequest): Promise<NextResponse> {
   try {
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.delete('host');
-    requestHeaders.delete('referer');
-    requestHeaders.delete('connection');
-    requestHeaders.delete('keep-alive');
-    requestHeaders.delete('proxy-authenticate');
-    requestHeaders.delete('proxy-authorization');
-    requestHeaders.delete('te');
-    requestHeaders.delete('trailer');
-    requestHeaders.delete('transfer-encoding');
-    requestHeaders.delete('upgrade');
+    const body = hasBody(req.method) ? await req.arrayBuffer() : undefined
+    const session = readSession(req)
+    const forwardedFor = clientForwardedFor(req)
 
-    let body: any = undefined;
-    if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'DELETE') {
-      try {
-        body = await req.text();
-      } catch (e) {
-        body = undefined;
-      }
+    let renewed: SessionTokens | null = null
+    let accessToken = session.access
+    if (!accessToken && session.refresh) {
+      renewed = await refreshSession(session.refresh, forwardedFor)
+      accessToken = renewed?.token
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-
-    try {
-      const response = await fetch(targetUrl, {
-        method: req.method,
-        headers: requestHeaders,
-        body,
-        cache: 'no-store',
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      const responseHeaders = new Headers(response.headers);
-      responseHeaders.delete('content-encoding');
-      responseHeaders.delete('content-length'); 
-
-      return new NextResponse(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: responseHeaders,
-      });
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      if (fetchError.name === 'AbortError') {
-        throw new Error('Backend request timed out after 15s');
-      }
-      throw fetchError;
+    let response = await forward(req, body, accessToken)
+    if (response.status === 401 && session.refresh && !renewed) {
+      renewed = await refreshSession(session.refresh, forwardedFor)
+      if (renewed) response = await forward(req, body, renewed.token)
     }
+
+    const out = toNextResponse(response)
+    if (renewed) setSessionCookies(out, renewed)
+    else if (response.status === 401 && session.refresh) clearSessionCookies(out) // la sesión terminó
+    return out
   } catch (error) {
-    console.error(`❌ API Proxy Error [${path}]:`, error);
+    const timedOut = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
+    console.error(`API proxy ${req.nextUrl.pathname}:`, error instanceof Error ? error.message : error)
     return NextResponse.json(
-      { 
-        error: 'Error al conectar con el servidor backend.',
-        details: error instanceof Error ? error.message : String(error),
-        path 
-      }, 
-      { status: 504 } // Gateway Timeout or Service Unavailable
-    );
+      {
+        message: timedOut ? 'El servidor tardó demasiado en responder' : 'No se pudo conectar con el servidor',
+        statusCode: 504
+      },
+      { status: 504 }
+    )
   }
 }

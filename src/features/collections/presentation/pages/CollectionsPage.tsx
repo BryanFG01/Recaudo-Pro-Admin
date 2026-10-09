@@ -153,9 +153,9 @@ export default function CollectionsPage() {
     { key: 'payment_method', header: 'Método', className: 'text-center', render: (collection) => {
         const method = collection.payment_method?.toLowerCase()
         if (!method) return '-'
-        return <span className={cn('px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-2 transition-all duration-300', method === 'efectivo' ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]' : 'bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_-5px_theme(colors.primary)]')}><span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', method === 'efectivo' ? 'bg-success' : 'bg-primary')} />{method}</span>
+        return <span className={cn('px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-2 transition-all duration-300', method === 'efectivo' ? 'bg-success/10 text-success border border-success/20' : 'bg-primary/10 text-primary border border-primary/20')}><span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', method === 'efectivo' ? 'bg-success' : 'bg-primary')} />{method}</span>
     }},
-    { key: 'transaction_reference', header: 'Referencia', className: 'font-mono text-[10px] text-muted-foreground/40', render: (collection) => collection.transaction_reference || '-' },
+    { key: 'transaction_reference', header: 'Referencia', className: 'font-mono text-xs text-muted-foreground/40', render: (collection) => collection.transaction_reference || '-' },
     { key: 'id', header: '', className: 'w-10 text-center', render: (collection) => <button type="button" onClick={(e) => { e.stopPropagation(); setEditingCollection(collection); }} className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors" title="Editar recaudo"><Pencil className="w-3.5 h-3.5" /></button> }
   ]
 
@@ -167,11 +167,11 @@ export default function CollectionsPage() {
     <div className="flex flex-col h-full space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white min-w-0">Registro de Recaudos</h1>
+          <h1 className="text-3xl sm:text-4xl text-foreground min-w-0">Registro de Recaudos</h1>
           <p className="text-sm text-muted-foreground/60">Flujo histórico de entradas y abonos a capital por cliente.</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          <Button onClick={handleExport} variant="outline" disabled={filteredCollections.length === 0} className="min-h-[44px] px-6 border-white/5 bg-white/[0.03] text-white hover:bg-white/[0.08] hover:border-white/10 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"><Download className="w-4 h-4 mr-2" aria-hidden="true" />Exportar XLS</Button>
+          <Button onClick={handleExport} variant="outline" disabled={filteredCollections.length === 0} className="min-h-[44px] px-6"><Download className="w-4 h-4 mr-2" aria-hidden="true" />Exportar XLS</Button>
         </div>
       </div>
       <div className="flex-shrink-0">

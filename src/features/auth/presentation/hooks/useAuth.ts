@@ -1,115 +1,50 @@
 import { useCallback, useMemo } from 'react'
-import {
-  buildGetCurrentUserUseCase,
-  buildResetPasswordUseCase,
-  buildSignInUseCase,
-  buildSignOutUseCase
-} from '../../application/useCases'
+import { buildSignInUseCase, buildSignOutUseCase } from '../../application/useCases'
 import { CreateUserRequest, SignInRequest } from '../../domain/models'
 import { AuthService } from '../../domain/services/AuthService'
 import { AuthRepository } from '../../infrastructure/repositories/AuthRepository'
 import { useAuthStore } from '../store/authStore'
 
+const errorText = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback)
+
 export const useAuth = () => {
-  const { user, setUser, setToken, signOut: signOutStore } = useAuthStore()
+  const { user, setUser, signOut: clearStore } = useAuthStore()
 
-  // Instanciar Repository y Service
-  const authService = useMemo(() => {
-    const repository = new AuthRepository()
-    return new AuthService(repository)
-  }, [])
-
-  // Construir Use Cases
+  const repository = useMemo(() => new AuthRepository(), [])
+  const authService = useMemo(() => new AuthService(repository), [repository])
   const signInUseCase = useMemo(() => buildSignInUseCase(authService), [authService])
-
-  const getCurrentUserUseCase = useMemo(
-    () => buildGetCurrentUserUseCase(authService),
-    [authService]
-  )
-
   const signOutUseCase = useMemo(() => buildSignOutUseCase(authService), [authService])
 
-  const resetPasswordUseCase = useMemo(() => buildResetPasswordUseCase(authService), [authService])
-
-  // Handlers (useCallback para que no dispare efectos en páginas que dependen de esta función)
+  // useCallback para que no dispare efectos en las páginas que dependen de esta función
   const getUsersByBusinessId = useCallback(
-    async (businessId: string) => {
-      return await authService.getUsersByBusinessId(businessId)
-    },
+    (businessId: string) => authService.getUsersByBusinessId(businessId),
     [authService]
   )
 
-  const getBusinessByCode = async (code: string) => {
-    try {
-      const repository = new AuthRepository()
-      return await repository.getBusinessByCode(code)
-    } catch (error) {
-      throw error
-    }
-  }
+  const getBusinessByCode = (code: string) => repository.getBusinessByCode(code)
+
   const signIn = async (request: SignInRequest) => {
     try {
-      const response = await signInUseCase(request)
-      setUser(response.user)
-      setToken(response.token)
-      // No sobrescribir businessId: debe mantenerse el del Código de negocio ingresado
-      // en el paso 1. response.user.business_id puede ser de otro negocio (ej. NEG003).
+      const { user: signedIn } = await signInUseCase(request)
+      setUser(signedIn)
       return { success: true, error: null }
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Error al iniciar sesión'
-      }
+      return { success: false, error: errorText(error, 'Error al iniciar sesión') }
     }
   }
 
-  const signOut = async () => {
-    try {
-      await signOutUseCase()
-      signOutStore()
-      return { success: true, error: null }
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Error al cerrar sesión'
-      }
-    }
-  }
-
-  const loadCurrentUser = async () => {
-    try {
-      const currentUser = await getCurrentUserUseCase()
-      if (currentUser) {
-        setUser(currentUser)
-      }
-      return currentUser
-    } catch (error) {
-      return null
-    }
-  }
-
-  const resetPassword = async (email: string) => {
-    try {
-      await resetPasswordUseCase(email)
-      return { success: true, error: null }
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Error al resetear contraseña'
-      }
-    }
-  }
+  /** Cierra la sesión en el backend y limpia los datos locales. */
+  const signOut = useCallback(async () => {
+    await signOutUseCase()
+    clearStore()
+  }, [signOutUseCase, clearStore])
 
   const createUser = async (request: CreateUserRequest, businessId: string) => {
     try {
-      const user = await authService.createUser(request, businessId)
-      return { success: true, error: null, user }
+      const created = await authService.createUser(request, businessId)
+      return { success: true, error: null, user: created }
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Error al crear usuario',
-        user: null
-      }
+      return { success: false, error: errorText(error, 'Error al crear usuario'), user: null }
     }
   }
 
@@ -118,10 +53,7 @@ export const useAuth = () => {
       await authService.deleteUser(id)
       return { success: true, error: null }
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Error al eliminar usuario'
-      }
+      return { success: false, error: errorText(error, 'Error al eliminar usuario') }
     }
   }
 
@@ -130,11 +62,7 @@ export const useAuth = () => {
       const updated = await authService.updateUserActive(identifier, isActive)
       return { success: true, error: null, user: updated }
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Error al actualizar estado',
-        user: null
-      }
+      return { success: false, error: errorText(error, 'Error al actualizar estado'), user: null }
     }
   }
 
@@ -142,8 +70,6 @@ export const useAuth = () => {
     user,
     signIn,
     signOut,
-    loadCurrentUser,
-    resetPassword,
     getUsersByBusinessId,
     getBusinessByCode,
     createUser,

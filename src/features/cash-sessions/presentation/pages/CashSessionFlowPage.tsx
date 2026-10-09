@@ -40,6 +40,7 @@ import { useCollections } from '../../../collections/presentation/hooks/useColle
 import { DailySummaryItem } from '../../domain/models'
 import { useCashSessions } from '../hooks/useCashSessions'
 import { DynamicTable, Column } from '@/shared/components/DynamicTable'
+import StatsCard from '@/shared/components/StatsCard/StatsCard'
 
 // --- Types for Unified Movements ---
 type MovementType = 'Ingreso' | 'Egreso' | 'Ajuste'
@@ -57,8 +58,7 @@ interface UnifiedMovement {
   reference: string
 }
 
-const containerStyle = 'bg-card/50 border-border/50 backdrop-blur-xl shadow-2xl rounded-lg'
-const labelStyle = 'text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 mb-2.5 block'
+const containerStyle = 'bg-card rounded-card'
 
 export default function CashSessionFlowPage() {
   const { user: currentUser } = useAuthStore()
@@ -179,8 +179,8 @@ export default function CashSessionFlowPage() {
       header: 'Fecha/Hora',
       render: (m) => (
         <div className="space-y-0.5">
-          <p className="text-xs font-black text-foreground">{formatDate(m.date, 'dd MMM yyyy')}</p>
-          <p className="text-[10px] font-bold text-muted-foreground/50 tabular-nums uppercase">{formatDate(m.date, 'HH:mm')}</p>
+          <p className="text-xs font-bold text-foreground">{formatDate(m.date, 'dd MMM yyyy')}</p>
+          <p className="text-xs font-bold text-muted-foreground/50 tabular-nums">{formatDate(m.date, 'HH:mm')}</p>
         </div>
       )
     },
@@ -189,10 +189,10 @@ export default function CashSessionFlowPage() {
       header: 'Usuario',
       render: (m) => (
         <div className="flex items-center gap-3">
-          <div className="size-8 rounded-lg bg-muted/40 flex items-center justify-center text-[10px] font-black uppercase">
+          <div className="size-8 rounded-lg bg-muted/40 flex items-center justify-center text-xs font-semibold">
             {m.userName.slice(0, 2)}
           </div>
-          <span className="text-xs font-black text-foreground/80">{m.userName}</span>
+          <span className="text-xs font-bold text-foreground/80">{m.userName}</span>
         </div>
       )
     },
@@ -201,7 +201,7 @@ export default function CashSessionFlowPage() {
       header: 'Tipo',
       render: (m) => (
         <Badge variant="outline" className={cn(
-          "rounded-lg border px-2 py-0.5 text-[10px] font-black uppercase tracking-tighter",
+          "rounded-lg border px-2 py-0.5 text-xs font-semibold",
           m.type === 'Ingreso' ? 'bg-success/10 border-success/30 text-success' :
           m.type === 'Egreso' ? 'bg-error/10 border-error/30 text-error' :
           'bg-warning/10 border-warning/30 text-warning'
@@ -215,7 +215,7 @@ export default function CashSessionFlowPage() {
       key: 'concept',
       header: 'Concepto',
       className: 'max-w-xs',
-      render: (m) => <p className="text-xs font-black text-foreground/70 truncate">{m.concept}</p>
+      render: (m) => <p className="text-xs font-bold text-foreground/70 truncate">{m.concept}</p>
     },
     {
       key: 'amount',
@@ -223,7 +223,7 @@ export default function CashSessionFlowPage() {
       isNumeric: true,
       render: (m) => (
         <span className={cn(
-          "text-xs font-black tabular-nums tracking-tighter",
+          "text-xs font-bold tabular-nums",
           m.type === 'Ingreso' ? 'text-success' : m.type === 'Egreso' ? 'text-error' : 'text-foreground'
         )}>
           {m.type === 'Egreso' ? '-' : '+'}{formatCurrency(m.amount).replace('COP', '')}
@@ -234,7 +234,7 @@ export default function CashSessionFlowPage() {
       key: 'reference',
       header: 'Referencia',
       className: 'text-center',
-      render: (m) => <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums uppercase border border-border/30 px-2 py-1 rounded-md">{m.reference}</span>
+      render: (m) => <span className="text-xs font-semibold text-muted-foreground/40 tabular-nums border border-border/30 px-2 py-1 rounded-md">{m.reference}</span>
     },
     {
       key: 'actions',
@@ -258,15 +258,15 @@ export default function CashSessionFlowPage() {
       {/* ── HEADER ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-4xl font-black text-foreground tracking-tighter uppercase">Seguimiento de Saldo</h1>
-          <p className="text-muted-foreground/60 font-medium uppercase text-[11px] tracking-widest">Monitorea los movimientos y saldos de los cobradores en tiempo real.</p>
+          <h1 className="text-5xl text-foreground">Seguimiento de saldo</h1>
+          <p className="text-base text-muted-foreground">Movimientos y saldos de tus cobradores en tiempo real.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-11 px-5 rounded-lg border-border/50 bg-background/50 backdrop-blur-sm">
+          <Button variant="outline" className="h-11 px-5">
             <RefreshCw className="size-4 mr-2" />
             Actualizar
           </Button>
-          <Button className="h-11 px-6 rounded-lg font-bold bg-primary text-white shadow-lg shadow-primary/25">
+          <Button className="h-11 px-6">
             <Download className="size-4 mr-2" />
             Exportar
           </Button>
@@ -275,42 +275,42 @@ export default function CashSessionFlowPage() {
 
       {/* ── GLOBAL KPI ROW ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          label="Saldo Total"
+        <StatsCard
+          title="Saldo total"
           value={formatCurrency(globalStats.totalSaldo)}
-          icon={<Wallet className="size-5" />}
-          accent="info"
-          subtitle="+8.2% vs. semana anterior"
+          icon={<Wallet />}
+          variant="premium-dark"
+          subtitle="Suma de la caja de todos los cobradores"
         />
-        <MetricCard
-          label="Total Ingresos"
+        <StatsCard
+          title="Ingresos"
           value={formatCurrency(globalStats.totalIngresos)}
-          icon={<ArrowUpRight className="size-5" />}
-          accent="success"
+          icon={<ArrowUpRight />}
+          variant="success"
           subtitle={`${unifiedMovements.filter(m => m.type === 'Ingreso').length} movimientos`}
         />
-        <MetricCard
-          label="Total Egresos"
+        <StatsCard
+          title="Egresos"
           value={formatCurrency(globalStats.totalEgresos)}
-          icon={<ArrowDownRight className="size-5" />}
-          accent="error"
+          icon={<ArrowDownRight />}
+          variant="error"
           subtitle={`${unifiedMovements.filter(m => m.type === 'Egreso').length} movimientos`}
         />
-        <MetricCard
-          label="Balance Neto"
+        <StatsCard
+          title="Balance neto"
           value={formatCurrency(globalStats.balanceNeto)}
-          icon={<TrendingUp className="size-5" />}
-          accent="success"
-          subtitle="Diferencia ingresos - egresos"
+          icon={<TrendingUp />}
+          variant="success"
+          subtitle="Ingresos menos egresos"
         />
       </div>
 
       {/* ── SALDOS POR COBRADOR ── */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-black tracking-tight flex items-center gap-2 uppercase">
-            <UserIcon className="size-5 text-primary" />
-            Saldos por Cobrador
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <UserIcon className="size-5" />
+            Saldos por cobrador
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -321,16 +321,16 @@ export default function CashSessionFlowPage() {
             const hasData = !!summary
 
             return (
-              <Card key={u.id} className={cn('border-none transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl overflow-hidden group', containerStyle)}>
+              <Card key={u.id} className="group overflow-hidden transition-colors hover:bg-card/80">
                 <CardContent className="p-6 space-y-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-lg shadow-inner">
+                      <div className="flex size-11 items-center justify-center rounded-full bg-mint text-sm font-semibold text-black">
                         {initials}
                       </div>
                       <div className="space-y-0.5">
-                        <p className="font-black text-base group-hover:text-primary transition-colors">{displayName}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{u.role === 'cobrador' ? 'Cobrador' : 'Supervisor'}</p>
+                        <p className="text-base font-semibold">{displayName}</p>
+                        <p className="text-sm text-muted-foreground">{u.role === 'cobrador' ? 'Cobrador' : 'Supervisor'}</p>
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
@@ -340,12 +340,12 @@ export default function CashSessionFlowPage() {
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-end">
-                      <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">Saldo Actual</span>
-                      <span className="text-xl font-black tabular-nums">{formatCurrency(summary?.caja_actual || 0)}</span>
+                      <span className="text-sm text-muted-foreground">Saldo actual</span>
+                      <span className="text-2xl font-semibold tracking-tight tabular-nums">{formatCurrency(summary?.caja_actual || 0)}</span>
                     </div>
-                    <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden border border-border/20">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
                       <div
-                        className="h-full bg-success rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(var(--success-rgb),0.5)]"
+                        className="h-full bg-success rounded-full transition-all duration-1000"
                         style={{ width: hasData ? `${Math.min(((summary.total_recaudo || 0) / (summary.total_ventas || 1)) * 100, 100)}%` : '0%' }}
                       />
                     </div>
@@ -353,19 +353,19 @@ export default function CashSessionFlowPage() {
 
                   <div className="flex items-center gap-8 justify-between pt-2">
                     <div className="space-y-0.5">
-                       <p className="text-[9px] font-black text-success/60 uppercase tracking-tighter flex items-center gap-1">
+                       <p className="flex items-center gap-1 text-sm font-medium text-success">
                           <ArrowUpRight className="size-3" /> {formatCurrency(summary?.total_ingresos || 0)}
                        </p>
                     </div>
                     <div className="space-y-0.5">
-                       <p className="text-[9px] font-black text-error/60 uppercase tracking-tighter flex items-center gap-1 text-right">
+                       <p className="flex items-center gap-1 text-right text-sm font-medium text-error">
                           <ArrowDownRight className="size-3" /> {formatCurrency(summary?.total_retiros || 0)}
                        </p>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-border/30">
-                    <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">Último movimiento: Hace pocos minutos</p>
+                  <div className="border-t border-border pt-3">
+                    <p className="text-xs text-muted-foreground">Último movimiento: hace pocos minutos</p>
                   </div>
                 </CardContent>
               </Card>
@@ -376,9 +376,9 @@ export default function CashSessionFlowPage() {
 
       {/* ── MOVEMENT HISTORY SECTION ── */}
       <div className="space-y-6 pt-6 h-[800px] flex flex-col">
-        <h2 className="text-xl font-black tracking-tight flex items-center gap-2 uppercase">
-          <RefreshCw className="size-5 text-primary" />
-          Historial de Movimientos
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <RefreshCw className="size-5" />
+          Historial de movimientos
         </h2>
 
         {/* Filters */}
@@ -409,8 +409,8 @@ export default function CashSessionFlowPage() {
             </Select>
 
             <Select value={movementTypeFilter} onValueChange={setMovementTypeFilter}>
-              <SelectTrigger className="w-[160px] h-12 rounded-xl bg-background/40 border-border/30">
-                <div className="flex items-center gap-2">
+              <SelectTrigger className="w-[190px] h-12 rounded-xl bg-background/40 border-border/30">
+                <div className="flex items-center gap-2 whitespace-nowrap">
                   <Filter className="size-3.5 opacity-40" />
                   <SelectValue placeholder="Tipo" />
                 </div>
@@ -453,50 +453,5 @@ export default function CashSessionFlowPage() {
         </div>
       </div>
     </div>
-  )
-}
-
-// --- Local Subcomponents ---
-
-interface MetricCardProps {
-  label: string
-  value: string
-  icon: React.ReactNode
-  accent: 'info' | 'success' | 'warning' | 'error'
-  subtitle?: string
-}
-
-function MetricCard({ label, value, icon, accent, subtitle }: MetricCardProps) {
-  const accentStyles = {
-    info: 'bg-primary/5 border-primary/20',
-    success: 'bg-success/5 border-success/20',
-    warning: 'bg-warning/5 border-warning/20',
-    error: 'bg-error/5 border-error/20'
-  }
-  const iconColors = {
-    info: 'bg-primary/10 text-primary',
-    success: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    error: 'bg-error/10 text-error'
-  }
-
-  return (
-    <Card className={cn('border-none transition-all duration-500 hover:scale-[1.03] group', containerStyle, accentStyles[accent])}>
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <p className={labelStyle}>{label}</p>
-          <div className={cn('p-2.5 rounded-lg shadow-inner transition-transform group-hover:rotate-12 duration-500', iconColors[accent])}>
-            {icon}
-          </div>
-        </div>
-        <h3 className="text-2xl font-black tabular-nums tracking-tighter leading-none mb-3">{value}</h3>
-        {subtitle && (
-          <div className="flex items-center gap-1.5 opacity-60">
-             <div className={cn("size-1 rounded-full", iconColors[accent].split(' ')[1].replace('text-', 'bg-'))} />
-             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{subtitle}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
   )
 }

@@ -37,7 +37,7 @@ interface FiltersBarProps {
 
 const containerStyle = 'glass-card rounded-3xl hover:border-primary/20 transition-all duration-500'
 const inputStyle = 'glass border border-border/40 text-foreground placeholder:text-muted-foreground/40 focus:bg-background/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/50 rounded-2xl h-11 transition-all'
-const labelStyle = 'text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 mb-2.5 block px-1'
+const labelStyle = 'text-xs font-semibold text-muted-foreground/60 mb-2.5 block px-1'
 
 export default function FiltersBar({
   onFilterChange,
@@ -100,8 +100,8 @@ export default function FiltersBar({
               <Filter className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <h3 className="text-sm font-black text-foreground tracking-tight uppercase">Filtros Avanzados</h3>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+              <h3 className="text-sm font-semibold text-foreground">Filtros avanzados</h3>
+              <p className="text-xs text-muted-foreground font-bold">
                 {hasActiveFilters ? 'Filtros aplicados' : 'Sin filtros activos'}
               </p>
             </div>
@@ -117,7 +117,7 @@ export default function FiltersBar({
               variant="ghost"
               size="sm"
               onClick={handleClearFilters}
-              className="h-8 text-[10px] font-bold uppercase tracking-widest text-error hover:bg-error/10 hover:text-error"
+              className="h-8 text-xs font-bold text-error hover:bg-error/10 hover:text-error"
             >
               <X className="w-3 h-3 mr-1.5" />
               Limpiar Todo

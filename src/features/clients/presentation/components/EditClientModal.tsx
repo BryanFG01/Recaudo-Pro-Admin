@@ -110,7 +110,7 @@ export const EditClientModal = ({
                 </div>
                 <div>
                   <DialogTitle className="text-2xl font-bold text-foreground tracking-tight uppercase">Editar Cliente</DialogTitle>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mt-1">Actualización de datos maestros</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-1">Actualización de datos maestros</p>
                 </div>
               </div>
 
@@ -124,17 +124,17 @@ export const EditClientModal = ({
             {(totalAmount != null || totalBalance != null) && (
                 <div className="p-6 rounded-[4px] bg-muted/40 border border-border flex items-center justify-between shadow-inner group">
                     <div className="space-y-2">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60">Saldo Pendiente</p>
+                        <p className="text-xs font-bold text-muted-foreground opacity-60">Saldo Pendiente</p>
                         <p className={cn(
-                            "text-2xl font-bold tracking-tighter font-mono font-medium",
+                            "text-2xl font-semibold tabular-nums",
                             (totalBalance ?? 0) > 0 ? 'text-destructive shadow-destructive/10' : 'text-primary'
                         )}>
                             {formatCurrency(totalBalance ?? 0)}
                         </p>
                     </div>
                     <div className="text-right space-y-2">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60">Inversión Total</p>
-                          <p className="text-lg font-bold text-foreground font-mono font-medium opacity-80 group-hover:opacity-100 transition-opacity">
+                          <p className="text-xs font-bold text-muted-foreground opacity-60">Inversión Total</p>
+                          <p className="text-lg font-semibold text-foreground tabular-nums opacity-80 group-hover:opacity-100 transition-opacity">
                              {formatCurrency(totalAmount ?? 0)}
                           </p>
                     </div>
@@ -146,13 +146,13 @@ export const EditClientModal = ({
                  <div className="p-2 rounded-[4px] bg-destructive/20">
                     <X className="size-4 text-destructive" />
                  </div>
-                 <p className="text-[10px] font-bold uppercase text-destructive tracking-widest flex-1">{error}</p>
+                 <p className="text-xs font-bold text-destructive flex-1">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit} id="edit-client-form" className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="md:col-span-2 space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Nombre Completo</Label>
+                    <Label className="text-xs font-bold text-muted-foreground ml-1">Nombre Completo</Label>
                     <div className="relative group/field">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/40 group-focus-within/field:text-primary transition-colors" />
                         <Input
@@ -166,7 +166,7 @@ export const EditClientModal = ({
                 </div>
 
                 <div className="space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Teléfono Móvil</Label>
+                    <Label className="text-xs font-bold text-muted-foreground ml-1">Teléfono Móvil</Label>
                     <div className="relative group/field">
                         <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/40 group-focus-within/field:text-primary transition-colors" />
                         <Input
@@ -180,7 +180,7 @@ export const EditClientModal = ({
                 </div>
 
                 <div className="space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Documento ID</Label>
+                    <Label className="text-xs font-bold text-muted-foreground ml-1">Documento ID</Label>
                     <div className="relative group/field">
                         <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/40 group-focus-within/field:text-primary transition-colors" />
                         <Input
@@ -194,7 +194,7 @@ export const EditClientModal = ({
                 </div>
 
                 <div className="md:col-span-2 space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Dirección de Residencia</Label>
+                    <Label className="text-xs font-bold text-muted-foreground ml-1">Dirección de Residencia</Label>
                     <div className="relative group/field">
                         <MapPinned className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/40 group-focus-within/field:text-primary transition-colors" />
                         <Input
@@ -210,7 +210,7 @@ export const EditClientModal = ({
 
             <div className="p-5 rounded-[4px] bg-primary/5 border border-primary/10 flex gap-4 shadow-inner">
                 <Info className="size-5 text-primary shrink-0 mt-0.5" />
-                <p className="text-[10px] leading-relaxed text-muted-foreground font-bold uppercase tracking-tight opacity-70">
+                <p className="text-xs leading-relaxed text-muted-foreground font-bold tracking-tight opacity-70">
                     Las actualizaciones en la dirección sincronizarán automáticamente con las rutas de cobro asignadas para el día de mañana.
                 </p>
             </div>
@@ -223,7 +223,7 @@ export const EditClientModal = ({
              <Button
                 variant="ghost"
                 onClick={onClose}
-                className="h-11 px-8 text-muted-foreground hover:text-foreground hover:bg-muted font-bold rounded-[4px] text-[10px] uppercase tracking-widest transition-all"
+                className="h-11 px-8 text-muted-foreground hover:text-foreground hover:bg-muted font-bold rounded-[4px] text-xs transition-all"
              >
                 Descartar
              </Button>
@@ -232,7 +232,7 @@ export const EditClientModal = ({
                 type="submit"
                 form="edit-client-form"
                 disabled={loading}
-                className="h-11 px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-[4px] font-bold transition-all flex items-center gap-3 text-[10px] uppercase tracking-[0.15em]"
+                className="h-11 px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-[4px] font-bold transition-all flex items-center gap-3 text-xs"
              >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                     <>

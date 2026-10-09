@@ -1,6 +1,8 @@
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { cn } from '@/shared/utils/cn'
 import { ReactNode } from 'react'
+
+type StatsVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'premium-dark'
 
 interface StatsCardProps {
   title: string
@@ -13,9 +15,25 @@ interface StatsCardProps {
   }
   className?: string
   isCurrency?: boolean
-  isWarning?: boolean
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'premium-dark'
+  variant?: StatsVariant
   loading?: boolean
+}
+
+const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })
+
+const formatStatValue = (value: string | number, isCurrency: boolean, loading: boolean): string | number => {
+  if (loading) return '—'
+  return isCurrency && typeof value === 'number' ? COP.format(value) : value
+}
+
+// Chip del icono: mint por defecto; los estados conservan su color semántico
+const ICON_CHIP: Record<StatsVariant, string> = {
+  default: 'bg-mint text-black',
+  info: 'bg-mint text-black',
+  success: 'bg-success/15 text-success',
+  warning: 'bg-warning/15 text-warning',
+  error: 'bg-error/15 text-error',
+  'premium-dark': 'bg-mint text-black',
 }
 
 export default function StatsCard({
@@ -28,120 +46,54 @@ export default function StatsCard({
   isCurrency = false,
   variant = 'default',
   loading = false,
-}: StatsCardProps) {
-  const formatValue = (val: string | number) => {
-    if (loading) return '---'
-    if (isCurrency && typeof val === 'number') {
-      return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-      }).format(val)
-    }
-    return val
-  }
-
-  const variants = {
-    default: 'border-primary/20 bg-primary/5',
-    success: 'border-success/20 bg-success/5',
-    warning: 'border-warning/20 bg-warning/5',
-    error: 'border-error/20 bg-error/5',
-    info: 'border-blue-400/20 bg-blue-400/5',
-    'premium-dark': 'premium-dark-card border-white/10 shadow-2xl',
-  }
-
-  const pulseColors = {
-    default: 'bg-primary',
-    success: 'bg-success',
-    warning: 'bg-warning',
-    error: 'bg-error',
-    info: 'bg-blue-400',
-    'premium-dark': 'bg-primary',
-  }
+}: Readonly<StatsCardProps>) {
+  const displayValue = formatStatValue(value, isCurrency, loading)
+  const inverted = variant === 'premium-dark'
+  const mutedText = inverted ? 'text-background/60' : 'text-muted-foreground'
 
   return (
     <Card
       className={cn(
-        'relative overflow-hidden border shadow-sm transition-all duration-300 hover:shadow-xl hover:translate-y-[-4px] group',
-        variants[variant],
+        'flex flex-col gap-6 p-6 transition-colors',
+        inverted ? 'bg-foreground text-background' : 'hover:bg-card/80',
         className
       )}
       role="article"
-      aria-label={`${title}: ${formatValue(value)}`}
+      aria-label={`${title}: ${displayValue}`}
     >
-      {/* Pulse Signature Line */}
-      <div 
-        className={cn(
-          'absolute left-0 top-0 bottom-0 w-1.5 transition-colors duration-300',
-          pulseColors[variant]
-        )} 
-      />
-
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1.5 min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70 flex items-center gap-1.5">
-              <span className={cn("w-1.5 h-1.5 rounded-full", pulseColors[variant])} />
-              {title}
-            </p>
-            <div className="flex flex-col gap-1">
-              <h3 className={cn(
-                "text-3xl font-extrabold tracking-tight tabular-nums drop-shadow-sm",
-                variant === 'premium-dark' ? "text-white" : "text-foreground"
-              )}>
-                {formatValue(value)}
-              </h3>
-              {trend && (
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={cn(
-                      'text-[11px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm',
-                      trend.isPositive ? 'bg-success/20 text-success' : 'bg-error/20 text-error'
-                    )}
-                  >
-                    {trend.isPositive ? '↗' : '↘'} {Math.abs(trend.value)}%
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/60 font-medium">vs. período anterior</span>
-                </div>
-              )}
-            </div>
-          </div>
-          {icon && (
-            <div 
-              className={cn(
-                'flex-shrink-0 p-3 rounded-2xl border backdrop-blur-md shadow-xl transition-transform duration-300 group-hover:scale-110',
-                variant === 'premium-dark' ? 'bg-white/5 border-white/10 text-primary' : 'bg-muted/50 border-border',
-                variant === 'default' && 'text-primary',
-                variant === 'success' && 'text-success',
-                variant === 'warning' && 'text-warning',
-                variant === 'error' && 'text-error',
-                variant === 'info' && 'text-blue-400'
-              )}
-              aria-hidden="true"
-            >
-              {icon}
-            </div>
-          )}
-        </div>
-
-        {subtitle && (
-          <div className="mt-4 flex items-center gap-2 pt-4 border-t border-border">
-            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.2">
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span> {subtitle}
-            </p>
+      <div className="flex items-center gap-3">
+        {icon && (
+          <div
+            className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl [&_svg]:size-5', ICON_CHIP[variant])}
+            aria-hidden="true"
+          >
+            {icon}
           </div>
         )}
-      </CardContent>
-      
-      {/* Subtle background glow */}
-      <div 
-        className={cn(
-          'absolute -right-6 -bottom-6 w-24 h-24 blur-3xl opacity-20 pointer-events-none rounded-full',
-          pulseColors[variant]
-        )} 
-      />
+        <p className={cn('text-sm font-medium', mutedText)}>{title}</p>
+      </div>
+
+      <div className="mt-auto space-y-2">
+        <p className="break-words text-3xl font-semibold tracking-tight tabular-nums sm:text-[2rem]">
+          {displayValue}
+        </p>
+
+        {trend && (
+          <p className={cn('flex items-center gap-2 text-sm', mutedText)}>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                trend.isPositive ? 'bg-mint text-black' : 'bg-error/15 text-error'
+              )}
+            >
+              {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
+            </span>
+            frente al período anterior
+          </p>
+        )}
+
+        {subtitle && <p className={cn('text-sm', mutedText)}>{subtitle}</p>}
+      </div>
     </Card>
   )
 }
-
-

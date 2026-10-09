@@ -2,17 +2,16 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { User } from '../../domain/models'
 
-const INACTIVITY_MS = 12 * 60 * 60 * 1000 // 12 horas
-
+/**
+ * Datos del administrador para la interfaz (nombre, negocio, rol). No contiene tokens:
+ * la sesión vive en cookies httpOnly y la valida el servidor.
+ */
 interface AuthState {
   user: User | null
-  token: string | null
   businessId: string | null
   /** Código de negocio (ej. ARG01) para /api/clients?business_code= */
   businessCode: string | null
-  lastActivityAt: number | null
   setUser: (user: User | null) => void
-  setToken: (token: string | null) => void
   setBusinessId: (businessId: string | null) => void
   setBusinessCode: (code: string | null) => void
   signOut: () => void
@@ -22,48 +21,22 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      token: null,
       businessId: null,
       businessCode: null,
-      lastActivityAt: null,
-      setUser: (user) =>
-        set({ user, lastActivityAt: user != null ? Date.now() : null }),
-      setToken: (token) => set({ token }),
+      setUser: (user) => set({ user }),
       setBusinessId: (businessId) => set({ businessId }),
       setBusinessCode: (businessCode) => set({ businessCode }),
-      signOut: () =>
-        set({ user: null, token: null, businessId: null, businessCode: null, lastActivityAt: null }),
+      signOut: () => set({ user: null, businessId: null, businessCode: null })
     }),
     {
       name: 'recaudo-auth',
-      partialize: (s) => ({
-        user: s.user,
-        token: s.token,
-        businessId: s.businessId,
-        businessCode: s.businessCode,
-        lastActivityAt: s.lastActivityAt,
-      }),
-      onRehydrateStorage: () => (state, error) => {
-        if (error) {
-          console.error('❌ Error during auth rehydration:', error)
-          return
-        }
-        if (!state) return
-        
-        console.log('✅ Auth rehydration finished')
-
-        if (
-          state.lastActivityAt != null &&
-          Date.now() - state.lastActivityAt > INACTIVITY_MS
-        ) {
-          console.log('⌛ Session expired due to inactivity')
-          useAuthStore.getState().signOut()
-        } else if (state.user != null) {
-          useAuthStore.setState({ lastActivityAt: Date.now() })
-        }
+      // v2: el token ya no se guarda en el navegador (antes iba en localStorage)
+      version: 2,
+      migrate: (persisted) => {
+        const { user, businessId, businessCode } = (persisted ?? {}) as Partial<AuthState>
+        return { user: user ?? null, businessId: businessId ?? null, businessCode: businessCode ?? null } as AuthState
       },
+      partialize: (s) => ({ user: s.user, businessId: s.businessId, businessCode: s.businessCode })
     }
   )
 )
-
-

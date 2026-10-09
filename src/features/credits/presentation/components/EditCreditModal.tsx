@@ -124,7 +124,7 @@ export const EditCreditModal = ({
                 </div>
                 <div>
                   <DialogTitle className="text-2xl font-bold text-foreground tracking-tight uppercase">Editar Préstamo</DialogTitle>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mt-1">Refinanciación y parámetros</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-1">Refinanciación y parámetros</p>
                 </div>
               </div>
 
@@ -136,16 +136,16 @@ export const EditCreditModal = ({
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-[4px] bg-muted/40 border border-border space-y-1">
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Tasa Actual</p>
-                    <p className="text-sm font-bold text-foreground font-mono font-medium">{credit.interest_rate}%</p>
+                    <p className="text-xs font-bold text-muted-foreground">Tasa Actual</p>
+                    <p className="text-sm font-semibold text-foreground tabular-nums">{credit.interest_rate}%</p>
                 </div>
                 <div className="p-4 rounded-[4px] bg-muted/40 border border-border space-y-1">
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Cuotas</p>
-                    <p className="text-sm font-bold text-foreground font-mono font-medium">{credit.total_installments}</p>
+                    <p className="text-xs font-bold text-muted-foreground">Cuotas</p>
+                    <p className="text-sm font-semibold text-foreground tabular-nums">{credit.total_installments}</p>
                 </div>
                 <div className="p-4 rounded-[4px] bg-primary/5 border border-primary/20 space-y-1 col-span-2">
-                    <p className="text-[9px] font-bold text-primary uppercase tracking-wider">Capital Original</p>
-                    <p className="text-sm font-bold text-primary font-mono font-medium">{formatFinancial(credit.total_amount ?? 0)}</p>
+                    <p className="text-xs font-bold text-primary">Capital Original</p>
+                    <p className="text-sm font-semibold text-primary tabular-nums">{formatFinancial(credit.total_amount ?? 0)}</p>
                 </div>
             </div>
 
@@ -154,13 +154,13 @@ export const EditCreditModal = ({
                  <div className="p-2 rounded-[4px] bg-destructive/20">
                     <X className="size-4 text-destructive" />
                  </div>
-                 <p className="text-[10px] font-bold uppercase text-destructive tracking-widest flex-1">{error}</p>
+                 <p className="text-xs font-bold text-destructive flex-1">{error}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit} id="edit-credit-form" className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
                 <div className="md:col-span-2 space-y-4">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Monto del Capital</Label>
+                    <Label className="text-xs font-bold text-muted-foreground ml-1">Monto del Capital</Label>
                     <div className="relative group/field">
                         <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground/30 group-focus-within/field:text-primary transition-colors">$</span>
                         <Input
@@ -169,13 +169,13 @@ export const EditCreditModal = ({
                             inputMode="numeric"
                             value={formatFinancial(formData.total_amount)}
                             onChange={handlePriceChange}
-                            className="h-20 pl-14 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20 focus-visible:bg-card font-mono font-medium text-3xl text-foreground transition-all" 
+                            className="h-20 pl-14 bg-muted/40 border-border/50 rounded-[4px] focus-visible:ring-primary/20 focus-visible:bg-card tabular-nums font-medium text-3xl text-foreground transition-all" 
                         />
                     </div>
                 </div>
 
                 <div className="space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Tasa de Interés (%)</Label>
+                    <Label className="text-xs font-bold text-muted-foreground ml-1">Tasa de Interés (%)</Label>
                     <div className="relative group/field">
                         <Percent className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/30 group-focus-within/field:text-primary transition-colors" />
                         <Input
@@ -190,7 +190,7 @@ export const EditCreditModal = ({
                 </div>
 
                 <div className="space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Número de Cuotas</Label>
+                    <Label className="text-xs font-bold text-muted-foreground ml-1">Número de Cuotas</Label>
                     <div className="relative group/field">
                         <Hash className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/30 group-focus-within/field:text-primary transition-colors" />
                         <Input
@@ -204,7 +204,7 @@ export const EditCreditModal = ({
                 </div>
 
                 <div className="space-y-3">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Próximo Vencimiento</Label>
+                    <Label className="text-xs font-bold text-muted-foreground ml-1">Próximo Vencimiento</Label>
                     <div className="relative group/field">
                         < Calendar className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/30 group-focus-within/field:text-primary transition-colors" />
                         <Input
@@ -221,7 +221,7 @@ export const EditCreditModal = ({
 
             <div className="p-6 rounded-[4px] bg-amber-500/5 border border-amber-500/10 flex gap-5 shadow-inner">
                 <AlertCircle className="size-5 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-[10px] leading-relaxed text-muted-foreground font-medium uppercase tracking-tight opacity-70">
+                <p className="text-xs leading-relaxed text-muted-foreground font-medium tracking-tight opacity-70">
                     Importante: Cambiar el monto o la tasa recalculará automáticamente el valor de las cuotas futuras. Los pagos ya registrados no se verán afectados.
                 </p>
             </div>
@@ -234,7 +234,7 @@ export const EditCreditModal = ({
              <Button
                 variant="ghost"
                 onClick={onClose}
-                className="h-11 px-8 text-muted-foreground hover:text-foreground hover:bg-muted font-bold rounded-[4px] text-[10px] uppercase tracking-widest transition-all"
+                className="h-11 px-8 text-muted-foreground hover:text-foreground hover:bg-muted font-bold rounded-[4px] text-xs transition-all"
              >
                 Descartar
              </Button>
@@ -243,7 +243,7 @@ export const EditCreditModal = ({
                 type="submit"
                 form="edit-credit-form"
                 disabled={loading}
-                className="h-11 px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-[4px] font-bold transition-all flex items-center gap-3 text-[10px] uppercase tracking-[0.15em]"
+                className="h-11 px-10 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-[4px] font-bold transition-all flex items-center gap-3 text-xs"
              >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                     <>

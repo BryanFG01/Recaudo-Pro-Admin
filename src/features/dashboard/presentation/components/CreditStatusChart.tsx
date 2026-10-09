@@ -21,8 +21,8 @@ export default function CreditStatusChart({
   return (
     <div className="w-full h-full min-h-[300px]">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-base font-bold text-foreground tracking-tight">Estado de Créditos</h3>
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cartera Actual</span>
+        <h3 className="text-base font-semibold text-foreground">Estado de la cartera</h3>
+        <span className="text-sm text-muted-foreground">Créditos activos</span>
       </div>
       
       <div className="flex flex-col md:flex-row items-center gap-8">
@@ -56,8 +56,8 @@ export default function CreditStatusChart({
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-2xl font-black text-foreground tabular-nums">{activeCredits}</span>
-            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Total</span>
+            <span className="text-2xl font-bold text-foreground tabular-nums">{activeCredits}</span>
+            <span className="text-xs font-bold text-muted-foreground">Total</span>
           </div>
         </div>
 
@@ -70,17 +70,17 @@ export default function CreditStatusChart({
                     className="w-2 h-2 rounded-full shadow-sm" 
                     style={{ backgroundColor: item.color }} 
                   />
-                  <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase tracking-wide">
+                  <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                     {item.name}
                   </span>
                 </div>
-                <span className="text-xs font-black text-foreground tabular-nums">
+                <span className="text-xs font-bold text-foreground tabular-nums">
                   {item.value.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-lg font-extrabold text-foreground tabular-nums">{item.count}</span>
-                <span className="text-[10px] text-muted-foreground font-medium italic">créditos</span>
+                <span className="text-xs text-muted-foreground font-medium italic">créditos</span>
               </div>
             </div>
           ))}

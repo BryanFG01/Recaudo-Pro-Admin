@@ -25,7 +25,7 @@ import { useCashSessions } from '../hooks/useCashSessions'
 
 const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
 const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50 h-11'
-const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
+const labelStyle = 'text-xs font-semibold text-muted-foreground/60 mb-2 block'
 
 function userLabel(u: User): string {
   const name = u.name || u.first_name || u.email || u.employee_code || u.id
@@ -234,7 +234,7 @@ export default function CashSessionsPage() {
     {
       key: 'session_date',
       header: 'Fecha',
-      className: 'font-mono text-[11px] text-muted-foreground/60',
+      className: 'font-mono text-xs text-muted-foreground/60',
       render: (row) => formatDate(row.session_date || '')
     },
     {
@@ -261,7 +261,7 @@ export default function CashSessionsPage() {
       className: 'text-center',
       render: (row) => (
         <span className={cn(
-          "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border",
+          "px-2 py-0.5 rounded text-xs font-semibold border",
           row.allowed_to_withdraw ? 'bg-success/10 text-success border-success/20' : 'bg-error/10 text-error border-error/20'
         )}>
           {row.allowed_to_withdraw ? 'Autorizado' : 'Bloqueado'}
@@ -275,7 +275,7 @@ export default function CashSessionsPage() {
       render: (row) => {
         const isEditing = editingId === row.id
         const isDeleting = deletingId === row.id
-        if (isEditing) return <span className="text-primary font-bold text-[10px] uppercase animate-pulse">Editando</span>
+        if (isEditing) return <span className="text-primary font-bold text-xs animate-pulse">Editando</span>
         return (
           <div className="flex items-center justify-end gap-1">
             <Button
@@ -315,7 +315,7 @@ export default function CashSessionsPage() {
   return (
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="space-y-1">
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center gap-3">
           <Banknote className="w-8 h-8 text-primary" />
           Apertura de Caja
         </h1>
@@ -324,7 +324,7 @@ export default function CashSessionsPage() {
 
       {(error || success) && (
         <div className={cn(
-          "rounded-lg p-3 text-[10px] font-black uppercase tracking-widest border",
+          "rounded-lg p-3 text-xs font-semibold border",
           error ? "bg-error/10 border-error/20 text-error" : "bg-success/10 border-success/20 text-success"
         )}>
           {error || success}
@@ -335,7 +335,7 @@ export default function CashSessionsPage() {
         <div className="xl:col-span-4 sticky top-0">
           <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
             <CardHeader className="border-b border-border pb-4">
-              <CardTitle className="text-sm font-bold text-foreground uppercase tracking-widest text-muted-foreground">
+              <CardTitle className="text-sm font-bold text-foreground text-muted-foreground">
                 Nueva Sesión
               </CardTitle>
             </CardHeader>
@@ -392,7 +392,7 @@ export default function CashSessionsPage() {
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
-                  <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase cursor-pointer mb-0" htmlFor="withdraw_check">
+                  <Label className="text-xs font-bold text-muted-foreground/60 cursor-pointer mb-0" htmlFor="withdraw_check">
                     Permitir Retiros
                   </Label>
                   <Switch
@@ -406,10 +406,10 @@ export default function CashSessionsPage() {
                 <div className="flex gap-2 pt-2">
                   {editingId ? (
                     <>
-                      <Button type="submit" disabled={isSubmitting} className="flex-1 h-11 font-bold uppercase tracking-widest text-[10px]">
+                      <Button type="submit" disabled={isSubmitting} className="flex-1 h-11 font-bold text-xs">
                         Actualizar
                       </Button>
-                      <Button type="button" variant="outline" onClick={cancelEdit} className="h-11 px-4 font-bold uppercase tracking-widest text-[10px]">
+                      <Button type="button" variant="outline" onClick={cancelEdit} className="h-11 px-4 font-bold text-xs">
                         X
                       </Button>
                     </>
@@ -417,7 +417,7 @@ export default function CashSessionsPage() {
                     <Button
                       type="submit"
                       disabled={isSubmitting || !selectedUserId}
-                      className="w-full h-11 font-black uppercase tracking-widest text-[10px]"
+                      className="w-full h-11 font-semibold text-xs"
                     >
                       {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Abrir Caja'}
                     </Button>

@@ -62,9 +62,9 @@ export default function AdminUsersPage() {
     const collectors = users.filter(u => u.role === 'cobrador').length
 
     return [
-      { label: 'Total Equipo', value: total, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+      { label: 'Total Equipo', value: total, icon: Users, color: 'text-foreground', bg: 'bg-mint' },
       { label: 'Activos', value: active, icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-      { label: 'Administradores', value: admins, icon: Shield, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+      { label: 'Administradores', value: admins, icon: Shield, color: 'text-background', bg: 'bg-foreground' },
       { label: 'Recaudadores', value: collectors, icon: HardHat, color: 'text-amber-500', bg: 'bg-amber-500/10' },
     ]
   }, [users])
@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-bold text-foreground truncate">{user.name || '-'}</span>
-            <span className="text-[10px] text-muted-foreground truncate font-medium uppercase tracking-tight">{user.email}</span>
+            <span className="text-xs text-muted-foreground truncate font-medium tracking-tight">{user.email}</span>
           </div>
         </div>
       )
@@ -163,11 +163,11 @@ export default function AdminUsersPage() {
       render: (user) => (
         <span
           className={cn(
-            'px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border',
+            'px-2 py-0.5 rounded-full text-xs font-semibold border',
             user.role === 'admin'
               ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
               : user.role === 'supervisor'
-              ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+              ? 'bg-secondary text-foreground border-transparent'
               : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
           )}
         >
@@ -179,7 +179,7 @@ export default function AdminUsersPage() {
       key: 'number',
       header: 'ID',
       className: 'text-center tabular-nums',
-      render: (user) => <span className="text-[11px] font-bold text-slate-400">#{user.number || '-'}</span>
+      render: (user) => <span className="text-xs font-bold text-slate-400">#{user.number || '-'}</span>
     },
     {
       key: 'commission_percentage',
@@ -200,7 +200,7 @@ export default function AdminUsersPage() {
           <div className="flex items-center gap-2">
             <div className={cn(
                 "size-1.5 rounded-full animate-pulse",
-                user.is_active ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-white/10"
+                user.is_active ? "bg-emerald-500" : "bg-muted-foreground/30"
             )} />
             <Switch
               checked={user.is_active}
@@ -224,13 +224,13 @@ export default function AdminUsersPage() {
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40 bg-card border-border shadow-xl rounded-xl">
-                    <DropdownMenuItem className="text-[10px] font-bold uppercase tracking-tight py-2.5 cursor-pointer text-foreground/70 focus:bg-accent focus:text-foreground">
+                    <DropdownMenuItem className="text-xs font-bold tracking-tight py-2.5 cursor-pointer text-foreground/70 focus:bg-accent focus:text-foreground">
                         Editar Perfil
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-[10px] font-bold uppercase tracking-tight py-2.5 text-info cursor-pointer focus:bg-accent">
+                    <DropdownMenuItem className="text-xs font-bold tracking-tight py-2.5 text-info cursor-pointer focus:bg-accent">
                         Ver Actividad
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-[10px] font-bold uppercase tracking-tight py-2.5 text-error cursor-pointer focus:bg-accent" onClick={() => {}}>
+                    <DropdownMenuItem className="text-xs font-bold tracking-tight py-2.5 text-error cursor-pointer focus:bg-accent" onClick={() => {}}>
                         Eliminar
                     </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -248,7 +248,7 @@ export default function AdminUsersPage() {
         checked={selectedIds.has(u.id)}
         onChange={() => toggleSelect(u.id || '')}
         onClick={(e) => e.stopPropagation()}
-        className="h-4 w-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary/50"
+        className="h-4 w-4 rounded border-input bg-card text-primary focus:ring-primary/50"
       />
     )
   }
@@ -264,8 +264,8 @@ export default function AdminUsersPage() {
       {/* Header ERP */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/10 pb-6 mb-2">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tight text-foreground uppercase">Equipo de Trabajo</h1>
-          <p className="text-sm font-semibold text-muted-foreground/70 uppercase tracking-widest">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground uppercase">Equipo de Trabajo</h1>
+          <p className="text-sm font-semibold text-muted-foreground/70">
             Gestión de roles y configuración de cobradores
           </p>
         </div>
@@ -273,7 +273,7 @@ export default function AdminUsersPage() {
         <div className="flex flex-wrap gap-2">
            <Button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="h-11 px-6 font-bold uppercase tracking-[0.1em] text-[11px] bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-xl"
+                className="h-11 px-6 font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-xl"
             >
                 <Plus className="w-4 h-4 mr-2" />
                 Alta Usuario
@@ -282,7 +282,7 @@ export default function AdminUsersPage() {
                 onClick={handleExport}
                 disabled={users.length === 0}
                 variant="outline"
-                className="h-11 px-6 font-bold uppercase tracking-[0.1em] text-[11px] border-border hover:bg-accent rounded-xl"
+                className="h-11 px-6 font-bold text-xs border-border hover:bg-accent rounded-xl"
             >
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
@@ -308,12 +308,12 @@ export default function AdminUsersPage() {
         <div className="glass-card rounded-3xl p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary shrink-0 shadow-[0_0_15px_-5px_theme(colors.primary.DEFAULT)]">
+                    <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary shrink-0">
                         <Users className="size-5" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">Listado de Colaboradores</h3>
-                        <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Equipo operativo registrado</p>
+                        <h3 className="text-sm font-semibold text-foreground">Listado de Colaboradores</h3>
+                        <p className="text-xs font-bold text-muted-foreground/60">Equipo operativo registrado</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -330,10 +330,10 @@ export default function AdminUsersPage() {
 
             {deleteMode && (
                 <div className="flex items-center justify-between p-4 rounded-xl bg-destructive/10 border border-destructive/20 animate-in slide-in-from-top-2 duration-300">
-                    <span className="text-[10px] font-black uppercase text-destructive tracking-widest">Modo Selección Activo: {selectedIds.size} seleccionados</span>
+                    <span className="text-xs font-semibold text-destructive">Modo Selección Activo: {selectedIds.size} seleccionados</span>
                     <div className="flex gap-2">
-                        <Button onClick={cancelDeleteMode} variant="ghost" className="h-8 px-4 text-[10px] font-bold uppercase text-white/60 hover:text-white">Cancelar</Button>
-                        <Button onClick={handleDeleteSelected} disabled={selectedIds.size === 0 || isDeleting} className="h-8 px-4 bg-destructive text-white font-bold text-[10px] uppercase rounded-lg">Eliminar</Button>
+                        <Button onClick={cancelDeleteMode} variant="ghost" className="h-8 px-4 text-xs font-bold">Cancelar</Button>
+                        <Button onClick={handleDeleteSelected} disabled={selectedIds.size === 0 || isDeleting} className="h-8 px-4 bg-destructive text-destructive-foreground font-bold text-xs rounded-lg">Eliminar</Button>
                     </div>
                 </div>
             )}

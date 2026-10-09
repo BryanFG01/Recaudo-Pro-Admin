@@ -10,7 +10,8 @@ export interface User {
   business_id: string
   employee_code: string | null
   phone: string | null
-  role: 'admin' | 'cobrador' | 'supervisor'
+  /** super_admin = dueño del negocio que entra al panel (tabla super_admins). */
+  role: 'super_admin' | 'admin' | 'cobrador' | 'supervisor'
   commission_percentage: number | null
   is_active: boolean
   created_at: string
@@ -22,16 +23,15 @@ export interface User {
 export interface SignInRequest {
   email: string
   password: string
-  /** Para elegir el usuario del negocio cuando el API devuelve un array. UUID o id del negocio. */
-  businessId?: string
-  /** Código de negocio (ej. ARG01) para matchear si el API devuelve business_id como código. */
-  businessCode?: string
+  /** UUID del negocio (resuelto con el código en el paso 1 del login). */
+  businessId: string
+  /** Código de negocio (ej. ARG01), va en la URL del login. */
+  businessCode: string
 }
 
+/** Los tokens no llegan al navegador: quedan en cookies httpOnly del servidor de Next. */
 export interface SignInResponse {
   user: User
-  token: string
-  success: boolean
 }
 
 export interface CreateUserRequest {

@@ -193,7 +193,7 @@ export default function ClientsPage() {
     { key: 'total_paid', header: 'Total pagado', isNumeric: true, render: (client) => <span className="font-semibold text-success">{formatCurrency(client.total_paid)}</span> },
     { key: 'total_balance', header: 'Saldo Pendiente', isNumeric: true, render: (client) => {
         const balance = client.total_balance || 0
-        return <span className={cn('px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300', balance === 0 ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]' : 'bg-error/10 text-error border border-error/20 shadow-[0_0_15px_-5px_theme(colors.error)]')}>{formatCurrency(balance)}</span>
+        return <span className={cn('px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300', balance === 0 ? 'bg-success/10 text-success border border-success/20' : 'bg-error/10 text-error border border-error/20')}>{formatCurrency(balance)}</span>
     }},
     { key: 'created_at', header: 'Fecha Creación', className: 'text-muted-foreground/50', render: (client) => formatDate(client.created_at) },
     { key: 'id', header: '', className: 'w-10 text-center', render: (client) => <button type="button" onClick={(e) => { e.stopPropagation(); setEditingClient(client); }} className="p-1.5 rounded-md text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-colors" title="Editar cliente"><Pencil className="w-3.5 h-3.5" /></button> }
@@ -207,11 +207,11 @@ export default function ClientsPage() {
     <div className="flex flex-col h-full space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white min-w-0">Administración de Clientes</h1>
+          <h1 className="text-3xl sm:text-4xl text-foreground min-w-0">Administración de Clientes</h1>
           <p className="text-sm text-muted-foreground/60">Gestiona y visualiza la salud financiera de tu cartera de clientes.</p>
         </div>
         <div className="flex wrap gap-2 sm:gap-3">
-          <Button variant="outline" onClick={handleExport} disabled={clients.length === 0} className="min-h-[44px] px-6 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]"><Download className="w-4 h-4 mr-2" />Exportar XLS</Button>
+          <Button variant="outline" onClick={handleExport} disabled={clients.length === 0} className="min-h-[44px] px-6"><Download className="w-4 h-4 mr-2" />Exportar XLS</Button>
         </div>
       </div>
       <div className="flex-shrink-0">

@@ -6,13 +6,9 @@ import { ClientFilters } from '@/shared/types/filters'
 export class ClientService {
   constructor(private readonly repository: IClientRepository) {}
 
-  async getClients() {
-    return this.repository.getClients()
-  }
-
+  /** Clientes del negocio de la sesión (la API los limita al negocio; el usuario es opcional). */
   async getClientsWithCredits(businessId: string, userId: string, userEmail?: string, businessCode?: string, userNumber?: string): Promise<ClientWithCredits[]> {
     if (!businessId) throw new Error('business_id es requerido')
-    if (!userId) throw new Error('user_id es requerido para obtener clientes del negocio')
     return this.repository.getClientsWithCredits(businessId, userId, userEmail, businessCode, userNumber)
   }
 
@@ -21,13 +17,6 @@ export class ClientService {
       throw new Error('ID de cliente es requerido')
     }
     return this.repository.getClientById(id)
-  }
-
-  async searchClients(query: string) {
-    if (!query || query.trim().length === 0) {
-      throw new Error('La búsqueda no puede estar vacía')
-    }
-    return this.repository.searchClients(query.trim())
   }
 
   async createClient(request: CreateClientRequest, businessId: string) {
@@ -67,7 +56,6 @@ export class ClientService {
 
   async getClientsWithFilters(filters: ClientFilters): Promise<ClientWithCredits[]> {
     if (!filters.businessId) throw new Error('ID de negocio es requerido')
-    if (!filters.userId) throw new Error('ID de usuario (user_id) es requerido para obtener clientes del negocio')
     return this.repository.getClientsWithFilters(filters)
   }
 }

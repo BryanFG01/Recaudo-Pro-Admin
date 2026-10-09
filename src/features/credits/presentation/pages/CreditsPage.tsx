@@ -236,7 +236,7 @@ export default function CreditsPage() {
       render: (credit) => {
         const raw = summaryByCreditId[credit.id]?.total_paid
         const value = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
-        return <span className="font-mono font-semibold text-success">{formatCurrency(value)}</span>
+        return <span className="tabular-nums font-semibold text-success">{formatCurrency(value)}</span>
       }
     },
     {
@@ -248,10 +248,10 @@ export default function CreditsPage() {
         const balance = raw != null && !Number.isNaN(Number(raw)) ? Number(raw) : 0
         return (
           <span className={cn(
-              'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300',
+              'px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300',
               balance === 0 
-                ? 'bg-success/10 text-success border border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]' 
-                : 'bg-error/10 text-error border border-error/20 shadow-[0_0_15px_-5px_theme(colors.error)]'
+                ? 'bg-success/10 text-success border border-success/20' 
+                : 'bg-error/10 text-error border border-error/20'
             )}>
             {formatCurrency(balance)}
           </span>
@@ -275,11 +275,11 @@ export default function CreditsPage() {
         const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0
         return (
           <div className="flex flex-col items-center gap-2 min-w-[80px]">
-            <span className="text-[10px] font-black tabular-nums text-foreground/80 tracking-widest">
+            <span className="text-xs font-semibold tabular-nums text-foreground/80">
               {paid} / {total}
             </span>
-            <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden border border-white/5">
-              <div className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)] transition-all duration-500" style={{ width: `${pct}%` }} />
+            <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
+              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
             </div>
           </div>
         )
@@ -291,13 +291,13 @@ export default function CreditsPage() {
       isNumeric: true,
       render: (credit) => {
         const overdue = summaryByCreditId[credit.id]?.overdue_installments ?? credit.overdue_installments
-        return <span className={cn("tabular-nums font-black", (overdue ?? 0) > 0 ? 'text-error' : 'text-muted-foreground/20')}>{overdue ?? 0}</span>
+        return <span className={cn("tabular-nums font-bold", (overdue ?? 0) > 0 ? 'text-error' : 'text-muted-foreground/20')}>{overdue ?? 0}</span>
       }
     },
     {
       key: 'next_due_date',
       header: 'Vencimiento',
-      className: 'text-muted-foreground/50 text-[11px]',
+      className: 'text-muted-foreground/50 text-xs',
       render: (credit) => (credit.next_due_date ? formatDate(credit.next_due_date) : '-')
     },
     {
@@ -320,11 +320,11 @@ export default function CreditsPage() {
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground min-w-0">Gestión de Créditos</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground min-w-0">Gestión de Créditos</h1>
           <p className="text-sm text-muted-foreground/60">Monitorea el estado de los préstamos, cuotas y niveles de recaudo.</p>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          <Button variant="outline" onClick={handleExport} disabled={displayedCredits.length === 0} className="min-h-[44px] px-6 shadow-xl transition-all font-bold uppercase tracking-widest text-[10px]">
+          <Button variant="outline" onClick={handleExport} disabled={displayedCredits.length === 0} className="min-h-[44px] px-6 shadow-xl transition-all font-bold text-xs">
             <Download className="w-4 h-4 mr-2" />
             Exportar XLS
           </Button>

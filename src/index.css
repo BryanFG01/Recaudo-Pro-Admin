@@ -2,73 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tema basado en DESIGN.MD (editorial brutalista, monocromo, plano):
+ *   canvas #e5e5e5 · card #ffffff · carbon #000000 · mist #f3f3f3 · ash #c6c6c6
+ *   smoke #979797 · slate #444444 · graphite #2f2f2f · mint #d1ffca · voltage #fff100
+ */
 @layer base {
   :root {
-    --background: 210 40% 98%; 
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --background: 0 0% 89.8%;          /* canvas */
+    --foreground: 0 0% 0%;             /* carbon */
+    --card: 0 0% 100%;                 /* paper */
+    --card-foreground: 0 0% 0%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 1rem;
+    --popover-foreground: 0 0% 0%;
+    --primary: 0 0% 0%;                /* CTA negro */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 95.3%;           /* mist */
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 95.3%;
+    --muted-foreground: 0 0% 26.7%;    /* slate */
+    --accent: 112 100% 89.6%;          /* mint */
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 72% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 87%;
+    --input: 0 0% 77.6%;               /* ash */
+    --ring: 0 0% 0%;
+    --radius: 0.5rem;                  /* botones e inputs: 8px */
 
-    /* SIDEBAR LIGHT - Sophisticated Gray */
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 215.4 16.3% 46.9%;
-    --sidebar-primary: 221.2 83.2% 53.3%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96.1%;
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 221.2 83.2% 53.3%;
+    /* Sidebar invertido (bloque negro) */
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 77.6%;
+    --sidebar-primary: 112 100% 89.6%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 18.4%;      /* graphite */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 18.4%;
+    --sidebar-ring: 112 100% 89.6%;
+    --sidebar-outline: 0 0% 30%;       /* contorno del bloque (sigue la curva) */
   }
 
   .dark {
-    --background: 240 10% 4%; /* Deep Charcoal */
-    --foreground: 0 0% 98%;
-    --card: 240 10% 8%; /* Slightly lighter Charcoal */
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 4%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 210 100% 55%; /* Cyber Blue */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 98%;
-    --brand: 210 100% 55%;
-    --brand-foreground: 210 40% 98%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 156 72% 50%;
-    --success-foreground: 156 72% 5%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 210 100% 55%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 112 100% 89.6%;         /* mint como CTA sobre negro */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 18.4%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 18.4%;
+    --muted-foreground: 0 0% 59.2%;    /* smoke */
+    --accent: 0 0% 18.4%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 18.4%;
+    --input: 0 0% 26.7%;
+    --ring: 112 100% 89.6%;
 
-    --sidebar-background: 240 10% 8%;
-    --sidebar-foreground: 240 5% 85%;
-    --sidebar-primary: 210 100% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 16%;
+    --sidebar-background: 0 0% 11%;    /* un escalón sobre el negro para que se vea la curva */
+    --sidebar-outline: 0 0% 24%;
+    --sidebar-foreground: 0 0% 77.6%;
+    --sidebar-primary: 112 100% 89.6%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 18.4%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 210 100% 55%;
+    --sidebar-border: 0 0% 18.4%;
+    --sidebar-ring: 112 100% 89.6%;
   }
 }
 
@@ -79,15 +82,20 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'Outfit', sans-serif;
     letter-spacing: -0.01em;
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
-  #root {
-    width: 100%;
-    min-height: 100vh;
+
+  /* Titulares de página: condensados y en mayúsculas, con aire suficiente para leerse bien */
+  h1 {
+    font-family: var(--font-display), 'Anton', ui-sans-serif, sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 0.95;
+    letter-spacing: 0.005em;
   }
 
   /* Mejoras de accesibilidad y foco */
@@ -96,7 +104,6 @@
     outline-offset: 2px;
   }
 
-  /* Asegurar que los elementos interactivos sean accesibles por teclado */
   button:not(:disabled),
   a,
   input:not(:disabled),
@@ -112,7 +119,6 @@
     cursor: not-allowed;
   }
 
-  /* Mejorar contraste y legibilidad */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -123,7 +129,7 @@
     }
   }
 
-  /* Custom Scrollbar Utilities */
+  /* Scrollbar */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -132,17 +138,30 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.2);
+    background: hsl(var(--foreground) / 0.2);
     border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.4);
+    background: hsl(var(--foreground) / 0.4);
   }
-
-  /* Firefox */
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary) / 0.2) transparent;
+    scrollbar-color: hsl(var(--foreground) / 0.2) transparent;
+  }
+  /* Sin flechas ^ v (Windows las dibuja por defecto). Nota: Chrome ≥121 ignora ::-webkit-scrollbar
+     si hay scrollbar-width/color, por eso el sidebar usa .scrollbar-none (barra oculta). */
+  .custom-scrollbar::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  /* Autocompletado del navegador: mantener el fondo del input (sin el azul de Chrome) */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: hsl(var(--foreground));
+    -webkit-box-shadow: 0 0 0 1000px hsl(var(--secondary)) inset;
+    caret-color: hsl(var(--foreground));
+    transition: background-color 9999s ease-out 0s;
   }
 
   .scrollbar-none::-webkit-scrollbar {
@@ -153,43 +172,35 @@
     scrollbar-width: none;
   }
 
-  /* PREMIUM DARK COMPONENTS */
+  /* Superficies heredadas: ahora planas (sin sombra ni borde), según DESIGN.MD */
   .premium-dark-card {
     background-color: hsl(var(--card)) !important;
-    color: hsl(var(--foreground)) !important;
-    border: 1px solid hsl(var(--border)) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-  }
-
-  .dark .premium-dark-card {
-    background-color: #18181b !important;
-    color: white !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2) !important;
+    color: hsl(var(--card-foreground)) !important;
+    border: 0 !important;
+    border-radius: 24px !important;
+    box-shadow: none !important;
   }
 
   .premium-dark-input {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: white !important;
-    transition: all 0.2s ease;
+    background-color: hsl(var(--secondary)) !important;
+    border: 1px solid transparent !important;
+    color: hsl(var(--foreground)) !important;
+    transition: border-color 0.2s ease;
   }
 
   .premium-dark-input:focus {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    border-color: hsl(var(--primary)) !important;
-    box-shadow: 0 0 0 2px hsla(var(--primary), 0.2) !important;
+    border-color: hsl(var(--foreground)) !important;
+    box-shadow: none !important;
   }
 
-  /* SIDEBAR TRIGGER REFINEMENT */
+  /* Botón para colapsar el sidebar */
   [data-sidebar="trigger"] {
     background-color: hsl(var(--card)) !important;
-    border: 1px solid hsl(var(--border)) !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+    border: 0 !important;
+    box-shadow: none !important;
     border-radius: 8px !important;
     color: hsl(var(--foreground)) !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: background-color 0.2s ease !important;
   }
 
   [data-sidebar="trigger"] svg {
@@ -200,8 +211,6 @@
   [data-sidebar="trigger"]:hover {
     background-color: hsl(var(--accent)) !important;
     color: hsl(var(--accent-foreground)) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
   }
 }
 
@@ -213,7 +222,6 @@
   display: block;
 }
 
-/* El nuevo tema siempre se expande SOBRE el viejo */
 ::view-transition-old(root) {
   z-index: 1;
 }
@@ -223,20 +231,12 @@
 }
 
 @layer utilities {
+  /* Sin blur ni sombras: la profundidad viene del contraste de superficies */
   .glass {
-    @apply bg-background/80 backdrop-blur-md border border-border/50 shadow-sm;
+    @apply bg-background border border-border;
   }
-  
+
   .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-border/50 shadow-xl;
-  }
-
-  .dark .glass {
-    @apply bg-background/60 backdrop-blur-md border border-border/40 shadow-none;
-  }
-
-  .dark .glass-card {
-    @apply bg-white/[0.03] backdrop-blur-3xl border-white/5 shadow-2xl;
+    @apply bg-card;
   }
 }
-

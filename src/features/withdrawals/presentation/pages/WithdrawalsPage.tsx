@@ -22,7 +22,7 @@ import { useWithdrawals } from '../hooks/useWithdrawals'
 
 const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
 const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50 h-11'
-const labelStyle = 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2 block'
+const labelStyle = 'text-xs font-semibold text-muted-foreground/60 mb-2 block'
 
 function userLabel(u: User): string {
   const name = u.name || u.first_name || u.email || u.employee_code || u.id
@@ -41,7 +41,8 @@ export default function WithdrawalsPage() {
 
   const [businessUsers, setBusinessUsers] = useState<User[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
-  const [selectedUserId, setSelectedUserId] = useState<string>(user?.id ?? '')
+  // Por defecto, todos los retiros del negocio (el administrador del panel no tiene retiros propios)
+  const [selectedUserId, setSelectedUserId] = useState<string>(FILTER_ALL)
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -64,10 +65,7 @@ export default function WithdrawalsPage() {
       .then((list) => {
         if (!cancelled) {
           setBusinessUsers(list)
-          setSelectedUserId((prev) => {
-            if (prev) return prev
-            return user?.id ?? list[0]?.id ?? ''
-          })
+          setSelectedUserId((prev) => prev || FILTER_ALL)
         }
       })
       .finally(() => {
@@ -76,7 +74,7 @@ export default function WithdrawalsPage() {
     return () => {
       cancelled = true
     }
-  }, [businessIdForUsers, user?.id, getUsersByBusinessId])
+  }, [businessIdForUsers, getUsersByBusinessId])
 
   const loadWithdrawals = useCallback(async () => {
     if (!selectedUserId) {
@@ -162,7 +160,7 @@ export default function WithdrawalsPage() {
     {
       key: 'created_at',
       header: 'Fecha Solicitud',
-      className: 'font-mono text-[11px] text-muted-foreground/60',
+      className: 'font-mono text-xs text-muted-foreground/60',
       render: (row) => (row.created_at ? formatDateTime(row.created_at) : '-')
     },
     {
@@ -190,9 +188,9 @@ export default function WithdrawalsPage() {
       render: (row) => (
         <span
           className={cn(
-            'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-300',
+            'px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-300',
             row.is_approved
-              ? 'bg-success/10 text-success border-success/20 shadow-[0_0_15px_-5px_theme(colors.success)]'
+              ? 'bg-success/10 text-success border-success/20'
               : 'bg-error/10 text-error border-error/10 animate-pulse'
           )}
         >
@@ -207,7 +205,7 @@ export default function WithdrawalsPage() {
       render: (row) => {
         const busy = updatingId === row.id
         const approved = row.is_approved === true
-        if (approved) return <span className="text-success font-bold text-[10px] uppercase">Finalizado</span>
+        if (approved) return <span className="text-success font-bold text-xs">Finalizado</span>
         return (
           <div className="flex items-center justify-end gap-2">
             <Button
@@ -215,7 +213,7 @@ export default function WithdrawalsPage() {
               size="sm"
               disabled={busy}
               onClick={() => handleApprove(row)}
-              className="h-8 bg-success hover:bg-success/90 text-primary-foreground border-0 font-bold uppercase tracking-widest text-[9px] px-3 transition-transform active:scale-95"
+              className="h-8 bg-success hover:bg-success/90 text-primary-foreground border-0 font-bold text-xs px-3 transition-transform active:scale-95"
             >
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}
               {!busy && 'Autorizar'}
@@ -226,7 +224,7 @@ export default function WithdrawalsPage() {
               variant="outline"
               disabled={busy}
               onClick={() => handleReject(row)}
-              className="h-8 font-bold uppercase tracking-widest text-[9px] px-3"
+              className="h-8 font-bold text-xs px-3"
             >
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
               {!busy && 'Denegar'}
@@ -245,7 +243,7 @@ export default function WithdrawalsPage() {
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Wallet className="w-8 h-8 text-primary" />
             Control de Egresos
           </h1>
@@ -283,14 +281,14 @@ export default function WithdrawalsPage() {
               )}
             </div>
             
-            <div className="flex items-center gap-6 px-6 border-l border-white/5 h-16 self-end">
+            <div className="flex items-center gap-6 px-6 border-l border-border h-16 self-end">
               <div>
                 <p className={labelStyle}>Solicitudes</p>
-                <p className="text-xl font-black tabular-nums text-foreground">{withdrawals.length}</p>
+                <p className="text-xl font-bold tabular-nums text-foreground">{withdrawals.length}</p>
               </div>
               <div>
                 <p className={labelStyle}>Pendientes</p>
-                <p className="text-xl font-black tabular-nums text-error">{withdrawals.filter(w => !w.is_approved).length}</p>
+                <p className="text-xl font-bold tabular-nums text-error">{withdrawals.filter(w => !w.is_approved).length}</p>
               </div>
             </div>
           </div>
@@ -298,7 +296,7 @@ export default function WithdrawalsPage() {
       </Card>
 
       {error && (
-        <div className="bg-error/10 border border-error/20 rounded-lg p-3 text-error text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+        <div className="bg-error/10 border border-error/20 rounded-lg p-3 text-error text-xs font-semibold flex items-center gap-2">
           <X className="w-4 h-4" />
           {error}
         </div>

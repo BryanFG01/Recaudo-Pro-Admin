@@ -7,6 +7,9 @@ import { MapPin, Navigation, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Client } from '../../domain/models'
 
+/** Clave de Google Maps restringida por dominio (se expone al navegador por diseño de Google). */
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
+
 const mapOptions = {
   disableDefaultUI: false,
   clickableIcons: false,
@@ -72,47 +75,15 @@ const mapOptions = {
 
 export default function ClientMapPage() {
   const { businessId, businessCode, user } = useAuthStore()
+  const currentBusinessId = user?.business_id || businessId
   const [clients, setClients] = useState<Client[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Bloqueo agresivo del modal de error de Google
-  useEffect(() => {
-    // 1. Inyectamos CSS para ocultar el contenedor de error
-    const style = document.createElement('style')
-    style.innerHTML = `
-      .gm-err-container, .gm-err-content, .gm-err-icon, .gm-err-title, .gm-err-message { 
-        display: none !important; 
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-      }
-      .gm-style div[style*="z-index: 1000001"] { display: none !important; }
-    `
-    document.head.appendChild(style)
-
-    // 2. Intervalo para "clic" automático en OK si aparece el botón
-    const interval = setInterval(() => {
-      const buttons = document.querySelectorAll('button')
-      buttons.forEach(btn => {
-        if (btn.textContent === 'OK' || btn.innerText === 'OK') {
-          (btn as HTMLElement).click()
-        }
-      })
-    }, 500)
-
-    return () => {
-      if (document.head.contains(style)) {
-        document.head.removeChild(style)
-      }
-      clearInterval(interval)
-    }
-  }, [])
-  
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: "" 
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY
   })
 
   const clientService = useMemo(() => {
@@ -120,16 +91,13 @@ export default function ClientMapPage() {
     return new ClientService(repository)
   }, [])
 
-  const currentBusinessId = user?.business_id || businessId
-
   const loadClients = useCallback(async () => {
-    if (!currentBusinessId || !user?.id) return
+    if (!currentBusinessId) return
     setIsLoading(true)
     try {
       const data = await clientService.getClientsWithFilters({
         businessId: currentBusinessId,
-        businessCode: businessCode || undefined,
-        userId: user.id
+        businessCode: businessCode || undefined
       })
       
       const validClients = (data || [])
@@ -153,7 +121,7 @@ export default function ClientMapPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [currentBusinessId, businessCode, clientService, user?.id])
+  }, [currentBusinessId, businessCode, clientService])
 
   useEffect(() => {
     loadClients()
@@ -199,7 +167,7 @@ export default function ClientMapPage() {
             <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
               <Navigation className="w-3 h-3 text-primary" />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">Geolocalización</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">Geolocalización</h1>
           </div>
           <p className="text-sm text-muted-foreground">Monitoreo de ubicación y rutas de clientes en tiempo real.</p>
         </div>
@@ -219,7 +187,7 @@ export default function ClientMapPage() {
               />
             </div>
             <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {filteredClients.length} Ubicados
               </span>
             </div>
@@ -229,10 +197,10 @@ export default function ClientMapPage() {
             {isLoading ? (
                <div className="p-8 text-center space-y-2">
                  <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
-                 <p className="text-[10px] font-bold text-muted-foreground uppercase">Cargando...</p>
+                 <p className="text-xs font-bold text-muted-foreground">Cargando...</p>
                </div>
             ) : filteredClients.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground text-[10px] font-bold uppercase italic">
+              <div className="p-8 text-center text-muted-foreground text-xs font-bold italic">
                 No se encontraron clientes
               </div>
             ) : (
@@ -250,15 +218,15 @@ export default function ClientMapPage() {
                   <p className="font-bold text-foreground text-sm truncate">{client.name}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <MapPin className="w-3 h-3 text-primary" />
-                    <p className="text-[9px] text-muted-foreground font-medium truncate uppercase tracking-tighter">
+                    <p className="text-xs text-muted-foreground font-medium truncate">
                        {client.address || 'Sin dirección'}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 mt-2">
-                    <div className="bg-primary/5 px-2 py-0.5 rounded text-[8px] font-black text-primary/60">
+                    <div className="bg-primary/5 px-2 py-0.5 rounded text-xs font-semibold text-primary/60">
                       LAT: {client.latitude?.toFixed(5)}
                     </div>
-                    <div className="bg-primary/5 px-2 py-0.5 rounded text-[8px] font-black text-primary/60">
+                    <div className="bg-primary/5 px-2 py-0.5 rounded text-xs font-semibold text-primary/60">
                       LNG: {client.longitude?.toFixed(5)}
                     </div>
                   </div>
@@ -269,7 +237,17 @@ export default function ClientMapPage() {
         </div>
 
         <div className="lg:col-span-3 relative rounded-3xl overflow-hidden border border-border shadow-xl bg-muted/20 backdrop-blur-sm">
-          {isLoaded && !isLoading ? (
+          {!GOOGLE_MAPS_API_KEY || loadError ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center">
+              <MapPin className="w-8 h-8 text-muted-foreground" />
+              <p className="text-base font-semibold text-foreground">El mapa no está disponible</p>
+              <p className="max-w-md text-sm text-muted-foreground">
+                {GOOGLE_MAPS_API_KEY
+                  ? 'Google Maps rechazó la clave configurada. Revisa que esté activa y permitida para este dominio.'
+                  : 'Falta configurar la clave de Google Maps (NEXT_PUBLIC_GOOGLE_MAPS_API_KEY). La lista de clientes con ubicación sigue disponible a la izquierda.'}
+              </p>
+            </div>
+          ) : isLoaded && !isLoading ? (
             <GoogleMap
               mapContainerStyle={{ width: '100%', height: '100%' }}
               center={defaultCenter}
@@ -310,7 +288,7 @@ export default function ClientMapPage() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full space-y-4">
                <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-               <p className="text-sm text-muted-foreground font-black uppercase tracking-widest animate-pulse">Sincronizando Satélites...</p>
+               <p className="text-sm text-muted-foreground font-semibold animate-pulse">Sincronizando Satélites...</p>
             </div>
           )}
         </div>

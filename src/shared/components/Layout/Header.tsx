@@ -27,13 +27,13 @@ export default function Header() {
         <div className="flex items-center gap-4">
           <SidebarTrigger className="h-9 w-9 text-foreground/80 hover:text-foreground transition-all flex items-center justify-center rounded-lg hover:bg-accent/50 border border-border/20" />
           <Separator orientation="vertical" className="h-4 opacity-20" />
-          <nav className="flex items-center space-x-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60">
+          <nav className="flex items-center space-x-1.5 text-xs font-semibold text-muted-foreground/60">
             <Link href="/admin" className="flex items-center hover:text-primary transition-colors">
               <Home className="h-3.5 w-3.5" />
             </Link>
             <ChevronRight className="h-3 w-3 opacity-20" />
             {pathnames.length === 0 ? (
-              <span className="text-foreground font-black tracking-widest">Dashboard</span>
+              <span className="text-foreground font-semibold">Dashboard</span>
             ) : (
               pathnames.map((name, index) => {
                 const isLast = index === pathnames.length - 1
@@ -46,7 +46,7 @@ export default function Header() {
                     <span
                       className={cn(
                         "transition-colors",
-                        isLast ? "text-foreground font-black tracking-widest" : "hover:text-primary cursor-pointer"
+                        isLast ? "text-foreground font-semibold" : "hover:text-primary cursor-pointer"
                       )}
                     >
                       {displayName}

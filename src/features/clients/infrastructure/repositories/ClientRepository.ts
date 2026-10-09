@@ -31,16 +31,6 @@ export class ClientRepository implements IClientRepository {
       throw new Error(`Error al obtener clientes con créditos: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
-  async getClients(): Promise<Client[]> {
-    try {
-      // TODO: Necesitamos el businessId para obtener clientes
-      // Por ahora retornamos array vacío, pero esto debería requerir businessId
-      return []
-    } catch (error) {
-      throw new Error(`Error al obtener clientes: ${error instanceof Error ? error.message : 'Error desconocido'}`)
-    }
-  }
-
   async getClientById(id: string): Promise<Client | null> {
     try {
       const client = await apiClient.get<Client>(`/api/clients/${encodeURIComponent(id)}`)
@@ -51,16 +41,6 @@ export class ClientRepository implements IClientRepository {
         return null
       }
       throw new Error(`Error al obtener cliente: ${error instanceof Error ? error.message : 'Error desconocido'}`)
-    }
-  }
-
-  async searchClients(_query: string): Promise<Client[]> {
-    try {
-      // TODO: El backend debería tener un endpoint de búsqueda
-      // Por ahora retornamos array vacío
-      return []
-    } catch (error) {
-      throw new Error(`Error al buscar clientes: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
 

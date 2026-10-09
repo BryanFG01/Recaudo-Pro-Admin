@@ -185,9 +185,9 @@ export default function AdminClientsPage() {
     {
       key: 'name',
       header: 'Nombre',
-      className: 'font-black tracking-tight',
+      className: 'font-bold tracking-tight',
       render: (client) => (
-        <span className="text-foreground font-black uppercase text-sm">{client.name}</span>
+        <span className="text-foreground font-bold uppercase text-sm">{client.name}</span>
       )
     },
     {
@@ -199,7 +199,7 @@ export default function AdminClientsPage() {
       key: 'user_id',
       header: 'Asignado a',
       render: (client) => (
-        <span className="text-[11px] font-black uppercase tracking-widest text-info/80 bg-info/5 px-2.5 py-1 rounded-lg border border-info/10">
+        <span className="text-xs font-semibold text-info/80 bg-info/5 px-2.5 py-1 rounded-lg border border-info/10">
           {client.user_id
             ? (userNameById[client.user_id] ?? client.user_email ?? 'Sin asignar')
             : client.user_email || 'Sin asignar'}
@@ -209,7 +209,7 @@ export default function AdminClientsPage() {
     {
       key: 'document_id',
       header: 'Documento',
-      className: 'text-muted-foreground/40 font-mono text-[11px]',
+      className: 'text-muted-foreground/40 font-mono text-xs',
       render: (client) => client.document_id || 'N/A'
     },
     {
@@ -217,7 +217,7 @@ export default function AdminClientsPage() {
       header: 'Préstamos',
       className: 'text-center',
       render: (client) => (
-        <span className="size-8 inline-flex items-center justify-center rounded-full bg-muted/30 border border-border/50 text-xs font-black">
+        <span className="size-8 inline-flex items-center justify-center rounded-full bg-muted/30 border border-border/50 text-xs font-bold">
             {client.total_credits}
         </span>
       )
@@ -254,7 +254,7 @@ export default function AdminClientsPage() {
         return (
           <span
             className={cn(
-              'px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-300',
+              'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300',
               balance === 0 
                 ? 'bg-success/5 text-success border-success/20' 
                 : 'bg-error/5 text-error border-error/20'
@@ -275,15 +275,15 @@ export default function AdminClientsPage() {
     <div className="flex flex-col h-full space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/10 pb-6 mb-2">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tight text-foreground uppercase">Administración de Clientes</h1>
-          <p className="text-sm font-semibold text-muted-foreground/70 uppercase tracking-widest">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground uppercase">Administración de Clientes</h1>
+          <p className="text-sm font-semibold text-muted-foreground/70">
             Gestiona y visualiza la salud financiera de tu cartera
           </p>
         </div>
         <Button
           onClick={handleExport}
           disabled={filteredClients.length === 0}
-          className="h-11 px-6 font-bold uppercase tracking-[0.1em] text-[11px] border-border hover:bg-accent rounded-xl"
+          className="h-11 px-6 font-bold text-xs border-border hover:bg-accent rounded-xl"
           variant="outline"
         >
           <Download className="w-4 h-4 mr-2" />
@@ -294,7 +294,7 @@ export default function AdminClientsPage() {
       <div className="bg-card/40 border border-border/40 rounded-3xl p-6 backdrop-blur-xl shadow-2xl">
           <div className="flex gap-6 items-end flex-wrap">
             <div className="flex-1 min-w-[240px] space-y-3">
-              <Label htmlFor="emailFilter" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
+              <Label htmlFor="emailFilter" className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/60">
                 <Filter className="w-3.5 h-3.5 text-primary" aria-hidden />
                 Filtros Avanzados
               </Label>
@@ -318,8 +318,8 @@ export default function AdminClientsPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2 bg-muted/20 px-4 py-2.5 rounded-xl border border-border/50">
-                <div className="size-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.5)]" />
-                <p className="text-[10px] font-bold uppercase text-muted-foreground/60 tracking-widest">
+                <div className="size-1.5 rounded-full bg-primary animate-pulse" />
+                <p className="text-xs font-bold text-muted-foreground/60">
                 {selectedEmail ? `RESULTADOS FILTRADOS: ${filteredClients.length}` : `MOSTRANDO TODOS: ${clients.length}`}
                 </p>
             </div>

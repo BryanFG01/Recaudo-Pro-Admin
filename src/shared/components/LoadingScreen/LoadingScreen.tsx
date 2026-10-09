@@ -22,7 +22,7 @@ export function LoadingScreen({
         <div className="absolute inset-0 blur-2xl bg-primary/20 rounded-full animate-pulse" />
         <RefreshCw className="size-12 animate-spin text-primary/60 relative z-10" />
       </div>
-      <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] animate-pulse">
+      <p className="text-xs font-semibold text-muted-foreground animate-pulse">
         {message}
       </p>
     </div>
