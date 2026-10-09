@@ -59,3 +59,6 @@ Thumbs.db
 
 # Next.js (caché y build: se generan solos)
 .next/
+
+# Configuración local de Claude Code (no se sube)
+.claude/
