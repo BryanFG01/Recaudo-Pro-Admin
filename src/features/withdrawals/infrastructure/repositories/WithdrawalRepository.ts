@@ -15,6 +15,8 @@ function toWithdrawal(item: unknown): Withdrawal | null {
     amount: typeof o.amount === 'number' ? o.amount : Number(o.amount) || 0,
     reason: typeof o.reason === 'string' ? o.reason : o.reason == null ? null : String(o.reason),
     is_approved: o.is_approved === true || o.isApproved === true,
+    kind: o.kind === 'expense' ? 'expense' : 'withdrawal',
+    is_rejected: o.is_rejected === true,
     created_at: typeof o.created_at === 'string' ? o.created_at : (o.createdAt as string) ?? undefined,
     updated_at: typeof o.updated_at === 'string' ? o.updated_at : (o.updatedAt as string) ?? undefined
   }
@@ -72,17 +74,16 @@ export class WithdrawalRepository implements IWithdrawalRepository {
   }
 
   /**
-   * PATCH /api/withdrawals/{id} — aprueba o rechaza un retiro.
-   * Body: { is_approved }.
-   * is_approved: true = aprobar, is_approved: false = rechazar.
+   * PATCH /api/withdrawals/{id} — aprueba ({ is_approved: true }) o rechaza ({ is_rejected: true }).
+   * Rechazar deja el registro marcado (ya no resta de la caja) en vez de dejarlo como pendiente.
    */
   async updateApproval(
     id: string,
     request: UpdateWithdrawalApprovalRequest
   ): Promise<Withdrawal> {
-    return apiClient.patch<Withdrawal>(
-      `/api/withdrawals/${encodeURIComponent(id)}`,
-      { is_approved: request.is_approved }
-    )
+    const raw = await apiClient.patch<unknown>(`/api/withdrawals/${encodeURIComponent(id)}`, request)
+    const updated = toWithdrawal(raw)
+    if (!updated) throw new Error('Respuesta inválida al actualizar el retiro')
+    return updated
   }
 }

@@ -20,6 +20,7 @@ import { cn } from '@/shared/utils/cn'
 import {
     formatCurrency,
     formatDate,
+    formatDateTime,
 } from '@/shared/utils/date'
 import {
     ArrowDownRight,
@@ -38,9 +39,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Collection } from '../../../collections/domain/models/Collection'
 import { useCollections } from '../../../collections/presentation/hooks/useCollections'
 import { DailySummaryItem } from '../../domain/models'
+import { summarizeCashBoxes } from '../../domain/services/cashSessionRules'
+import { CollectorCashSummary } from '../components/CollectorCashSummary'
+import { useRefreshOnNotification } from '@/features/notifications/presentation/hooks/useRefreshOnNotification'
 import { useCashSessions } from '../hooks/useCashSessions'
 import { DynamicTable, Column } from '@/shared/components/DynamicTable'
 import StatsCard from '@/shared/components/StatsCard/StatsCard'
+import { exportToExcel } from '@/shared/utils/excel'
 
 // --- Types for Unified Movements ---
 type MovementType = 'Ingreso' | 'Egreso' | 'Ajuste'
@@ -60,6 +65,17 @@ interface UnifiedMovement {
 
 const containerStyle = 'bg-card rounded-card'
 
+/** Filas del Excel: los movimientos tal como se ven en la tabla (con los filtros aplicados). */
+const toExportRows = (movements: UnifiedMovement[]) =>
+  movements.map((m) => ({
+    Fecha: formatDateTime(m.date),
+    Usuario: m.userName,
+    Tipo: m.type,
+    Concepto: m.concept,
+    Monto: m.amount,
+    Referencia: m.reference
+  }))
+
 export default function CashSessionFlowPage() {
   const { user: currentUser } = useAuthStore()
   const businessId = currentUser?.business_id || ''
@@ -72,19 +88,31 @@ export default function CashSessionFlowPage() {
 
   // --- Hooks ---
   const { getDailySummaryByUser } = useCashSessions()
-  const { collections } = useCollections()
+  const { collections, refetch: refetchCollections } = useCollections()
 
   // --- Data States ---
   const [businessUsers, setBusinessUsers] = useState<User[]>([])
   const [summaries, setSummaries] = useState<Record<string, DailySummaryItem>>({})
   const [credits, setCredits] = useState<any[]>([])
   const [isLoadingUI, setIsLoadingUI] = useState(true)
+  // Sube cuando llega un aviso de caja (gasto, retiro, apertura, cierre) para recargar sin F5
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  /** Botón "Actualizar" y avisos de caja: recarga saldos, créditos y recaudos sin recargar la página. */
+  const refresh = () => {
+    setIsRefreshing(true)
+    void refetchCollections()
+    setRefreshKey((k) => k + 1)
+  }
+  useRefreshOnNotification('cash', refresh)
 
   // --- Load Initial Data ---
   useEffect(() => {
     async function init() {
       if (!businessId) return
-      setIsLoadingUI(true)
+      // Solo la primera carga muestra la pantalla de espera; las recargas por aviso son silenciosas
+      if (refreshKey === 0) setIsLoadingUI(true)
       try {
         const users = await apiClient.get<User[]>(`/api/users/business/${businessId}`)
         setBusinessUsers(users || [])
@@ -107,21 +135,14 @@ export default function CashSessionFlowPage() {
         console.error('Error initializing dashboard:', err)
       } finally {
         setIsLoadingUI(false)
+        setIsRefreshing(false)
       }
     }
     init()
-  }, [businessId])
+  }, [businessId, refreshKey])
 
   // --- Global Stats ---
-  const globalStats = useMemo(() => {
-    const items = Object.values(summaries)
-    return {
-      totalSaldo: items.reduce((acc, curr) => acc + (curr.caja_actual || 0), 0),
-      totalIngresos: items.reduce((acc, curr) => acc + (curr.total_ingresos || 0), 0),
-      totalEgresos: items.reduce((acc, curr) => acc + (curr.total_retiros || 0) + (curr.total_gastos || 0), 0),
-      balanceNeto: items.reduce((acc, curr) => acc + (curr.total_ingresos || 0) - (curr.total_retiros || 0) - (curr.total_gastos || 0), 0)
-    }
-  }, [summaries])
+  const globalStats = useMemo(() => summarizeCashBoxes(Object.values(summaries)), [summaries])
 
   // --- Aggregate Movements ---
   const unifiedMovements = useMemo(() => {
@@ -262,11 +283,15 @@ export default function CashSessionFlowPage() {
           <p className="text-base text-muted-foreground">Movimientos y saldos de tus cobradores en tiempo real.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="h-11 px-5">
-            <RefreshCw className="size-4 mr-2" />
-            Actualizar
+          <Button variant="outline" className="h-11 px-5" onClick={refresh} disabled={isRefreshing}>
+            <RefreshCw className={cn('size-4 mr-2', isRefreshing && 'animate-spin')} />
+            {isRefreshing ? 'Actualizando…' : 'Actualizar'}
           </Button>
-          <Button className="h-11 px-6">
+          <Button
+            className="h-11 px-6"
+            disabled={filteredMovements.length === 0}
+            onClick={() => exportToExcel(toExportRows(filteredMovements), { filename: 'flujo_caja_recaudopro', sheetName: 'Movimientos' })}
+          >
             <Download className="size-4 mr-2" />
             Exportar
           </Button>
@@ -287,21 +312,21 @@ export default function CashSessionFlowPage() {
           value={formatCurrency(globalStats.totalIngresos)}
           icon={<ArrowUpRight />}
           variant="success"
-          subtitle={`${unifiedMovements.filter(m => m.type === 'Ingreso').length} movimientos`}
+          subtitle="Recaudo de las cajas actuales"
         />
         <StatsCard
           title="Egresos"
           value={formatCurrency(globalStats.totalEgresos)}
           icon={<ArrowDownRight />}
           variant="error"
-          subtitle={`${unifiedMovements.filter(m => m.type === 'Egreso').length} movimientos`}
+          subtitle="Ventas, retiros aprobados y gastos"
         />
         <StatsCard
           title="Balance neto"
           value={formatCurrency(globalStats.balanceNeto)}
           icon={<TrendingUp />}
           variant="success"
-          subtitle="Ingresos menos egresos"
+          subtitle="Ingresos menos egresos (sin la caja inicial)"
         />
       </div>
 
@@ -318,7 +343,6 @@ export default function CashSessionFlowPage() {
             const summary = summaries[u.id]
             const displayName = u.name || (u.first_name || '')
             const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-            const hasData = !!summary
 
             return (
               <Card key={u.id} className="group overflow-hidden transition-colors hover:bg-card/80">
@@ -338,35 +362,7 @@ export default function CashSessionFlowPage() {
                     </Button>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-end">
-                      <span className="text-sm text-muted-foreground">Saldo actual</span>
-                      <span className="text-2xl font-semibold tracking-tight tabular-nums">{formatCurrency(summary?.caja_actual || 0)}</span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                      <div
-                        className="h-full bg-success rounded-full transition-all duration-1000"
-                        style={{ width: hasData ? `${Math.min(((summary.total_recaudo || 0) / (summary.total_ventas || 1)) * 100, 100)}%` : '0%' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-8 justify-between pt-2">
-                    <div className="space-y-0.5">
-                       <p className="flex items-center gap-1 text-sm font-medium text-success">
-                          <ArrowUpRight className="size-3" /> {formatCurrency(summary?.total_ingresos || 0)}
-                       </p>
-                    </div>
-                    <div className="space-y-0.5">
-                       <p className="flex items-center gap-1 text-right text-sm font-medium text-error">
-                          <ArrowDownRight className="size-3" /> {formatCurrency(summary?.total_retiros || 0)}
-                       </p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-border pt-3">
-                    <p className="text-xs text-muted-foreground">Último movimiento: hace pocos minutos</p>
-                  </div>
+                  <CollectorCashSummary summary={summary} />
                 </CardContent>
               </Card>
             )

@@ -17,8 +17,25 @@ import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDateTime } from '@/shared/utils/date'
 import { Check, Loader2, Wallet, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Withdrawal } from '../../domain/models'
+import { UpdateWithdrawalApprovalRequest, Withdrawal } from '../../domain/models'
+import {
+  canReject,
+  countPending,
+  displayReason,
+  isExpense,
+  needsReview,
+  withdrawalStatus,
+  type WithdrawalStatus
+} from '../../domain/services/withdrawalRules'
 import { useWithdrawals } from '../hooks/useWithdrawals'
+import { useRefreshOnNotification } from '@/features/notifications/presentation/hooks/useRefreshOnNotification'
+
+/** Gasto: resta al registrarse (se puede rechazar). Retiro: resta al autorizarse. */
+const STATUS_LABEL: Record<WithdrawalStatus, (w: Withdrawal) => string> = {
+  applied: (w) => (!isExpense(w) || w.is_approved ? 'Aprobado' : 'Descontado · por revisar'),
+  pending: () => 'Pendiente',
+  rejected: () => 'Rechazado'
+}
 
 const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
 const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50 h-11'
@@ -128,33 +145,24 @@ export default function WithdrawalsPage() {
     loadWithdrawals()
   }, [loadWithdrawals])
 
-  const handleApprove = async (w: Withdrawal) => {
-    if (w.is_approved) return
+  // Un cobrador registró un gasto o pidió un retiro: la lista se actualiza sola
+  useRefreshOnNotification('withdrawals', () => void loadWithdrawals())
+
+  const applyUpdate = async (w: Withdrawal, request: UpdateWithdrawalApprovalRequest, failMessage: string) => {
     setUpdatingId(w.id)
     setError(null)
     try {
-      await updateWithdrawalApproval(w.id, { is_approved: true })
-      setWithdrawals((prev) => prev.map((x) => (x.id === w.id ? { ...x, is_approved: true } : x)))
+      const updated = await updateWithdrawalApproval(w.id, request)
+      setWithdrawals((prev) => prev.map((x) => (x.id === w.id ? updated : x)))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al aprobar')
+      setError(err instanceof Error ? err.message : failMessage)
     } finally {
       setUpdatingId(null)
     }
   }
 
-  const handleReject = async (w: Withdrawal) => {
-    if (w.is_approved) return
-    setUpdatingId(w.id)
-    setError(null)
-    try {
-      await updateWithdrawalApproval(w.id, { is_approved: false })
-      setWithdrawals((prev) => prev.map((x) => (x.id === w.id ? { ...x, is_approved: false } : x)))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al rechazar')
-    } finally {
-      setUpdatingId(null)
-    }
-  }
+  const handleApprove = (w: Withdrawal) => applyUpdate(w, { is_approved: true }, 'Error al aprobar')
+  const handleReject = (w: Withdrawal) => applyUpdate(w, { is_rejected: true }, 'Error al rechazar')
 
   const columns: Column<Withdrawal>[] = [
     {
@@ -176,27 +184,36 @@ export default function WithdrawalsPage() {
       render: (row) => formatCurrency(row.amount ?? 0)
     },
     {
+      key: 'kind',
+      header: 'Tipo',
+      render: (row) => (isExpense(row) ? 'Gasto' : 'Retiro')
+    },
+    {
       key: 'reason',
       header: 'Justificación',
       className: 'italic text-muted-foreground/60 max-w-[200px] truncate',
-      render: (row) => row.reason || '-'
+      render: (row) => displayReason(row) || '-'
     },
     {
       key: 'is_approved',
       header: 'Estado',
       className: 'text-center',
-      render: (row) => (
-        <span
-          className={cn(
-            'px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-300',
-            row.is_approved
-              ? 'bg-success/10 text-success border-success/20'
-              : 'bg-error/10 text-error border-error/10 animate-pulse'
-          )}
-        >
-          {row.is_approved ? 'Autorizado' : 'Pendiente'}
-        </span>
-      )
+      render: (row) => {
+        const status = withdrawalStatus(row)
+        return (
+          <span
+            className={cn(
+              'px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-300',
+              // Amarillo = falta revisión del administrador (retiro por autorizar o gasto por revisar)
+              needsReview(row) && 'bg-warning/10 text-warning border-warning/20',
+              !needsReview(row) && status === 'applied' && 'bg-success/10 text-success border-success/20',
+              status === 'rejected' && 'bg-error/10 text-error border-error/20'
+            )}
+          >
+            {STATUS_LABEL[status](row)}
+          </span>
+        )
+      }
     },
     {
       key: 'actions',
@@ -204,20 +221,23 @@ export default function WithdrawalsPage() {
       className: 'text-right',
       render: (row) => {
         const busy = updatingId === row.id
-        const approved = row.is_approved === true
-        if (approved) return <span className="text-success font-bold text-xs">Finalizado</span>
+        if (!canReject(row)) {
+          return <span className="text-muted-foreground font-bold text-xs">Finalizado</span>
+        }
         return (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              type="button"
-              size="sm"
-              disabled={busy}
-              onClick={() => handleApprove(row)}
-              className="h-8 bg-success hover:bg-success/90 text-primary-foreground border-0 font-bold text-xs px-3 transition-transform active:scale-95"
-            >
-              {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}
-              {!busy && 'Autorizar'}
-            </Button>
+            {needsReview(row) && (
+              <Button
+                type="button"
+                size="sm"
+                disabled={busy}
+                onClick={() => handleApprove(row)}
+                className="h-8 bg-success hover:bg-success/90 text-primary-foreground border-0 font-bold text-xs px-3 transition-transform active:scale-95"
+              >
+                {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3 mr-1" />}
+                {!busy && (isExpense(row) ? 'Aprobar' : 'Autorizar')}
+              </Button>
+            )}
             <Button
               type="button"
               size="sm"
@@ -227,7 +247,7 @@ export default function WithdrawalsPage() {
               className="h-8 font-bold text-xs px-3"
             >
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3 mr-1" />}
-              {!busy && 'Denegar'}
+              {!busy && (isExpense(row) ? 'Rechazar gasto' : 'Denegar')}
             </Button>
           </div>
         )
@@ -288,7 +308,7 @@ export default function WithdrawalsPage() {
               </div>
               <div>
                 <p className={labelStyle}>Pendientes</p>
-                <p className="text-xl font-bold tabular-nums text-error">{withdrawals.filter(w => !w.is_approved).length}</p>
+                <p className="text-xl font-bold tabular-nums text-error">{countPending(withdrawals)}</p>
               </div>
             </div>
           </div>

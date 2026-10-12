@@ -174,7 +174,7 @@ export default function CreditsPage() {
       Cliente: credit.client_id ? clientNameById[credit.client_id] ?? credit.client_id : '-',
       'Monto Total': formatCurrency(credit.total_amount),
       'Tasa interés': credit.interest_rate != null ? `${Number(credit.interest_rate)}%` : '-',
-      'Total con interés': credit.total_interest != null ? formatCurrency(credit.total_interest) : '-',
+      'Interés': credit.total_interest != null ? formatCurrency(credit.total_interest) : '-',
       'Total pagado': formatCurrency(totalPaid),
       'Saldo Restante': formatCurrency(saldoNum),
       'Valor Cuota': formatCurrency(credit.installment_amount),

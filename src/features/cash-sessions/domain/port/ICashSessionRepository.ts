@@ -1,5 +1,6 @@
 import {
   CashSession,
+  CashSessionEvent,
   CashSessionFlow,
   CreateCashSessionRequest,
   DailySummaryResponse,
@@ -15,4 +16,11 @@ export interface ICashSessionRepository {
   getFlow(id: string): Promise<CashSessionFlow | null>
   getDailySummaryByUser(userId: string): Promise<DailySummaryResponse | null>
   delete(id: string): Promise<void>
+  /** Abre (o reabre si es de hoy) la caja del cobrador. */
+  open(userId: string): Promise<CashSession>
+  /** Cierra la caja: la caja actual queda como caja final. */
+  close(id: string): Promise<CashSession>
+  getEvents(id: string): Promise<CashSessionEvent[]>
+  /** Recarga a una caja abierta: el monto se suma a la caja inicial. */
+  topUp(id: string, amount: number): Promise<CashSession>
 }

@@ -1,3 +1,5 @@
+export type CashSessionStatus = 'open' | 'closed'
+
 export interface CashSession {
   id: string
   business_id: string
@@ -6,8 +8,25 @@ export interface CashSession {
   session_date: string
   initial_balance: number
   allowed_to_withdraw: boolean
+  /** Abierta: acepta cobros, ventas, gastos y retiros. Cerrada: guardó su caja final. */
+  status: CashSessionStatus
+  closed_at?: string | null
+  /** Caja final al cerrar (será la caja inicial de la siguiente). */
+  closing_balance?: number | null
   created_at?: string
   updated_at?: string
+}
+
+/** Apertura, cierre o reapertura de una caja (GET /api/cash-sessions/{id}/events). */
+export interface CashSessionEvent {
+  id: string
+  cash_session_id: string
+  actor_id: string
+  actor_role: string
+  event: 'open' | 'close' | 'reopen' | 'top_up'
+  /** Caja en ese momento (en una recarga: el monto recargado). */
+  balance: number
+  created_at: string
 }
 
 export interface CreateCashSessionRequest {
@@ -38,9 +57,15 @@ export interface DailySummaryItem {
   total_retiros: number
   total_gastos: number
   caja_actual: number
+  cash_session_id: string
+  status: CashSessionStatus
+  closed_at: string | null
+  closing_balance: number | null
+  /** Retiros esperando aprobación (aún no restan). */
+  total_retiros_pendientes: number
 }
 
-/** Totales acumulados del resumen diario */
+/** Totales de la caja actual (la más reciente) */
 export interface DailySummaryTotals {
   total_ingresos: number
   total_recaudo: number

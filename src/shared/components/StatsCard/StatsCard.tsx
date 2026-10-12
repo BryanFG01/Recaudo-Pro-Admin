@@ -19,7 +19,8 @@ interface StatsCardProps {
   loading?: boolean
 }
 
-const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })
+// Redondeado al peso, como en todo el panel y la app ("$ 3.223.889")
+const COP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
 const formatStatValue = (value: string | number, isCurrency: boolean, loading: boolean): string | number => {
   if (loading) return '—'

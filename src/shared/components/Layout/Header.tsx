@@ -5,6 +5,7 @@ import { ChevronRight, Home } from "lucide-react"
 import { cn } from "@/shared/utils/cn"
 import Link from "next/link"
 import { ModeToggle } from "@/components/theme/ModeToggle"
+import { NotificationCenter } from "@/features/notifications/presentation/components/NotificationCenter"
 
 export default function Header() {
   const pathname = usePathname()
@@ -19,6 +20,7 @@ export default function Header() {
     collections: "Recaudos",
     "cash-sessions": "Caja",
     flow: "Flujo",
+    withdrawals: "Retiros",
   }
 
   return (
@@ -59,6 +61,7 @@ export default function Header() {
         </div>
         
         <div className="flex items-center gap-2">
+          <NotificationCenter />
           <ModeToggle />
         </div>
       </div>

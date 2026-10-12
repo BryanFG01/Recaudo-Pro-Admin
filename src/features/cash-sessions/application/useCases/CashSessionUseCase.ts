@@ -1,6 +1,7 @@
 import { CashSessionService } from '../../domain/services/CashSessionService'
 import {
   CashSession,
+  CashSessionEvent,
   CashSessionFlow,
   CreateCashSessionRequest,
   DailySummaryResponse,
@@ -47,6 +48,22 @@ export const buildGetDailySummaryByUserUseCase = (service: CashSessionService) =
   return async (userId: string): Promise<DailySummaryResponse | null> => {
     return service.getDailySummaryByUser(userId)
   }
+}
+
+export const buildOpenCashSessionUseCase = (service: CashSessionService) => {
+  return async (userId: string): Promise<CashSession> => service.open(userId)
+}
+
+export const buildCloseCashSessionUseCase = (service: CashSessionService) => {
+  return async (id: string): Promise<CashSession> => service.close(id)
+}
+
+export const buildTopUpCashSessionUseCase = (service: CashSessionService) => {
+  return async (id: string, amount: number): Promise<CashSession> => service.topUp(id, amount)
+}
+
+export const buildGetCashSessionEventsUseCase = (service: CashSessionService) => {
+  return async (id: string): Promise<CashSessionEvent[]> => service.getEvents(id)
 }
 
 export const buildDeleteCashSessionUseCase = (service: CashSessionService) => {

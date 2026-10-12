@@ -1,6 +1,7 @@
 import { apiClient } from '@/shared/config/api'
 import {
   CashSession,
+  CashSessionEvent,
   CashSessionFlow,
   CreateCashSessionRequest,
   DailySummaryResponse,
@@ -122,7 +123,12 @@ export class CashSessionRepository implements ICashSessionRepository {
         total_ventas: toNum(item.total_ventas),
         total_retiros: toNum(item.total_retiros),
         total_gastos: toNum(item.total_gastos),
-        caja_actual: toNum(item.caja_actual)
+        caja_actual: toNum(item.caja_actual),
+        cash_session_id: String(item.cash_session_id ?? ''),
+        status: item.status === 'closed' ? 'closed' : 'open',
+        closed_at: typeof item.closed_at === 'string' ? item.closed_at : null,
+        closing_balance: item.closing_balance == null ? null : toNum(item.closing_balance),
+        total_retiros_pendientes: toNum(item.total_retiros_pendientes)
       })) : []
       const t = raw.totals ?? {}
       return {
@@ -144,5 +150,35 @@ export class CashSessionRepository implements ICashSessionRepository {
   /** DELETE /api/cash-sessions/{id} — id: UUID de la sesión de caja */
   async delete(id: string): Promise<void> {
     await apiClient.delete<void>(`/api/cash-sessions/${encodeURIComponent(id)}`)
+  }
+
+  /** POST /api/cash-sessions/open — abre la caja del cobrador (o la reabre si es de hoy). */
+  async open(userId: string): Promise<CashSession> {
+    return apiClient.post<CashSession>('/api/cash-sessions/open', { user_id: userId })
+  }
+
+  /** POST /api/cash-sessions/{id}/close — cierra la caja guardando su caja final. */
+  async close(id: string): Promise<CashSession> {
+    return apiClient.post<CashSession>(`/api/cash-sessions/${encodeURIComponent(id)}/close`, {})
+  }
+
+  /** POST /api/cash-sessions/{id}/top-up — recarga: el monto se suma a la caja inicial. */
+  async topUp(id: string, amount: number): Promise<CashSession> {
+    return apiClient.post<CashSession>(`/api/cash-sessions/${encodeURIComponent(id)}/top-up`, { amount })
+  }
+
+  /** GET /api/cash-sessions/{id}/events — aperturas y cierres (más reciente primero). */
+  async getEvents(id: string): Promise<CashSessionEvent[]> {
+    const raw = await apiClient.get<unknown>(`/api/cash-sessions/${encodeURIComponent(id)}/events`)
+    if (!Array.isArray(raw)) return []
+    return raw.map((e: Record<string, unknown>) => ({
+      id: String(e.id ?? ''),
+      cash_session_id: String(e.cash_session_id ?? ''),
+      actor_id: String(e.actor_id ?? ''),
+      actor_role: String(e.actor_role ?? ''),
+      event: (['close', 'reopen', 'top_up'] as const).find((k) => k === e.event) ?? 'open',
+      balance: toNum(e.balance),
+      created_at: String(e.created_at ?? '')
+    }))
   }
 }

@@ -9,7 +9,11 @@ import {
   buildGetCashSessionsByUserIdUseCase,
   buildGetCashSessionFlowUseCase,
   buildGetDailySummaryByUserUseCase,
-  buildDeleteCashSessionUseCase
+  buildDeleteCashSessionUseCase,
+  buildOpenCashSessionUseCase,
+  buildCloseCashSessionUseCase,
+  buildGetCashSessionEventsUseCase,
+  buildTopUpCashSessionUseCase
 } from '../../application/useCases'
 import {
   CreateCashSessionRequest,
@@ -87,8 +91,16 @@ export function useCashSessions() {
     (id: string) => deleteCashSessionFn(id),
     [deleteCashSessionFn]
   )
+  const openCashSession = useMemo(() => buildOpenCashSessionUseCase(service), [service])
+  const closeCashSession = useMemo(() => buildCloseCashSessionUseCase(service), [service])
+  const getCashSessionEvents = useMemo(() => buildGetCashSessionEventsUseCase(service), [service])
+  const topUpCashSession = useMemo(() => buildTopUpCashSessionUseCase(service), [service])
 
   return {
+    topUpCashSession,
+    openCashSession,
+    closeCashSession,
+    getCashSessionEvents,
     createCashSession,
     updateCashSession,
     getCashSessionById,

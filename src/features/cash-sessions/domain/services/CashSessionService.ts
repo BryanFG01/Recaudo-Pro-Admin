@@ -1,6 +1,7 @@
 import { ICashSessionRepository } from '../port'
 import {
   CashSession,
+  CashSessionEvent,
   CashSessionFlow,
   CreateCashSessionRequest,
   DailySummaryResponse,
@@ -47,6 +48,27 @@ export class CashSessionService {
   async getDailySummaryByUser(userId: string): Promise<DailySummaryResponse | null> {
     if (!userId) throw new Error('user_id es requerido')
     return this.repository.getDailySummaryByUser(userId)
+  }
+
+  async open(userId: string): Promise<CashSession> {
+    if (!userId) throw new Error('user_id es requerido')
+    return this.repository.open(userId)
+  }
+
+  async close(id: string): Promise<CashSession> {
+    if (!id) throw new Error('ID de sesión es requerido')
+    return this.repository.close(id)
+  }
+
+  async topUp(id: string, amount: number): Promise<CashSession> {
+    if (!id) throw new Error('ID de sesión es requerido')
+    if (!(amount > 0)) throw new Error('El monto a recargar debe ser mayor a 0')
+    return this.repository.topUp(id, amount)
+  }
+
+  async getEvents(id: string): Promise<CashSessionEvent[]> {
+    if (!id) throw new Error('ID de sesión es requerido')
+    return this.repository.getEvents(id)
   }
 
   async delete(id: string): Promise<void> {

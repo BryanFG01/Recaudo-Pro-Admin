@@ -22,7 +22,8 @@ export const createCreditColumns = (): Column<Credit>[] => [
   },
   {
     key: 'total_interest',
-    header: 'Total con interés',
+    // total_interest es solo el interés (el total a pagar es prestado + interés)
+    header: 'Interés',
     render: (credit) =>
       credit.total_interest != null
         ? formatCurrency(credit.total_interest as number)

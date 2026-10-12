@@ -15,13 +15,19 @@ import { User } from '@/features/auth/domain/models'
 import { useAuth } from '@/features/auth/presentation/hooks/useAuth'
 import { useAuthStore } from '@/features/auth/presentation/store/authStore'
 import { Column, DynamicTable } from '@/shared/components/DynamicTable'
-import { ApiError } from '@/shared/config/api'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog/ConfirmDialog'
+import { useConfirm } from '@/shared/hooks/useConfirm'
 import { cn } from '@/shared/utils/cn'
 import { formatCurrency, formatDate } from '@/shared/utils/date'
-import { Banknote, Loader2, Save, Trash2 } from 'lucide-react'
+import { Banknote, History, Loader2, Lock, Pencil, Plus, Unlock, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CashSession } from '../../domain/models'
+import { CashSession, CashSessionEvent } from '../../domain/models'
+import { canOpen, findOpenSession, lastClosingBalance, localDateISO } from '../../domain/services/cashSessionRules'
+import { MoneyInput } from '@/shared/components/MoneyInput/MoneyInput'
+import { CashSessionHistory } from '../components/CashSessionHistory'
+import { TopUpDialog } from '../components/TopUpDialog'
 import { useCashSessions } from '../hooks/useCashSessions'
+import { useRefreshOnNotification } from '@/features/notifications/presentation/hooks/useRefreshOnNotification'
 
 const containerStyle = 'bg-card border-border backdrop-blur-md shadow-xl'
 const inputStyle = 'bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary/50 focus:border-primary/50 h-11'
@@ -32,6 +38,11 @@ function userLabel(u: User): string {
   return name
 }
 
+function userLabelById(users: User[], id: string): string | null {
+  const u = users.find((x) => x.id === id)
+  return u ? userLabel(u) : null
+}
+
 export default function CashSessionsPage() {
   const { businessId, businessCode, user } = useAuthStore()
   const { getUsersByBusinessId } = useAuth()
@@ -39,7 +50,11 @@ export default function CashSessionsPage() {
     createCashSession,
     updateCashSession,
     getCashSessionsByBusinessId,
-    deleteCashSession
+    deleteCashSession,
+    openCashSession,
+    closeCashSession,
+    getCashSessionEvents,
+    topUpCashSession
   } = useCashSessions()
 
   const currentBusinessId = user?.business_id || businessId
@@ -55,14 +70,18 @@ export default function CashSessionsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  const [sessionDate, setSessionDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
-  )
+  const [sessionDate, setSessionDate] = useState(() => localDateISO())
   const [initialBalance, setInitialBalance] = useState<string>('0')
   const [allowedToWithdraw, setAllowedToWithdraw] = useState(true)
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [actingId, setActingId] = useState<string | null>(null)
+  const [topUpSession, setTopUpSession] = useState<CashSession | null>(null)
+  const formCardRef = useRef<HTMLDivElement>(null)
+  const { confirm, dialogProps } = useConfirm()
+  const [historySession, setHistorySession] = useState<CashSession | null>(null)
+  const [history, setHistory] = useState<CashSessionEvent[] | null>(null)
   const [editSessionDate, setEditSessionDate] = useState('')
   const [editInitialBalance, setEditInitialBalance] = useState('')
   const [editAllowedToWithdraw, setEditAllowedToWithdraw] = useState(true)
@@ -120,6 +139,9 @@ export default function CashSessionsPage() {
     if (currentBusinessId) loadSessions()
   }, [currentBusinessId, loadSessions])
 
+  // Un cobrador abrió o cerró su caja: la tabla se actualiza sola
+  useRefreshOnNotification('cash', () => void loadSessions())
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentBusinessId) {
@@ -135,14 +157,8 @@ export default function CashSessionsPage() {
       setError('Saldo inválido.')
       return
     }
-    const isDuplicateResponsableYFecha = sessions.some(
-      (s) =>
-        s.session_date &&
-        s.session_date.slice(0, 10) === sessionDate &&
-        s.user_id === selectedUserId
-    )
-    if (isDuplicateResponsableYFecha) {
-      setError('Ya existe una sesión de caja para este responsable en esta fecha. Elige otra fecha o edita la sesión existente.')
+    if (findOpenSession(sessions, selectedUserId)) {
+      setError('Este cobrador ya tiene una caja abierta. Ciérrala antes de abrir otra.')
       return
     }
 
@@ -163,17 +179,8 @@ export default function CashSessionsPage() {
       setInitialBalance('0')
       loadSessions()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al crear sesión'
-      const is400Duplicate = err instanceof ApiError && err.status === 400
-      const isDuplicateMessage =
-        typeof msg === 'string' &&
-        (msg.includes('cash_sessions_business_date_unique') || msg.includes('duplicate key'))
-      const isDuplicate = is400Duplicate || isDuplicateMessage
-      setError(
-        isDuplicate
-          ? 'Ya existe una sesión de caja para este responsable en esta fecha. Elige otra fecha o edita la sesión existente.'
-          : msg
-      )
+      // La API explica el motivo (ej. "El cobrador ya tiene una caja abierta (del 2026-10-12)...")
+      setError(err instanceof Error ? err.message : 'Error al crear sesión')
     } finally {
       setIsSubmitting(false)
     }
@@ -181,6 +188,8 @@ export default function CashSessionsPage() {
 
   const startEdit = async (session: CashSession) => {
     setEditingId(session.id)
+    // En pantallas angostas el formulario queda arriba de la tabla: llevar la vista hasta él
+    formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     setEditSessionDate((session.session_date || '').slice(0, 10))
     setEditInitialBalance(String(session.initial_balance ?? 0))
     setEditAllowedToWithdraw(session.allowed_to_withdraw ?? true)
@@ -191,7 +200,13 @@ export default function CashSessionsPage() {
   }
 
   const handleDelete = async (session: CashSession) => {
-    if (!window.confirm('¿Eliminar esta sesión de caja?')) return
+    const confirmed = await confirm({
+      title: 'Eliminar sesión de caja',
+      description: 'Se borrará la caja y sus recaudos asociados. Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      destructive: true
+    })
+    if (!confirmed) return
     setDeletingId(session.id)
     setError(null)
     setSuccess(null)
@@ -204,6 +219,67 @@ export default function CashSessionsPage() {
       setError(err instanceof Error ? err.message : 'Error al eliminar sesión')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  /** Abrir o cerrar una caja desde el panel (queda en su historial con el administrador). */
+  const runSessionAction = async (session: CashSession, action: 'open' | 'close') => {
+    const confirmed = await confirm(action === 'close'
+      ? {
+          title: 'Cerrar caja',
+          description: 'La caja actual quedará guardada como caja final y no se podrán registrar más movimientos hasta volver a abrirla.',
+          confirmLabel: 'Cerrar caja'
+        }
+      : {
+          title: 'Abrir caja',
+          description: 'Se abre una caja nueva con la caja final del cobrador como caja inicial. Para enviarle dinero, usa "Recargar" después de abrir.',
+          confirmLabel: 'Abrir caja'
+        })
+    if (!confirmed) return
+    setActingId(session.id)
+    setError(null)
+    setSuccess(null)
+    try {
+      if (action === 'close') await closeCashSession(session.id)
+      else await openCashSession(session.user_id)
+      setSuccess(action === 'close' ? 'Caja cerrada.' : 'Caja abierta.')
+      await loadSessions()
+      if (historySession?.id === session.id) await showHistory(session)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar la acción')
+    } finally {
+      setActingId(null)
+    }
+  }
+
+  /** Recarga: el monto se suma a la caja inicial y al cobrador le llega el aviso. */
+  const handleTopUp = async (amount: number) => {
+    if (!topUpSession) return
+    const session = topUpSession
+    setActingId(session.id)
+    setError(null)
+    setSuccess(null)
+    try {
+      const updated = await topUpCashSession(session.id, amount)
+      setSuccess(`Recarga enviada. Nueva caja inicial: ${formatCurrency(updated.initial_balance)}`)
+      setTopUpSession(null)
+      await loadSessions()
+      if (historySession?.id === session.id) await showHistory(session)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo recargar la caja')
+    } finally {
+      setActingId(null)
+    }
+  }
+
+  const showHistory = async (session: CashSession) => {
+    setHistorySession(session)
+    setHistory(null)
+    try {
+      setHistory(await getCashSessionEvents(session.id))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cargar el historial')
+      setHistory([])
     }
   }
 
@@ -256,6 +332,17 @@ export default function CashSessionsPage() {
       render: (row) => formatCurrency(row.initial_balance ?? 0)
     },
     {
+      key: 'status',
+      header: 'Estado',
+      render: (row) => row.status === 'open'
+        ? <span className="px-2 py-0.5 rounded text-xs font-semibold border bg-success/10 text-success border-success/20">Abierta</span>
+        : (
+          <span className="text-xs text-muted-foreground">
+            Cerrada · caja final <span className="font-semibold text-foreground">{formatCurrency(row.closing_balance ?? 0)}</span>
+          </span>
+        )
+    },
+    {
       key: 'allowed_to_withdraw',
       header: 'Retiros',
       className: 'text-center',
@@ -275,18 +362,52 @@ export default function CashSessionsPage() {
       render: (row) => {
         const isEditing = editingId === row.id
         const isDeleting = deletingId === row.id
-        if (isEditing) return <span className="text-primary font-bold text-xs animate-pulse">Editando</span>
+        if (isEditing) {
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-xs font-semibold text-primary">Editando en el formulario ←</span>
+              <Button type="button" variant="outline" size="sm" className="h-8 text-xs font-semibold" onClick={cancelEdit}>
+                Cancelar edición
+              </Button>
+            </div>
+          )
+        }
+        const isActing = actingId === row.id
         return (
           <div className="flex items-center justify-end gap-1">
+            {row.status === 'open' && (
+              <Button type="button" size="sm" className="h-8 text-xs font-semibold"
+                disabled={isActing} onClick={() => setTopUpSession(row)}>
+                <Plus className="w-3.5 h-3.5 mr-1" />Recargar
+              </Button>
+            )}
+            {row.status === 'open' && (
+              <Button type="button" variant="outline" size="sm" className="h-8 text-xs font-semibold"
+                disabled={isActing} onClick={() => runSessionAction(row, 'close')}>
+                {isActing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Lock className="w-3.5 h-3.5 mr-1" />Cerrar</>}
+              </Button>
+            )}
+            {canOpen(sessions, row) && (
+              <Button type="button" variant="outline" size="sm" className="h-8 text-xs font-semibold"
+                disabled={isActing} onClick={() => runSessionAction(row, 'open')}>
+                {isActing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Unlock className="w-3.5 h-3.5 mr-1" />Abrir</>}
+              </Button>
+            )}
+            <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              title="Historial de apertura y cierre" onClick={() => showHistory(row)}>
+              <History className="w-3.5 h-3.5" />
+            </Button>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              title="Editar sesión (fecha, saldo inicial, permiso de retiros)"
+              aria-label="Editar sesión"
               onClick={() => startEdit(row)}
               disabled={!!deletingId}
             >
-              <Save className="w-3.5 h-3.5" />
+              <Pencil className="w-3.5 h-3.5" />
             </Button>
             <Button
               type="button"
@@ -314,6 +435,14 @@ export default function CashSessionsPage() {
 
   return (
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <ConfirmDialog {...dialogProps} />
+      <TopUpDialog
+        session={topUpSession}
+        collectorName={topUpSession ? userLabelById(businessUsers, topUpSession.user_id) ?? 'el cobrador' : ''}
+        isSubmitting={actingId !== null && actingId === topUpSession?.id}
+        onConfirm={handleTopUp}
+        onClose={() => setTopUpSession(null)}
+      />
       <div className="space-y-1">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground flex items-center gap-3">
           <Banknote className="w-8 h-8 text-primary" />
@@ -333,11 +462,20 @@ export default function CashSessionsPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         <div className="xl:col-span-4 sticky top-0">
-          <Card className={cn('border transition-all duration-500 overflow-hidden group', containerStyle)}>
+          {/* El mismo formulario sirve para crear y para editar: en edición se resalta y cambia el título */}
+          <Card
+            ref={formCardRef}
+            className={cn('border transition-all duration-500 overflow-hidden group', containerStyle, editingId && 'ring-2 ring-primary')}
+          >
             <CardHeader className="border-b border-border pb-4">
               <CardTitle className="text-sm font-bold text-foreground text-muted-foreground">
-                Nueva Sesión
+                {editingId ? 'Editar sesión' : 'Nueva Sesión'}
               </CardTitle>
+              {editingId && (
+                <p className="text-xs text-muted-foreground pt-1">
+                  Cambia la fecha, corrige el saldo inicial o el permiso de retiros y presiona “Actualizar”.
+                </p>
+              )}
             </CardHeader>
             <CardContent className="pt-6">
               <form onSubmit={editingId ? handleUpdate : handleCreate} className="space-y-6">
@@ -376,20 +514,33 @@ export default function CashSessionsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="initial_balance" className={labelStyle}>Saldo Inicial</Label>
-                    <Input
+                    {/* Al crear se SUMA a la caja final anterior; al editar se corrige el valor */}
+                    <Label htmlFor="initial_balance" className={labelStyle}>
+                      {editingId ? 'Saldo inicial (corregir)' : 'Monto a enviar'}
+                    </Label>
+                    <MoneyInput
                       id="initial_balance"
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={editingId ? editInitialBalance : initialBalance}
-                      onChange={(e) => editingId ? setEditInitialBalance(e.target.value) : setInitialBalance(e.target.value)}
+                      value={Number(editingId ? editInitialBalance : initialBalance) || 0}
+                      onValueChange={(n) => (editingId ? setEditInitialBalance(String(n)) : setInitialBalance(String(n)))}
                       className={inputStyle}
-                      placeholder="0.00"
-                      required
+                      placeholder="0"
                     />
                   </div>
                 </div>
+                {!editingId && selectedUserId && findOpenSession(sessions, selectedUserId) && (
+                  <p className="text-xs text-warning -mt-2">
+                    Este cobrador ya tiene una caja abierta. Para enviarle dinero usa “Recargar” en su caja.
+                  </p>
+                )}
+                {!editingId && selectedUserId && !findOpenSession(sessions, selectedUserId) && (
+                  <p className="text-xs text-muted-foreground -mt-2">
+                    Caja inicial: {formatCurrency(lastClosingBalance(sessions, selectedUserId))} (caja final anterior)
+                    {' + '}{formatCurrency(Number(initialBalance) || 0)} = {' '}
+                    <span className="font-semibold text-foreground">
+                      {formatCurrency(lastClosingBalance(sessions, selectedUserId) + (Number(initialBalance) || 0))}
+                    </span>
+                  </p>
+                )}
 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
                   <Label className="text-xs font-bold text-muted-foreground/60 cursor-pointer mb-0" htmlFor="withdraw_check">
@@ -410,7 +561,7 @@ export default function CashSessionsPage() {
                         Actualizar
                       </Button>
                       <Button type="button" variant="outline" onClick={cancelEdit} className="h-11 px-4 font-bold text-xs">
-                        X
+                        Cancelar
                       </Button>
                     </>
                   ) : (
@@ -438,6 +589,14 @@ export default function CashSessionsPage() {
             variant="premium-dark"
             className="rounded-3xl"
           />
+          {historySession && (
+            <CashSessionHistory
+              session={historySession}
+              events={history}
+              userName={(id) => userLabelById(businessUsers, id)}
+              onClose={() => setHistorySession(null)}
+            />
+          )}
         </div>
       </div>
     </div>
